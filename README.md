@@ -2,7 +2,16 @@
 
 FitLoop is a fitness and daily wellbeing app for people whose routines change from week to week. It brings daily check-ins, workout tracking, a friends feed and an explainable coaching service into one place.
 
-The first release is being built around a small set of features that can be tested properly. The coach uses clear rules and recent trends. It does not diagnose conditions or replace professional advice.
+The idea is straightforward: make it easier to notice patterns and keep going, without turning everyday habits into another source of pressure. The coach explains why it has made a suggestion, and users can say whether that suggestion was useful.
+
+## What is in the project
+
+- **Daily check-ins:** sleep, steps, mood and focused work or study time.
+- **Workout tracking:** a starter exercise library, reusable routines, completed sessions and a simple training breakdown.
+- **Community:** friend requests, accepted connections, a friends-only feed, reactions and comments.
+- **Explainable coach:** a separate Python service that reviews recent check-ins and returns messages with reasons.
+- **Coach controls:** choose a gentle or direct tone, choose a focus area and record whether a message was helpful.
+- **Progress view:** recent habit charts and a breakdown of completed sets by muscle group.
 
 ## Project structure
 
@@ -20,29 +29,35 @@ The first release is being built around a small set of features that can be test
 
 ## Local setup
 
-1. Copy `.env.example` to `.env` and replace the example JWT secret with a long random value.
+1. Copy `.env.example` to `.env` and replace the example JWT secret with a random value of at least 32 characters.
 2. Create a local PostgreSQL database and update `DATABASE_URL`.
 3. Install JavaScript dependencies with `npm install`.
-4. Run `npm run db:generate` and `npm run db:migrate`.
-5. Start the app with `npm run dev`.
-6. Set up the coach in a Python virtual environment, install `coach/requirements.txt`, then run `uvicorn main:app --app-dir coach --reload --port 8000`.
+4. Generate the Prisma client with `npm run db:generate`.
+5. Apply the schema with `npm run db:migrate`.
+6. Add the starter exercises with `npm run db:seed`.
+7. Start the frontend and API with `npm run dev`.
+8. In another terminal, install `coach/requirements.txt` in a Python virtual environment, then run `uvicorn main:app --app-dir coach --reload --port 8000`.
 
-The frontend runs on port 5173, the API on port 4000 and the coach on port 8000.
+The frontend runs on port 5173, the API on port 4000 and the coach on port 8000. The coach must be running before the coaching check-in button can return suggestions.
 
-## Development
+## Useful commands
 
-- `npm run dev`: frontend and backend.
-- `npm run build`: frontend production build.
-- `npm test`: backend tests.
-- `npm run db:generate`: generate Prisma client.
-- `npm run db:migrate`: apply local database migrations.
+- `npm run dev`: start the frontend and backend.
+- `npm run build`: check backend JavaScript syntax and create the frontend production build.
+- `npm test`: run the backend Node.js test command.
+- `npm run db:generate`: generate the Prisma client.
+- `npm run db:migrate`: apply local database changes.
+- `npm run db:seed`: add the starter exercise library.
+- `pytest coach/test_coach.py`: run the Python coaching tests.
 
-## Current implementation status
+## Current status and known gaps
 
-The repository already contains the first relational data model. This branch adds the first API, frontend shell and rule-based coach foundation. Social workflows, workout routine management, richer analytics, coach approval flows, account deletion and deployment hardening still need implementation and testing.
+The first application flow is in place, including daily check-ins, routine creation, workout logging, friends, a feed and coach feedback. The project still needs deeper backend tests, an account and data deletion flow, stronger production authentication, notifications, offline sync and a proper usability evaluation.
 
-## Privacy
+The current workout logger records one selected exercise with a chosen number of sets and reps. It is a useful first pass, not yet a full live workout timer or multi-exercise session builder. The progress charts are simple summaries of logged data, not medical or performance assessments.
 
-Sleep, mood and activity logs are personal information. Keep the database private, use HTTPS outside local development, and never commit real environment files. The coach receives only recent measurements, not names or email addresses.
+## Privacy and safety
 
-Read [the architecture notes](docs/architecture.md), [development guide](docs/development.md) and [privacy notes](docs/privacy.md) before using real participant data.
+Sleep, mood and activity logs are personal information. Keep the database private, use HTTPS outside local development, and never commit real environment files. The coach receives recent measurements only; it does not receive names or email addresses.
+
+Do not collect real participant data until the required university ethics approval, retention rules and deletion process are in place. Read [the architecture notes](docs/architecture.md), [development guide](docs/development.md) and [privacy notes](docs/privacy.md) before using the project.

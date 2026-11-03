@@ -1,20 +1,44 @@
 # Local development
 
-Install Node.js 20+, npm 10+, Python 3.11+ and PostgreSQL 15+. Create a local database and set its connection string in `.env`.
+FitLoop is easiest to run locally with Node.js 20+, npm 10+, Python 3.11+ and PostgreSQL 15+.
+
+## First-time setup
 
 1. Copy `.env.example` to `.env`.
 2. Replace the example JWT secret with a random value of at least 32 characters.
-3. Install JavaScript packages with `npm install`.
-4. Generate the database client using `npm run db:generate`.
-5. Apply the local schema using `npm run db:migrate`.
-6. Start the frontend and API using `npm run dev`.
-7. In another terminal, create a Python virtual environment, install `coach/requirements.txt`, and run `uvicorn main:app --app-dir coach --reload --port 8000`.
+3. Create a local PostgreSQL database and put its connection string in `DATABASE_URL`.
+4. Install JavaScript packages with `npm install`.
+5. Generate the Prisma client with `npm run db:generate`.
+6. Apply the schema with `npm run db:migrate`.
+7. Add the starter exercise definitions with `npm run db:seed`.
+8. Start the React frontend and Express API with `npm run dev`.
 
-The coach must be running before the coaching endpoint can return suggestions. Account and daily logging routes do not depend on it.
+The browser app is available at port 5173 and the API at port 4000.
 
-Useful checks:
+## Start the coaching service
 
-- `npm test` runs backend tests.
-- `npm run build` creates the frontend production build.
+Open another terminal, create and activate a Python virtual environment, then install the coach dependencies:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r coach/requirements.txt
+uvicorn main:app --app-dir coach --reload --port 8000
+```
+
+On Windows, activate the environment with `.venv\\Scripts\\activate`. The coach needs to be running for the dashboard's coaching check-in action to work. Daily logging, workout tracking and the friends feed do not call the coach service.
+
+## Checks
+
+- `npm run build` checks backend JavaScript syntax and builds the frontend.
+- `npm test` runs the backend Node.js test command.
+- `pytest coach/test_coach.py` runs the Python rule tests.
+- `npm run db:validate` checks that Prisma can read the database model.
 - `GET /health` checks the API.
 - `GET http://localhost:8000/health` checks the coach.
+
+The GitHub Actions workflow runs schema validation, client generation, backend checks, the frontend build and Python tests on pushes and pull requests.
+
+## A few useful reminders
+
+Keep `.env` out of Git. Do not use real health or mood data in fixtures. When changing the Prisma schema, regenerate the client and apply a migration locally before relying on the new fields.

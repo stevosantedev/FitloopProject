@@ -27,6 +27,8 @@ jobs:
         run: npm run db:validate
 
       - name: Generate the Prisma client
+        env:
+          DATABASE_URL: postgresql://fitloop:fitloop@localhost:5432/fitloop
         run: npm run db:generate
 
       - name: Run backend tests

@@ -1,0 +1,209 @@
+// Prisma generates a typed database client from this schema.
+// Keeping relationships here makes ownership and deletion rules visible in one place.
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// A user owns every private record. Username is public-facing; email is only for sign-in.
+model User {
+  id             String              @id @default(cuid())
+  username       String              @unique
+  email          String              @unique
+  passwordHash   String
+  priority       String              @default("energy")
+  privateAccount Boolean             @default(true)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  dailyLogs      DailyLog[]
+  routines       WorkoutRoutine[]
+  sessions       WorkoutSession[]
+  plannedSessions PlannedSession[]
+  coachEvents    CoachEvent[]
+  coachPreference CoachPreference?
+  posts          FeedPost[]
+  sentRequests   FriendConnection[]  @relation("FriendRequester")
+  receivedRequests FriendConnection[] @relation("FriendAddressee")
+  reactions      Reaction[]
+  comments       FeedComment[]
+}
+
+// One row per user per calendar day keeps daily check-ins easy to query and update.
+model DailyLog {
+  id              String   @id @default(cuid())
+  userId          String
+  date            DateTime
+  sleepMinutes    Int?
+  bedtime         DateTime?
+  wakeTime        DateTime?
+  steps           Int?
+  activityMinutes Int?
+  mood            Int?
+  focusMinutes    Int?
+  note            String?  @db.VarChar(500)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@index([userId, date])
+}
+
+// Exercises can be shared in the starter library or owned as a private custom exercise.
+model Exercise {
+  id          String       @id @default(cuid())
+  name        String
+  muscleGroup String
+  equipment   String?
+  isCustom    Boolean      @default(false)
+  routines    RoutineExercise[]
+  sets        WorkoutSet[]
+}
+
+// Routines are reusable templates; a session records what the user actually completed.
+model WorkoutRoutine {
+  id          String             @id @default(cuid())
+  userId      String
+  name        String
+  description String?
+  createdAt   DateTime           @default(now())
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercises   RoutineExercise[]
+  sessions    WorkoutSession[]
+}
+
+// The join model stores the intended order of exercises inside a routine.
+model RoutineExercise {
+  id         String         @id @default(cuid())
+  routineId  String
+  exerciseId String
+  sortOrder  Int            @default(0)
+  routine    WorkoutRoutine @relation(fields: [routineId], references: [id], onDelete: Cascade)
+  exercise   Exercise       @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+
+  @@unique([routineId, exerciseId])
+}
+
+// A session can exist without a routine so one-off workouts remain possible.
+model WorkoutSession {
+  id         String   @id @default(cuid())
+  userId     String
+  routineId  String?
+  startedAt  DateTime @default(now())
+  endedAt    DateTime?
+  notes      String?
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  routine    WorkoutRoutine? @relation(fields: [routineId], references: [id], onDelete: SetNull)
+  sets       WorkoutSet[]
+  post       FeedPost?
+  planned    PlannedSession?
+}
+
+// Each set belongs to a session and exercise, allowing volume to be calculated later.
+model WorkoutSet {
+  id         String         @id @default(cuid())
+  sessionId  String
+  exerciseId String
+  setNumber  Int
+  reps       Int
+  weightKg   Float?
+  completed  Boolean        @default(true)
+  session    WorkoutSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  exercise   Exercise       @relation(fields: [exerciseId], references: [id], onDelete: Restrict)
+
+  @@index([sessionId])
+}
+
+// Planned sessions let the coach notice missed workouts without changing a user's plan.
+model PlannedSession {
+  id          String   @id @default(cuid())
+  userId      String
+  routineId   String?
+  scheduledAt DateTime
+  status      String   @default("planned")
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  routine     WorkoutRoutine? @relation(fields: [routineId], references: [id], onDelete: SetNull)
+  session     WorkoutSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  sessionId   String?  @unique
+
+  @@index([userId, scheduledAt, status])
+}
+
+// Store the explanation and source measurements so a coach message can be audited later.
+model CoachEvent {
+  id          String   @id @default(cuid())
+  userId      String
+  ruleCode    String
+  message     String
+  explanation String
+  metric      String?
+  createdAt   DateTime @default(now())
+  decision    String   @default("pending")
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+// Preferences change the wording and focus, not the underlying safety rules.
+model CoachPreference {
+  id         String @id @default(cuid())
+  userId     String @unique
+  style      String @default("gentle")
+  focus      String @default("energy")
+  user       User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Social content is private by default and is only returned to approved friends.
+model FeedPost {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  text      String?
+  sessionId String?  @unique
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session   WorkoutSession? @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  reactions Reaction[]
+  comments  FeedComment[]
+  @@index([userId, createdAt])
+}
+
+// A single directional request avoids storing duplicate friendship state.
+model FriendConnection {
+  id          String   @id @default(cuid())
+  requesterId String
+  addresseeId String
+  status      String   @default("pending")
+  createdAt   DateTime @default(now())
+  requester   User     @relation("FriendRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  addressee   User     @relation("FriendAddressee", fields: [addresseeId], references: [id], onDelete: Cascade)
+
+  @@unique([requesterId, addresseeId])
+}
+
+// Reactions are limited to one per user and post to keep the feed predictable.
+model Reaction {
+  id        String   @id @default(cuid())
+  userId    String
+  postId    String
+  value     String   @default("like")
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      FeedPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  @@unique([userId, postId])
+}
+
+model FeedComment {
+  id        String   @id @default(cuid())
+  userId    String
+  postId    String
+  text      String   @db.VarChar(500)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      FeedPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  @@index([postId, createdAt])
+}

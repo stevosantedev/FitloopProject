@@ -8,6 +8,8 @@ import { prisma } from "./prisma.js";
 import { requireAuth } from "./middleware/auth.js";
 import authRoutes from "./routes/auth.js";
 import dailyLogRoutes from "./routes/dailyLogs.js";
+import workoutRoutes from "./routes/workouts.js";
+import socialRoutes from "./routes/social.js";
 import coachRoutes from "./routes/coach.js";
 
 const app = express();
@@ -23,6 +25,8 @@ app.get("/health", (_req, res) => res.json({ status: "ok", service: "fitloop-api
 
 app.use("/api/auth", authRoutes);
 app.use("/api/daily-logs", requireAuth, dailyLogRoutes);
+app.use("/api/workouts", requireAuth, workoutRoutes);
+app.use("/api/social", requireAuth, socialRoutes);
 app.use("/api/coach", requireAuth, coachRoutes);
 
 // Validation messages are useful to users; unexpected errors stay generic to avoid leaking internals.

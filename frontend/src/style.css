@@ -89,3 +89,18 @@ button:disabled { opacity: .45; cursor: not-allowed; }
   .feed-heading { flex-direction: column; gap: 4px; }
   .comment-form { align-items: stretch; }
 }
+
+/* Coach controls sit with the messages so preferences and feedback are easy to find. */
+.coach-preferences { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px 14px; align-items: end; border-top: 1px solid #304238; padding-top: 14px; }
+.coach-preferences .field-heading { grid-row: 1; margin: 0; }
+.coach-preferences select { margin: 0; }
+.coach-preferences button { width: auto; margin: 0; }
+.secondary-action { background: #b7ed77; }
+.decision-state { color: #9cad9f; font-size: .82rem; margin: 8px 0; text-transform: capitalize; }
+.decision-actions { display: flex; gap: 8px; }
+.decision-actions button { width: auto; }
+@media (max-width: 700px) {
+  .coach-preferences { grid-template-columns: 1fr; }
+  .coach-preferences .field-heading { grid-row: auto; }
+  .coach-preferences button { width: 100%; }
+}

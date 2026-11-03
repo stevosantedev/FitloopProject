@@ -31,7 +31,8 @@ type FeedPost = {
   reactions: Array<{ value: string; userId: string }>;
   comments: Array<{ id: string; text: string; user: { username: string } }>;
 };
-type CoachMessage = { id: string; message: string; explanation: string };
+type CoachMessage = { id: string; message: string; explanation: string; decision?: string };
+type CoachPreference = { style: "gentle" | "direct"; focus: "energy" | "consistency" | "recovery" };
 
 const API = import.meta.env.VITE_API_URL ?? "http://localhost:4000";
 
@@ -95,6 +96,11 @@ export default function App() {
 
   async function loadDashboard() {
     try {
+      // Restore the profile and coaching preferences when a saved session is reopened in the browser.
+      const profile = await request("/api/me");
+      setUser(profile.user);
+      const preferenceData = await request("/api/coach/preferences");
+      setCoachPreference(preferenceData.preference);
       const data = await request("/api/daily-logs?days=7");
       setLogs(data.logs);
       const history = await request("/api/coach/history");
@@ -158,6 +164,33 @@ export default function App() {
       await loadDashboard();
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Could not save your check-in.");
+    }
+  }
+
+  async function saveCoachPreference(event: React.FormEvent) {
+    event.preventDefault();
+    try {
+      const data = await request("/api/coach/preferences", {
+        method: "PUT",
+        body: JSON.stringify(coachPreference)
+      });
+      setCoachPreference(data.preference);
+      setNotice("Your coaching preferences have been saved.");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Could not save coaching preferences.");
+    }
+  }
+
+  async function decideCoachMessage(id: string, decision: "approved" | "declined") {
+    try {
+      await request("/api/coach/events/" + id + "/decision", {
+        method: "PATCH",
+        body: JSON.stringify({ decision })
+      });
+      await loadDashboard();
+      setNotice(decision === "approved" ? "Recommendation marked as approved." : "Recommendation marked as declined.");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Could not save that decision.");
     }
   }
 
@@ -358,7 +391,22 @@ export default function App() {
       <section className="panel coach-panel">
         <div><p className="eyebrow">YOUR COACH</p><h2>Patterns, not pressure.</h2><p className="muted">Get a short explanation based on the check-ins you've logged.</p></div>
         <button onClick={askCoach}>Review my recent trends</button>
-        {coachMessages.map(item => <article className="coach-message" key={item.id}><strong>{item.message}</strong><p className="muted">{item.explanation}</p></article>)}
+        <form className="coach-preferences" onSubmit={saveCoachPreference}>
+          <p className="field-heading">Coaching style</p>
+          <select value={coachPreference.style} onChange={event => setCoachPreference(current => ({ ...current, style: event.target.value as CoachPreference["style"] }))}>
+            <option value="gentle">Gentle and encouraging</option><option value="direct">Clear and direct</option>
+          </select>
+          <p className="field-heading">Main focus</p>
+          <select value={coachPreference.focus} onChange={event => setCoachPreference(current => ({ ...current, focus: event.target.value as CoachPreference["focus"] }))}>
+            <option value="energy">Everyday energy</option><option value="consistency">Consistency</option><option value="recovery">Rest and recovery</option>
+          </select>
+          <button className="secondary-action">Save coach preferences</button>
+        </form>
+        {coachMessages.map(item => <article className="coach-message" key={item.id}>
+          <strong>{item.message}</strong><p className="muted">{item.explanation}</p>
+          <p className="decision-state">Decision: {item.decision ?? "pending"}</p>
+          <div className="decision-actions"><button type="button" className="small-button" onClick={() => void decideCoachMessage(item.id, "approved")}>Helpful</button><button type="button" className="small-button" onClick={() => void decideCoachMessage(item.id, "declined")}>Not for me</button></div>
+        </article>)}
       </section>
     </>}
 

@@ -104,3 +104,22 @@ button:disabled { opacity: .45; cursor: not-allowed; }
   .coach-preferences .field-heading { grid-row: auto; }
   .coach-preferences button { width: 100%; }
 }
+
+/* Compact charts show recorded habits without implying a target or medical score. */
+.mini-charts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.mini-chart { min-width: 0; padding: 12px; border: 1px solid #304238; border-radius: 12px; }
+.mini-chart > strong { display: block; font-size: .9rem; margin-bottom: 12px; }
+.bar-row { height: 112px; display: flex; align-items: end; justify-content: space-around; gap: 6px; border-bottom: 1px solid #52645a; }
+.bar-column { height: 100%; flex: 1; display: flex; flex-direction: column; justify-content: end; align-items: center; gap: 5px; min-width: 0; }
+.bar-column > span { display: block; width: min(22px, 80%); min-height: 0; border-radius: 5px 5px 0 0; background: #b7ed77; }
+.bar-column small { color: #9cad9f; font-size: .68rem; }
+.chart-note { color: #829488; font-size: .78rem; margin: 14px 0 0; line-height: 1.5; }
+.volume-list { display: grid; gap: 12px; }
+.volume-row { display: grid; grid-template-columns: 100px 1fr 28px; align-items: center; gap: 12px; font-size: .9rem; }
+.volume-track { height: 9px; overflow: hidden; border-radius: 99px; background: #2b3d32; }
+.volume-track span { display: block; height: 100%; border-radius: inherit; background: #b7ed77; }
+.volume-row strong { text-align: right; }
+@media (max-width: 700px) {
+  .mini-charts { grid-template-columns: 1fr; }
+  .volume-row { grid-template-columns: 78px 1fr 24px; gap: 8px; }
+}

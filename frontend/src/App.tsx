@@ -348,6 +348,19 @@ export default function App() {
     </main>;
   }
 
+  // Build small, honest summaries from the records already loaded for this account.
+  const chartLogs = [...logs].reverse();
+  const maxSteps = Math.max(1, ...chartLogs.map(log => log.steps ?? 0));
+  const maxSleep = Math.max(1, ...chartLogs.map(log => log.sleepMinutes ?? 0));
+  const maxFocus = Math.max(1, ...chartLogs.map(log => log.focusMinutes ?? 0));
+  const muscleVolume = sessions.flatMap(session => session.sets)
+    .reduce<Record<string, number>>((totals, set) => {
+      const group = set.exercise.muscleGroup || "Other";
+      totals[group] = (totals[group] ?? 0) + (set.completed ? 1 : 0);
+      return totals;
+    }, {});
+  const muscleEntries = Object.entries(muscleVolume).sort((a, b) => b[1] - a[1]);
+
   return <main className="app-shell">
     <header className="topbar">
       <a className="brand" href="/">FitLoop<span>.</span></a>
@@ -387,6 +400,16 @@ export default function App() {
               <span>{log.steps?.toLocaleString() ?? "No steps"} steps · {log.sleepMinutes ? (log.sleepMinutes / 60).toFixed(1) : "—"}h sleep · Mood {log.mood ?? "—"}/5</span>
             </li>)}</ul>}
         </section>
+      </section>
+      <section className="panel section-gap">
+        <p className="eyebrow">YOUR RECENT PATTERNS</p><h2>Small signals over seven days</h2>
+        <div className="mini-charts">
+          <article className="mini-chart"><strong>Sleep</strong><div className="bar-row">{chartLogs.map(log => <div className="bar-column" key={log.id} title={log.sleepMinutes == null ? "No sleep entry" : (log.sleepMinutes / 60).toFixed(1) + " hours"}><span style={{ height: (log.sleepMinutes == null ? 0 : Math.max(4, log.sleepMinutes / maxSleep * 100)) + "%" }} /><small>{new Date(log.date).toLocaleDateString(undefined, { weekday: "short" })}</small></div>)}</div></article>
+          <article className="mini-chart"><strong>Steps</strong><div className="bar-row">{chartLogs.map(log => <div className="bar-column" key={log.id} title={log.steps == null ? "No step entry" : log.steps.toLocaleString() + " steps"}><span style={{ height: (log.steps == null ? 0 : Math.max(4, log.steps / maxSteps * 100)) + "%" }} /><small>{new Date(log.date).toLocaleDateString(undefined, { weekday: "short" })}</small></div>)}</div></article>
+          <article className="mini-chart"><strong>Mood (out of 5)</strong><div className="bar-row">{chartLogs.map(log => <div className="bar-column" key={log.id} title={log.mood == null ? "No mood entry" : "Mood " + log.mood + " out of 5"}><span style={{ height: (log.mood == null ? 0 : log.mood / 5 * 100) + "%" }} /><small>{new Date(log.date).toLocaleDateString(undefined, { weekday: "short" })}</small></div>)}</div></article>
+          <article className="mini-chart"><strong>Focus (minutes)</strong><div className="bar-row">{chartLogs.map(log => <div className="bar-column" key={log.id} title={log.focusMinutes == null ? "No focus entry" : log.focusMinutes + " focused minutes"}><span style={{ height: (log.focusMinutes == null ? 0 : Math.max(4, log.focusMinutes / maxFocus * 100)) + "%" }} /><small>{new Date(log.date).toLocaleDateString(undefined, { weekday: "short" })}</small></div>)}</div></article>
+        </div>
+        <p className="chart-note">Blank bars mean no entry was logged. These charts describe your records; they do not score your health.</p>
       </section>
       <section className="panel coach-panel">
         <div><p className="eyebrow">YOUR COACH</p><h2>Patterns, not pressure.</h2><p className="muted">Get a short explanation based on the check-ins you've logged.</p></div>
@@ -437,6 +460,12 @@ export default function App() {
         <p className="eyebrow">SAVED ROUTINES</p><h2>Your routines</h2>
         {routines.length === 0 ? <p className="muted">No routines yet. Choose a few exercises above to make your first one.</p> :
           <div className="routine-grid">{routines.map(routine => <article className="routine-card" key={routine.id}><strong>{routine.name}</strong><p className="muted">{routine.exercises.map(item => item.exercise.name).join(" · ")}</p></article>)}</div>}
+      </section>
+      <section className="panel section-gap">
+        <p className="eyebrow">TRAINING BREAKDOWN</p><h2>Sets by muscle group</h2>
+        {muscleEntries.length === 0 ? <p className="muted">Log a workout to see how your completed sets are distributed.</p> :
+          <div className="volume-list">{muscleEntries.map(([group, count]) => <div className="volume-row" key={group}><span>{group}</span><div className="volume-track"><span style={{ width: (count / Math.max(...muscleEntries.map(item => item[1])) * 100) + "%" }} /></div><strong>{count}</strong></div>)}</div>}
+        <p className="chart-note">This counts completed sets in the sessions currently loaded. It is not a measure of training quality.</p>
       </section>
       <section className="panel section-gap">
         <p className="eyebrow">WORKOUT HISTORY</p><h2>Recent sessions</h2>

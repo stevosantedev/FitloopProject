@@ -11,6 +11,7 @@ import dailyLogRoutes from "./routes/dailyLogs.js";
 import workoutRoutes from "./routes/workouts.js";
 import socialRoutes from "./routes/social.js";
 import coachRoutes from "./routes/coach.js";
+import analyticsRoutes from "./routes/analytics.js";
 
 const app = express();
 
@@ -42,6 +43,7 @@ app.use("/api/daily-logs", requireAuth, dailyLogRoutes);
 app.use("/api/workouts", requireAuth, workoutRoutes);
 app.use("/api/social", requireAuth, socialRoutes);
 app.use("/api/coach", requireAuth, coachRoutes);
+app.use("/api/analytics", requireAuth, analyticsRoutes);
 
 // Validation messages are useful to users; unexpected errors stay generic to avoid leaking internals.
 app.use((error, _req, res, _next) => {

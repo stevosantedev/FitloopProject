@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import { z } from "zod";
 import { prisma } from "../prisma.js";
 import { config } from "../config.js";
+import { requireAuth } from "../middleware/auth.js";
 
 const router = Router();
 
@@ -60,6 +61,25 @@ router.post("/login", async (req, res, next) => {
       token: createToken(user.id),
       user: { id: user.id, username: user.username }
     });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+
+router.delete("/account", requireAuth, async (req, res, next) => {
+  try {
+    const input = z.object({ password: z.string().min(1).max(128), confirmation: z.literal("DELETE") }).parse(req.body);
+    const user = await prisma.user.findUnique({ where: { id: req.userId } });
+
+    // Ask for the current password so a copied browser session alone cannot erase an account.
+    if (!user || !(await bcrypt.compare(input.password, user.passwordHash))) {
+      return res.status(401).json({ error: "The password is incorrect." });
+    }
+
+    // Related logs, sessions, social records and coach events are removed by the schema's cascade rules.
+    await prisma.user.delete({ where: { id: req.userId } });
+    return res.json({ deleted: true });
   } catch (error) {
     return next(error);
   }

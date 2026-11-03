@@ -123,3 +123,8 @@ button:disabled { opacity: .45; cursor: not-allowed; }
   .mini-charts { grid-template-columns: 1fr; }
   .volume-row { grid-template-columns: 78px 1fr 24px; gap: 8px; }
 }
+
+/* Account deletion is deliberately separated from everyday actions and requires two confirmations. */
+.account-danger { border-color: #68423d; }
+.danger-button { background: #e5a39a; color: #321714; }
+.danger-button:hover { background: #f0b4ab; }

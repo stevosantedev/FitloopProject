@@ -52,6 +52,8 @@ export default function App() {
   const [notice, setNotice] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [username, setUsername] = useState("");
   const [registering, setRegistering] = useState(false);
   const [routineName, setRoutineName] = useState("");
@@ -305,6 +307,30 @@ export default function App() {
     }
   }
 
+
+  async function deleteAccount(event: React.FormEvent) {
+    event.preventDefault();
+    if (deleteConfirmation !== "DELETE") {
+      setNotice("Type DELETE exactly to confirm account removal.");
+      return;
+    }
+    try {
+      await request("/api/auth/account", {
+        method: "DELETE",
+        body: JSON.stringify({ password: deletePassword, confirmation: deleteConfirmation })
+      });
+      // Clear the local session only after the server confirms that the account was deleted.
+      localStorage.removeItem("fitloop-token");
+      setToken("");
+      setUser(null);
+      setDeletePassword("");
+      setDeleteConfirmation("");
+      setNotice("Your account and linked records have been deleted.");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Could not delete your account.");
+    }
+  }
+
   function signOut() {
     // Removing the browser token ends this local session without deleting any account records.
     localStorage.removeItem("fitloop-token");
@@ -432,6 +458,15 @@ export default function App() {
           <p className="decision-state">Decision: {item.decision ?? "pending"}</p>
           <div className="decision-actions"><button type="button" className="small-button" onClick={() => void decideCoachMessage(item.id, "approved")}>Helpful</button><button type="button" className="small-button" onClick={() => void decideCoachMessage(item.id, "declined")}>Not for me</button></div>
         </article>)}
+      </section>
+      <section className="panel section-gap account-danger">
+        <p className="eyebrow">ACCOUNT CONTROL</p><h2>Delete your account</h2>
+        <p className="muted">This permanently removes your account, daily logs, workouts, coach history and social records. This cannot be undone.</p>
+        <form onSubmit={deleteAccount}>
+          <label>Current password<input required type="password" value={deletePassword} onChange={event => setDeletePassword(event.target.value)} /></label>
+          <label>Type DELETE to confirm<input required value={deleteConfirmation} onChange={event => setDeleteConfirmation(event.target.value)} placeholder="DELETE" /></label>
+          <button className="danger-button" disabled={deleteConfirmation !== "DELETE" || !deletePassword}>Permanently delete account</button>
+        </form>
       </section>
     </>}
 

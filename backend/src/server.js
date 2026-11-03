@@ -23,6 +23,20 @@ app.use(express.json({ limit: "32kb" }));
 app.use("/api/auth", rateLimit({ windowMs: 15 * 60 * 1000, limit: 20 }));
 app.get("/health", (_req, res) => res.json({ status: "ok", service: "fitloop-api" }));
 
+// This endpoint restores the signed-in profile after a page refresh without storing profile data in the token.
+app.get("/api/me", requireAuth, async (req, res, next) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.userId },
+      select: { id: true, username: true, privateAccount: true, priority: true }
+    });
+    if (!user) return res.status(404).json({ error: "Account not found." });
+    return res.json({ user });
+  } catch (error) {
+    return next(error);
+  }
+});
+
 app.use("/api/auth", authRoutes);
 app.use("/api/daily-logs", requireAuth, dailyLogRoutes);
 app.use("/api/workouts", requireAuth, workoutRoutes);

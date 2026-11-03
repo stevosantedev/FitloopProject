@@ -1,0 +1,51 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap');
+
+:root { font-family: 'DM Sans', sans-serif; color: #eaf2ec; background: #101c18; font-synthesis: none; }
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; }
+button, input, select { font: inherit; }
+button { cursor: pointer; border: 0; border-radius: 12px; padding: 13px 18px; background: #b7ed77; color: #142018; font-weight: 700; }
+button:hover { background: #c9f49a; }
+input, select { width: 100%; padding: 13px 14px; margin-top: 7px; border: 1px solid #35453d; border-radius: 10px; background: #172720; color: #f3f7f3; }
+label { display: block; margin: 15px 0; color: #c8d5cc; font-size: .9rem; }
+h1, h2, .brand { font-family: 'Manrope', sans-serif; }
+h1 { font-size: clamp(2.2rem, 5vw, 4rem); line-height: 1.05; margin: 10px 0; letter-spacing: -.05em; }
+h2 { font-size: 1.35rem; margin: 8px 0 20px; }
+.auth-shell { min-height: 100vh; display: grid; place-items: center; padding: 24px; background: radial-gradient(circle at 50% 0%, #263f31, #101c18 55%); }
+.auth-card { width: min(100%, 430px); padding: 38px; border: 1px solid #34483b; border-radius: 22px; background: #15241d; box-shadow: 0 24px 80px #0005; }
+.auth-card h1 { font-size: 3.2rem; }
+.auth-card form button { width: 100%; margin-top: 10px; }
+.app-shell { max-width: 1100px; margin: auto; padding: 28px 24px 60px; }
+.topbar { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #2a3b31; padding-bottom: 18px; }
+.brand { color: #f1f7f1; text-decoration: none; font-size: 1.6rem; font-weight: 800; }
+.brand span, h1 span { color: #b7ed77; }
+.account { display: flex; align-items: center; gap: 20px; color: #aebdb2; }
+.welcome { padding: 58px 0 30px; }
+.eyebrow { color: #b7ed77; font-size: .72rem; font-weight: 700; letter-spacing: .16em; }
+.muted, footer { color: #9cad9f; line-height: 1.6; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.stats article, .panel { border: 1px solid #304238; border-radius: 18px; background: #172720; padding: 22px; }
+.stats article span { display: block; color: #9cad9f; font-size: .85rem; }
+.stats article strong { display: block; font: 800 2rem 'Manrope'; margin-top: 10px; }
+.stats small { color: #9cad9f; font-size: 1rem; }
+.content-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px; }
+.panel button { width: 100%; margin-top: 8px; }
+.text-button { background: transparent; color: #b7ed77; padding: 10px 0; }
+.text-button:hover { background: transparent; color: #d2f5aa; }
+.auth-card .text-button { width: 100%; }
+.log-list { list-style: none; margin: 0; padding: 0; }
+.log-list li { display: flex; flex-direction: column; gap: 6px; padding: 15px 0; border-bottom: 1px solid #304238; }
+.log-list li span { color: #9cad9f; font-size: .85rem; }
+.coach-panel { margin-top: 14px; display: grid; grid-template-columns: 1fr 240px; align-items: center; gap: 10px 24px; }
+.coach-panel button { grid-column: 2; grid-row: 1; }
+.coach-message { grid-column: 1 / -1; padding-top: 14px; border-top: 1px solid #304238; }
+.notice { color: #d7f6b6; padding: 12px 14px; border: 1px solid #587343; border-radius: 10px; }
+footer { margin-top: 32px; font-size: .8rem; }
+@media (max-width: 700px) {
+  .content-grid, .stats { grid-template-columns: 1fr; }
+  .auth-card { padding: 26px; }
+  .welcome { padding-top: 38px; }
+  .coach-panel { grid-template-columns: 1fr; }
+  .coach-panel button { grid-column: 1; grid-row: auto; }
+  .account { gap: 10px; }
+}

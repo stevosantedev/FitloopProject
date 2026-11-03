@@ -116,7 +116,9 @@ router.post("/sessions", async (req, res, next) => {
         routineId: input.routineId,
         notes: input.notes,
         endedAt: new Date(),
-        sets: { create: input.sets }
+        sets: { create: input.sets },
+        // Every completed session creates a friends-feed entry; feed visibility is still checked per connection.
+        post: { create: { userId: req.userId, type: "workout" } }
       },
       include: { routine: true, sets: { include: { exercise: true } } }
     });

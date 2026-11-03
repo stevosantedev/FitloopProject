@@ -49,3 +49,43 @@ footer { margin-top: 32px; font-size: .8rem; }
   .coach-panel button { grid-column: 1; grid-row: auto; }
   .account { gap: 10px; }
 }
+
+/* Navigation keeps the three main FitLoop areas easy to find on small and large screens. */
+.tab-nav { display: flex; gap: 8px; padding: 18px 0 4px; border-bottom: 1px solid #2a3b31; }
+.tab-nav button { width: auto; min-width: 110px; }
+.tab-nav .secondary { background: transparent; color: #aebdb2; border: 1px solid #35483d; }
+.tab-nav .secondary:hover { color: #eaf2ec; background: #1b2d24; }
+.tab-nav .active { background: #b7ed77; color: #142018; }
+.page-section { padding-top: 8px; }
+.welcome.compact { padding: 34px 0 24px; }
+.field-heading { color: #c8d5cc; font-size: .9rem; margin: 18px 0 8px; }
+.exercise-picker { max-height: 300px; overflow: auto; border: 1px solid #304238; border-radius: 12px; padding: 8px 12px; }
+.check-row { display: flex; align-items: center; gap: 10px; margin: 0; padding: 10px 0; border-bottom: 1px solid #304238; }
+.check-row:last-child { border-bottom: 0; }
+.check-row input { width: 18px; height: 18px; margin: 0; accent-color: #b7ed77; }
+.check-row span { display: flex; flex-direction: column; gap: 3px; }
+.check-row small { color: #9cad9f; }
+.section-gap { margin-top: 14px; }
+.routine-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.routine-card { border: 1px solid #304238; border-radius: 12px; padding: 16px; }
+.routine-card p { margin-bottom: 0; font-size: .9rem; }
+.feed-list { display: grid; gap: 12px; }
+.feed-card { padding: 18px 0; border-bottom: 1px solid #304238; }
+.feed-card:last-child { border-bottom: 0; }
+.feed-heading { display: flex; justify-content: space-between; gap: 12px; color: #eaf2ec; }
+.feed-heading span { color: #9cad9f; font-size: .8rem; }
+.reaction-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0; }
+.reaction-button, .small-button { width: auto !important; margin: 0 !important; padding: 8px 12px; border: 1px solid #435a49; background: #203329; color: #d8e7dc; font-size: .85rem; }
+.reaction-button:hover, .small-button:hover { background: #2b4334; }
+.comment { margin: 8px 0; padding: 8px 10px; border-radius: 8px; background: #1d3026; color: #c8d5cc; font-size: .9rem; }
+.comment-form { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+.comment-form input { margin: 0; }
+.comment-form button { width: auto; margin: 0; }
+button:disabled { opacity: .45; cursor: not-allowed; }
+@media (max-width: 700px) {
+  .tab-nav { overflow-x: auto; }
+  .tab-nav button { flex: 1; min-width: 0; padding: 11px 9px; }
+  .routine-grid { grid-template-columns: 1fr; }
+  .feed-heading { flex-direction: column; gap: 4px; }
+  .comment-form { align-items: stretch; }
+}

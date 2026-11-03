@@ -15,7 +15,7 @@ type WorkoutSession = {
   id: string;
   startedAt: string;
   routine?: { name: string } | null;
-  sets: Array<{ id: string; reps: number; weightKg?: number | null; exercise: Exercise }>;
+  sets: Array<{ id: string; reps: number; weightKg?: number | null; completed: boolean; exercise: Exercise }>;
 };
 type FriendConnection = {
   id: string;

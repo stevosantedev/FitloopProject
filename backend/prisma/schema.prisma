@@ -74,6 +74,7 @@ model WorkoutRoutine {
   user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   exercises   RoutineExercise[]
   sessions    WorkoutSession[]
+  plannedSessions PlannedSession[]
 }
 
 // The join model stores the intended order of exercises inside a routine.

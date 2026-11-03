@@ -41,6 +41,8 @@ export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [logs, setLogs] = useState<DailyLog[]>([]);
   const [coachMessages, setCoachMessages] = useState<CoachMessage[]>([]);
+  // Keep the selected coaching tone and focus available while the user edits their preferences.
+  const [coachPreference, setCoachPreference] = useState<CoachPreference>({ style: "gentle", focus: "energy" });
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [routines, setRoutines] = useState<Routine[]>([]);
   const [sessions, setSessions] = useState<WorkoutSession[]>([]);

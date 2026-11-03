@@ -6,10 +6,11 @@
   "workspaces": ["frontend", "backend"],
   "scripts": {
     "dev": "concurrently \"npm run dev --workspace frontend\" \"npm run dev --workspace backend\"",
-    "build": "npm run build --workspace frontend",
+    "build": "npm run check --workspace backend && npm run build --workspace frontend",
     "test": "npm run test --workspace backend",
     "db:generate": "npm run db:generate --workspace backend",
-    "db:migrate": "npm run db:migrate --workspace backend"
+    "db:migrate": "npm run db:migrate --workspace backend",
+    "db:validate": "npx prisma validate --schema backend/prisma/schema.prisma"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"

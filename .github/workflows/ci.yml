@@ -1,0 +1,53 @@
+name: FitLoop checks
+
+on:
+  push:
+    branches: [main, "feat/**"]
+  pull_request:
+    branches: [main]
+
+jobs:
+  application:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install workspace dependencies
+        run: npm install
+
+      - name: Validate the Prisma data model
+        env:
+          DATABASE_URL: postgresql://fitloop:fitloop@localhost:5432/fitloop
+        run: npm run db:validate
+
+      - name: Generate the Prisma client
+        run: npm run db:generate
+
+      - name: Run backend tests
+        run: npm test
+
+      - name: Build the frontend and check backend syntax
+        run: npm run build
+
+  coaching-service:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install coach dependencies
+        run: pip install -r coach/requirements.txt
+
+      - name: Test the coaching rules
+        run: pytest coach/test_coach.py

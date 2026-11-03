@@ -1,6 +1,6 @@
 from datetime import date
 from statistics import mean
-from typing import Optional
+from typing import Literal, Optional
 
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
@@ -23,8 +23,8 @@ class CheckInRequest(BaseModel):
     """The service accepts a short history so trends are less affected by one unusual day."""
 
     logs: list[DailyMetric] = Field(default_factory=list, max_length=30)
-    style: str = "gentle"
-    focus: str = "energy"
+    style: Literal["gentle", "direct"] = "gentle"
+    focus: Literal["energy", "consistency", "recovery"] = "energy"
 
 
 def wording(message: str, style: str) -> str:
@@ -56,7 +56,12 @@ def check_in(payload: CheckInRequest):
         if earlier and mean(recent) < mean(earlier) - 60:
             messages.append({
                 "kind": "sleep_trend",
-                "message": wording("Your sleep has been lower over the last few check-ins. If your schedule allows, try protecting a little more time for rest.", payload.style),
+                "message": wording(
+                    "Your recent sleep averages are lower. If it feels practical, consider protecting a little time for rest."
+                    if payload.focus == "recovery"
+                    else "Your sleep has been lower over the last few check-ins. If your schedule allows, try protecting a little more time for rest.",
+                    payload.style
+                ),
                 "metric": "sleepMinutes",
                 "reasons": [
                     f"Recent three recorded days average {mean(recent) / 60:.1f} hours.",
@@ -76,6 +81,18 @@ def check_in(payload: CheckInRequest):
                 f"Latest two recorded days average {mean(step_values[-2:]):.0f} steps.",
                 f"Earlier recorded days average {mean(step_values[:-2]):.0f} steps.",
                 "Only days with a recorded step count are compared."
+            ]
+        })
+
+    # Consistency prompts are based on logging frequency, not a judgement about missed targets.
+    if not messages and payload.focus == "consistency" and 1 <= len(logs) < 5:
+        messages.append({
+            "kind": "consistency_reflection",
+            "message": wording("You have logged a few check-ins. A small routine that fits your week may make it easier to keep the habit going.", payload.style),
+            "metric": "daysLogged",
+            "reasons": [
+                f"{len(logs)} daily check-ins are available in the recent history.",
+                "The prompt is about making logging convenient, not reaching a required streak."
             ]
         })
 

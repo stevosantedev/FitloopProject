@@ -217,3 +217,25 @@ test("POST routines rejects duplicate exercises and positions before database ac
   assert.equal(exerciseLookups, 0);
   assert.equal(routineWrites, 0);
 });
+
+
+test("POST routines rejects repeated explicit positions", async () => {
+  let exerciseLookups = 0;
+  const prisma = makePrisma({
+    exercise: { findMany: async () => { exerciseLookups += 1; return [{ id: "bench" }, { id: "row" }]; } }
+  });
+
+  await withWorkoutApi(prisma, async baseUrl => {
+    const response = await fetch(baseUrl + "/api/workouts/routines", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ name: "Repeated positions", exercises: [
+        { exerciseId: "bench", sortOrder: 0 },
+        { exerciseId: "row", sortOrder: 0 }
+      ] })
+    });
+    assert.equal(response.status, 400);
+  });
+
+  assert.equal(exerciseLookups, 0);
+});

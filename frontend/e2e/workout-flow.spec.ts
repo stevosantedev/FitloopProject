@@ -214,6 +214,9 @@ test("exercise guide opens technique, coaching and muscle information", async ({
   await expect(guide.getByText("Kettlebell")).toBeVisible();
   await guide.getByRole("button", { name: "Close" }).click();
   await expect(guide).toHaveCount(0);
+  await page.getByPlaceholder("Search exercises, technique or equipment").fill("whole foot grounded");
+  await expect(page.locator(".exercise-choice")).toContainText("Goblet squat");
+  await page.getByPlaceholder("Search exercises, technique or equipment").fill("");
 });
 
 test("exercise filters and the selected-movement tray stay in sync", async ({ page }) => {

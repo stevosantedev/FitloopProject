@@ -141,7 +141,15 @@ router.post("/routines", async (req, res, next) => {
     const exerciseIds = [...new Set(input.exercises.map(item => item.exerciseId))];
 
     // Confirm every exercise exists before linking it, so a user cannot create broken routine entries.
-    const available = await prismaClient.exercise.findMany({ where: { id: { in: exerciseIds } }, select: { id: true } });
+    const available = await prismaClient.exercise.findMany({
+      // Private custom movements must not be usable by another account merely
+      // because an exercise ID was guessed or copied from an old request.
+      where: {
+        id: { in: exerciseIds },
+        OR: [{ isCustom: false }, { ownerId: req.userId }]
+      },
+      select: { id: true }
+    });
     if (available.length !== exerciseIds.length) {
       return res.status(400).json({ error: "One or more selected exercises do not exist." });
     }
@@ -196,7 +204,15 @@ router.post("/sessions", async (req, res, next) => {
     // Validate every referenced exercise before writing any sets. A single bad
     // ID rejects the whole session, avoiding a partially recorded workout.
     const exerciseIds = [...new Set(input.sets.map(item => item.exerciseId))];
-    const available = await prismaClient.exercise.findMany({ where: { id: { in: exerciseIds } }, select: { id: true } });
+    const available = await prismaClient.exercise.findMany({
+      // Private custom movements must not be usable by another account merely
+      // because an exercise ID was guessed or copied from an old request.
+      where: {
+        id: { in: exerciseIds },
+        OR: [{ isCustom: false }, { ownerId: req.userId }]
+      },
+      select: { id: true }
+    });
     if (available.length !== exerciseIds.length) {
       return res.status(400).json({ error: "One or more selected exercises do not exist." });
     }

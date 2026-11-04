@@ -275,6 +275,156 @@ const exerciseGuides = {
     aliases: ["barbell glute bridge"],
     coachingCues: ["Keep the chin gently tucked", "Finish by extending the hips, not arching the back", "Control the descent"],
     equipmentAlternatives: ["Dumbbell", "Smith machine", "Glute bridge"]
+  },
+  "chest-fly": {
+    description: "A dumbbell chest isolation movement in which the arms travel through a wide arc while the elbows remain softly bent.",
+    aliases: ["dumbbell fly", "DB fly"],
+    coachingCues: ["Keep a small bend in the elbows", "Use a comfortable shoulder range", "Bring the arms together without bouncing"],
+    equipmentAlternatives: ["Cable", "Pec deck machine", "Resistance band"]
+  },
+  "rear-delt-fly": {
+    description: "A shoulder isolation movement that opens the arms out to the sides to emphasise the rear deltoids and upper-back muscles.",
+    aliases: ["reverse fly", "bent-over rear delt raise"],
+    coachingCues: ["Hinge or support the chest to stay steady", "Move from the shoulders", "Avoid shrugging towards the ears"],
+    equipmentAlternatives: ["Cable", "Reverse fly machine", "Resistance band"]
+  },
+  "overhead-triceps-extension": {
+    description: "An elbow-extension exercise performed with the arms raised overhead, loading the triceps through a lengthened position.",
+    aliases: ["overhead tricep extension", "dumbbell overhead extension"],
+    coachingCues: ["Keep the upper arms pointing mostly upwards", "Bend the elbows under control", "Avoid arching the lower back"],
+    equipmentAlternatives: ["Cable rope", "EZ bar", "Resistance band"]
+  },
+  "leg-curl": {
+    description: "A machine exercise that bends the knees against resistance to train the hamstrings.",
+    aliases: ["seated hamstring curl", "hamstring curl"],
+    coachingCues: ["Align the machine pivot with the knee", "Keep the hips against the pad", "Control the return to the start"],
+    equipmentAlternatives: ["Lying leg curl machine", "Resistance band"]
+  },
+  "calf-raise": {
+    description: "A standing plantar-flexion exercise that raises the heels to train the gastrocnemius and supporting calf muscles.",
+    aliases: ["standing calf raise"],
+    coachingCues: ["Use a stable foot position", "Rise through the balls of the feet", "Lower the heels through a controlled range"],
+    equipmentAlternatives: ["Dumbbell", "Smith machine", "Leg press"]
+  },
+  "dead-bug": {
+    description: "A floor-based core stability drill that moves opposite arms and legs while resisting extension through the trunk.",
+    aliases: ["dead bug exercise"],
+    coachingCues: ["Keep the lower back gently anchored", "Move opposite arm and leg together", "Shorten the range if the back lifts"],
+    equipmentAlternatives: ["Heel taps", "Bent-knee dead bug"]
+  },
+  "side-plank": {
+    description: "An isometric lateral-core exercise performed on one forearm and the side of the foot, resisting the hips dropping towards the floor.",
+    aliases: ["lateral plank"],
+    coachingCues: ["Stack the shoulder over the elbow", "Keep hips lifted and facing forwards", "Use the knees as a regression if needed"],
+    equipmentAlternatives: ["Bent-knee side plank"]
+  },
+  "glute-bridge": {
+    description: "A floor-based hip-extension exercise that raises the pelvis by contracting the glutes while the upper back remains on the ground.",
+    aliases: ["floor glute bridge"],
+    coachingCues: ["Keep feet flat and comfortably close", "Lift by squeezing the glutes", "Avoid finishing with an exaggerated lower-back arch"],
+    equipmentAlternatives: ["Dumbbell", "Resistance band", "Hip thrust"]
+  },
+  "mountain-climber": {
+    description: "A plank-based conditioning movement that alternates driving the knees forwards while the shoulders and trunk stabilise the body.",
+    aliases: ["mountain climbers"],
+    coachingCues: ["Keep shoulders over the hands", "Brace to limit hip bounce", "Choose a pace that preserves control"],
+    equipmentAlternatives: ["Slow step-in mountain climber"]
+  },
+  "jumping-jack": {
+    description: "A rhythmic full-body conditioning movement that alternates between feet apart with arms overhead and feet together with arms by the sides.",
+    aliases: ["star jump", "star jumps"],
+    coachingCues: ["Land softly", "Keep the movement rhythmic", "Use a step-out version if jumping is uncomfortable"],
+    equipmentAlternatives: ["Low-impact step jack"]
+  },
+  "machine-chest-press": {
+    description: "A seated machine press that trains the chest, triceps and front shoulders along a guided pressing path.",
+    aliases: ["chest press machine"],
+    coachingCues: ["Adjust handles around mid-chest height", "Keep shoulder blades supported", "Press without forcefully locking the elbows"],
+    equipmentAlternatives: ["Dumbbell bench press", "Barbell bench press", "Resistance band"]
+  },
+  "cable-crossover": {
+    description: "A standing cable fly variation that brings the arms across the front of the body to train the chest.",
+    aliases: ["standing cable fly", "cable fly"],
+    coachingCues: ["Set the pulleys to a suitable height", "Keep elbows softly bent", "Control the stretch and the return"],
+    equipmentAlternatives: ["Dumbbell chest fly", "Resistance band"]
+  },
+  "parallel-bar-dip": {
+    description: "A bodyweight pressing movement performed between parallel bars, involving the triceps, chest and front shoulders.",
+    aliases: ["parallel bar dips", "bodyweight dip"],
+    coachingCues: ["Keep shoulders controlled at the bottom", "Use a range your shoulders tolerate", "Avoid swinging the legs"],
+    equipmentAlternatives: ["Assisted dip machine", "Bench-supported dip", "Close-grip push-up"]
+  },
+  "close-grip-bench-press": {
+    description: "A barbell bench press using a narrower-than-usual hand position to increase the contribution of the triceps.",
+    aliases: ["close grip bench"],
+    coachingCues: ["Keep wrists stacked over elbows", "Choose a grip that keeps wrists comfortable", "Lower with elbows controlled"],
+    equipmentAlternatives: ["Dumbbell close-grip press", "Cable press"]
+  },
+  "face-pull": {
+    description: "A cable upper-body pull towards the face that trains the rear deltoids and upper-back muscles, including the external rotators.",
+    aliases: ["rope face pull", "cable face pull"],
+    coachingCues: ["Set the rope around upper-chest to face height", "Pull hands apart as they approach the face", "Keep ribs down and avoid leaning back"],
+    equipmentAlternatives: ["Resistance band"]
+  },
+  "dumbbell-shrug": {
+    description: "A loaded shoulder-elevation exercise that emphasises the upper trapezius while the arms remain straight.",
+    aliases: ["DB shrug"],
+    coachingCues: ["Lift shoulders vertically", "Pause briefly at the top", "Avoid rolling the shoulders"],
+    equipmentAlternatives: ["Barbell", "Trap bar", "Cable"]
+  },
+  "reverse-machine-fly": {
+    description: "A machine-based reverse fly that moves the arms out and back to train the rear deltoids and upper back.",
+    aliases: ["reverse pec deck", "rear delt machine fly"],
+    coachingCues: ["Set the seat so handles align comfortably", "Keep a soft bend in the elbows", "Move without thrusting the chest forwards"],
+    equipmentAlternatives: ["Dumbbell rear-delt fly", "Cable"]
+  },
+  "single-arm-dumbbell-row": {
+    description: "A unilateral horizontal pull using one dumbbell, allowing each side of the back to work independently.",
+    aliases: ["one-arm dumbbell row", "single arm row"],
+    coachingCues: ["Support the free hand securely", "Keep hips and shoulders steady", "Pull the elbow towards the hip"],
+    equipmentAlternatives: ["Cable", "Resistance band", "Single-arm machine row"]
+  },
+  "chest-supported-row": {
+    description: "A horizontal rowing movement performed with the chest supported on a bench or machine to reduce torso movement.",
+    aliases: ["incline bench row", "chest supported dumbbell row"],
+    coachingCues: ["Keep the chest in contact with the pad", "Pull elbows back without shrugging", "Lower until the arms reach a comfortable stretch"],
+    equipmentAlternatives: ["Machine row", "Cable row"]
+  },
+  "arnold-press": {
+    description: "A dumbbell shoulder press that rotates the hands during the press, combining shoulder flexion and pressing.",
+    aliases: ["Arnold dumbbell press"],
+    coachingCues: ["Use a controlled rotation", "Keep the ribcage stacked over the pelvis", "Choose a load that allows smooth movement"],
+    equipmentAlternatives: ["Dumbbell shoulder press", "Machine shoulder press"]
+  },
+  "front-raise": {
+    description: "A shoulder isolation movement that raises a weight in front of the body to emphasise the anterior deltoids.",
+    aliases: ["dumbbell front raise", "DB front raise"],
+    coachingCues: ["Raise only as high as you can control", "Keep the torso still", "Avoid swinging the weight"],
+    equipmentAlternatives: ["Cable", "Weight plate", "Resistance band"]
+  },
+  "leg-extension": {
+    description: "A machine-based knee-extension exercise that isolates the quadriceps while the torso and thighs remain supported.",
+    aliases: ["knee extension machine"],
+    coachingCues: ["Align the machine pivot with the knee", "Extend smoothly", "Lower without letting the weight stack drop"],
+    equipmentAlternatives: ["Resistance band knee extension"]
+  },
+  "bulgarian-split-squat": {
+    description: "A split-squat variation with the rear foot elevated, challenging the front leg's quadriceps and glutes.",
+    aliases: ["rear-foot-elevated split squat", "RFESS"],
+    coachingCues: ["Choose a stable rear-foot support", "Keep the front foot planted", "Lower under control without bouncing off the back leg"],
+    equipmentAlternatives: ["Dumbbell", "Smith machine", "Bodyweight split squat"]
+  },
+  "step-up": {
+    description: "A unilateral lower-body exercise in which one foot steps onto a raised platform and drives the body to standing.",
+    aliases: ["dumbbell step-up", "box step-up"],
+    coachingCues: ["Use a platform you can control", "Drive through the working foot", "Lower slowly rather than dropping down"],
+    equipmentAlternatives: ["Bodyweight", "Dumbbell", "Smith machine"]
+  },
+  "sumo-squat": {
+    description: "A squat variation using a wider stance and turned-out toes, training the quadriceps, glutes and hip adductors.",
+    aliases: ["wide-stance squat"],
+    coachingCues: ["Set a stance that suits your hips", "Keep knees tracking with the toes", "Maintain pressure across the whole foot"],
+    equipmentAlternatives: ["Dumbbell", "Kettlebell", "Barbell"]
   }
 };
 

@@ -164,12 +164,12 @@ test("active workout mode shows live progress and a completion summary", async (
   await expect(activeWorkout.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "0");
   await expect(activeWorkout.getByText("Next set: Goblet squat · Set 1")).toBeVisible();
 
-  await activeWorkout.getByRole("button", { name: "Set complete" }).click();
+  await activeWorkout.getByRole("button", { name: "Set complete — start rest" }).click();
   await expect(activeWorkout.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "1");
   await expect(activeWorkout.getByText("Next set: Goblet squat · Set 2")).toBeVisible();
 
-  await activeWorkout.getByRole("button", { name: "Set complete" }).click();
-  await activeWorkout.getByRole("button", { name: "Set complete" }).click();
+  await activeWorkout.getByRole("button", { name: "Set complete — start rest" }).click();
+  await activeWorkout.getByRole("button", { name: "Set complete — start rest" }).click();
   await expect(page.getByRole("status").filter({ hasText: "SESSION FINISHED" })).toBeVisible();
   await expect(page.getByText("3 sets completed in guided mode")).toBeVisible();
 });

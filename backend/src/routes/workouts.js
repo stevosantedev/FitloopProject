@@ -31,6 +31,18 @@ const routineInput = z.object({
     exerciseId: z.string().min(1),
     sortOrder: z.number().int().min(0).max(100).default(0)
   })).max(30)
+}).superRefine((input, context) => {
+  // The join table has a unique routine/exercise key, so reject duplicate
+  // movements here rather than allowing a database constraint to become a 500.
+  const exerciseIds = input.exercises.map(item => item.exerciseId);
+  if (new Set(exerciseIds).size !== exerciseIds.length) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ["exercises"], message: "A routine cannot contain the same exercise more than once." });
+  }
+
+  const positions = input.exercises.map(item => item.sortOrder);
+  if (new Set(positions).size !== positions.length) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ["exercises"], message: "Each routine exercise must have a unique position." });
+  }
 });
 
 // A session contains the sets the user actually performed. Bounds protect the
@@ -135,10 +147,9 @@ router.get("/routines", async (req, res, next) => {
 router.post("/routines", async (req, res, next) => {
   try {
     const input = routineInput.parse(req.body);
-    // Check distinct IDs so selecting the same exercise twice does not make the
-    // existence check fail. The original input array is still used below because
-    // repeated exercises and their sort positions are meaningful in a routine.
-    const exerciseIds = [...new Set(input.exercises.map(item => item.exerciseId))];
+    // The request schema already guarantees unique exercise IDs and positions,
+    // so this list can be used for one ownership-aware catalogue lookup.
+    const exerciseIds = input.exercises.map(item => item.exerciseId);
 
     // Confirm every exercise exists before linking it, so a user cannot create broken routine entries.
     const available = await prismaClient.exercise.findMany({

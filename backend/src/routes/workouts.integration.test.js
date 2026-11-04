@@ -192,3 +192,28 @@ test("POST routines cannot link another account's private custom exercise", asyn
   assert.deepEqual(lookup.where.OR, [{ isCustom: false }, { ownerId: "user-a" }]);
   assert.equal(routineWrites, 0);
 });
+
+
+test("POST routines rejects duplicate exercises and positions before database access", async () => {
+  let exerciseLookups = 0;
+  let routineWrites = 0;
+  const prisma = makePrisma({
+    exercise: { findMany: async () => { exerciseLookups += 1; return [{ id: "bench" }]; } },
+    workoutRoutine: { create: async () => { routineWrites += 1; return {}; } }
+  });
+
+  await withWorkoutApi(prisma, async baseUrl => {
+    const response = await fetch(baseUrl + "/api/workouts/routines", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ name: "Duplicate entries", exercises: [
+        { exerciseId: "bench", sortOrder: 0 },
+        { exerciseId: "bench", sortOrder: 1 }
+      ] })
+    });
+    assert.equal(response.status, 400);
+  });
+
+  assert.equal(exerciseLookups, 0);
+  assert.equal(routineWrites, 0);
+});

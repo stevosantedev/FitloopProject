@@ -128,3 +128,28 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 .account-danger { border-color: #68423d; }
 .danger-button { background: #e5a39a; color: #321714; }
 .danger-button:hover { background: #f0b4ab; }
+
+
+/* Exercise reference cards keep technique guidance beside the movement name. */
+.catalogue-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.catalogue-card { display: flex; flex-direction: column; gap: 7px; min-width: 0; padding: 15px; border: 1px solid #304238; border-radius: 12px; background: #1a2b22; }
+.catalogue-card > span, .catalogue-card > small { color: #9cad9f; font-size: .82rem; line-height: 1.5; }
+.catalogue-card details { color: #c8d5cc; font-size: .85rem; }
+.catalogue-card summary { color: #b7ed77; cursor: pointer; }
+.catalogue-card ol { padding-left: 20px; line-height: 1.55; }
+.anatomy-switch { display: flex; gap: 8px; margin: 12px 0; }
+.anatomy-switch button { width: auto; margin: 0; }
+.anatomy-switch .secondary { color: #c8d5cc; background: transparent; border: 1px solid #435a49; }
+.anatomy-layout { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(220px, .8fr); gap: 14px; align-items: start; }
+.muscle-map-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.muscle-chip { display: flex; justify-content: space-between; align-items: center; gap: 8px; width: 100%; margin: 0; padding: 11px 12px; text-align: left; color: #dce8df; background: #203329; border: 1px solid #435a49; font-size: .84rem; }
+.muscle-chip:hover, .muscle-chip.selected { background: #304936; border-color: #b7ed77; }
+.muscle-chip strong { color: #b7ed77; }
+.muscle-detail { min-height: 170px; padding: 18px; border: 1px solid #435a49; border-radius: 12px; background: #1a2b22; }
+.muscle-detail > strong { font: 700 1.1rem 'Manrope'; }
+.muscle-detail p { margin: 10px 0; color: #c8d5cc; }
+.muscle-detail small { color: #9cad9f; line-height: 1.5; }
+@media (max-width: 700px) {
+  .catalogue-grid, .anatomy-layout { grid-template-columns: 1fr; }
+  .muscle-map-list { grid-template-columns: 1fr 1fr; }
+}

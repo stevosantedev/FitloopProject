@@ -536,3 +536,10 @@ footer { padding: 22px 0 0; border-top: 1px solid #202c25; }
   .exercise-choice { gap: 5px; }
   .exercise-choice-select { gap: 7px; }
 }
+
+
+/* Exercise result feedback keeps a large catalogue easy to scan and reset. */
+.exercise-results-summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 12px 0 8px; color: #87988a; font-size: .72rem; }
+.exercise-results-summary strong { color: #dce8dc; font-variant-numeric: tabular-nums; }
+.exercise-results-summary .text-button { width: auto; margin: 0; padding: 5px 8px; color: #c5f28e; font-size: .72rem; }
+.exercise-empty-state { grid-column: 1 / -1; margin: 0; padding: 20px 14px; border: 1px dashed #35483a; border-radius: 10px; text-align: center; }

@@ -81,7 +81,6 @@ export default function App() {
   const [routineName, setRoutineName] = useState("");
   const [routineExerciseIds, setRoutineExerciseIds] = useState<string[]>([]);
   const [selectedRoutine, setSelectedRoutine] = useState("");
-  const [selectedExercise, setSelectedExercise] = useState("");
   // One live session can contain several exercises and their set sequences.
   const [selectedExerciseIds, setSelectedExerciseIds] = useState<string[]>([]);
   const [setType, setSetType] = useState("working");
@@ -167,7 +166,6 @@ export default function App() {
       setRoutines(routineData.routines);
       setSessions(sessionData.sessions);
       setMuscleStats(muscleData.muscles);
-      if (!selectedExercise && exerciseData.exercises[0]) setSelectedExercise(exerciseData.exercises[0].id);
       if (selectedExerciseIds.length === 0 && exerciseData.exercises[0]) setSelectedExerciseIds([exerciseData.exercises[0].id]);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Could not load workouts.");
@@ -581,7 +579,7 @@ export default function App() {
           <label>Routine (optional)<select value={selectedRoutine} onChange={event => {
             const routine = routines.find(item => item.id === event.target.value);
             setSelectedRoutine(event.target.value);
-            if (routine) setSelectedExerciseIds(routine.exercises.map(item => item.exercise.id));
+            setSelectedExerciseIds(routine ? routine.exercises.map(item => item.exercise.id) : []);
           }}><option value="">One-off workout</option>{routines.map(routine => <option key={routine.id} value={routine.id}>{routine.name}</option>)}</select></label>
           <label>Search exercises<input value={exerciseSearch} onChange={event => setExerciseSearch(event.target.value)} placeholder="Search name, muscle or movement" /></label>
           <label>Filter by muscle<select value={exerciseMuscleFilter} onChange={event => setExerciseMuscleFilter(event.target.value)}><option value="all">All muscles</option>{muscleStats.map(muscle => <option key={muscle.id} value={muscle.slug}>{muscle.name}</option>)}</select></label>

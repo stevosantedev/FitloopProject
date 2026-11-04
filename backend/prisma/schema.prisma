@@ -30,6 +30,7 @@ model User {
   receivedRequests FriendConnection[] @relation("FriendAddressee")
   reactions      Reaction[]
   comments       FeedComment[]
+  customExercises Exercise[]
 }
 
 // One row per user per calendar day keeps daily check-ins easy to query and update.
@@ -54,14 +55,65 @@ model DailyLog {
 }
 
 // Exercises can be shared in the starter library or owned as a private custom exercise.
+// Exercise definitions are shared catalogue records unless ownerId is set.
+// Optional metadata lets the catalogue grow without inventing unsupported facts.
 model Exercise {
-  id          String       @id @default(cuid())
-  name        String
-  muscleGroup String
-  equipment   String?
-  isCustom    Boolean      @default(false)
-  routines    RoutineExercise[]
-  sets        WorkoutSet[]
+  id                    String             @id @default(cuid())
+  slug                  String?            @unique
+  name                  String
+  muscleGroup           String
+  equipment             String?
+  description           String?
+  aliases               String[]           @default([])
+  instructions          String[]           @default([])
+  coachingCues          String[]           @default([])
+  equipmentAlternatives String[]           @default([])
+  category              String?
+  movementPattern       String?
+  bodyRegion            String?
+  difficulty            String?
+  mediaUrl              String?
+  mediaSource           String?
+  mediaLicense          String?
+  isCustom              Boolean            @default(false)
+  ownerId               String?
+  owner                 User?              @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  muscles               ExerciseMuscle[]
+  routines              RoutineExercise[]
+  sets                  WorkoutSet[]
+
+  @@index([isCustom, name])
+  @@index([ownerId])
+}
+
+// A canonical muscle record powers both exercise targeting and anatomy views.
+model Muscle {
+  id         String           @id @default(cuid())
+  slug       String           @unique
+  name       String
+  bodyRegion String
+  view       String
+  sortOrder  Int              @default(0)
+  exercises  ExerciseMuscle[]
+
+  @@index([bodyRegion, sortOrder])
+}
+
+enum MuscleRole {
+  PRIMARY
+  SECONDARY
+}
+
+// The join row distinguishes a prime mover from supporting muscles for each exercise.
+model ExerciseMuscle {
+  exerciseId String
+  muscleId   String
+  role       MuscleRole @default(PRIMARY)
+  exercise   Exercise   @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  muscle     Muscle     @relation(fields: [muscleId], references: [id], onDelete: Cascade)
+
+  @@id([exerciseId, muscleId])
+  @@index([muscleId, role])
 }
 
 // Routines are reusable templates; a session records what the user actually completed.

@@ -152,6 +152,9 @@ export default function App() {
       setLogs(data.logs);
       const history = await request("/api/coach/history");
       setCoachMessages(history.events);
+      // Recent sessions belong on the home dashboard as well as the training screen.
+      const workoutHistory = await request("/api/workouts/sessions");
+      setSessions(workoutHistory.sessions);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Could not load your dashboard.");
     }
@@ -479,6 +482,9 @@ export default function App() {
   const maxSteps = Math.max(1, ...chartLogs.map(log => log.steps ?? 0));
   const maxSleep = Math.max(1, ...chartLogs.map(log => log.sleepMinutes ?? 0));
   const maxFocus = Math.max(1, ...chartLogs.map(log => log.focusMinutes ?? 0));
+  const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const sessionsThisWeek = sessions.filter(session => new Date(session.startedAt).getTime() >= sevenDaysAgo);
+  const completedSetsThisWeek = sessionsThisWeek.flatMap(session => session.sets).filter(set => set.completed).length;
   // Count completed sets by the exercise's primary muscle group. This is a
   // simple training-volume proxy, not a measure of muscle growth or recovery.
   const muscleVolume = sessions.flatMap(session => session.sets)
@@ -525,14 +531,27 @@ export default function App() {
 
     {activeTab === "home" && <>
       <section className="welcome">
-        <p className="eyebrow">A LITTLE PROGRESS ADDS UP</p>
-        <h1>Your week, at a glance.</h1>
-        <p className="muted">Keep it realistic. Pick up where you are.</p>
+        <p className="eyebrow">YOUR TRAINING SPACE</p>
+        <h1>Your training, at a glance.</h1>
+        <p className="muted">Pick up where you left off. Every session adds up.</p>
       </section>
       <section className="stats">
-        <article><span>Check-ins this week</span><strong>{logs.length}<small> / 7</small></strong></article>
-        <article><span>Latest steps</span><strong>{logs[0]?.steps?.toLocaleString() ?? "—"}</strong></article>
-        <article><span>Latest sleep</span><strong>{logs[0]?.sleepMinutes ? `${(logs[0].sleepMinutes / 60).toFixed(1)}h` : "—"}</strong></article>
+        <article><span>Workouts this week</span><strong>{sessionsThisWeek.length}</strong><small>Last 7 days</small></article>
+        <article><span>Sets completed</span><strong>{completedSetsThisWeek}</strong><small>Across your sessions</small></article>
+        <article><span>Daily check-ins</span><strong>{logs.length}<small> / 7</small></strong><small>Last 7 days</small></article>
+      </section>
+      <section className="panel section-gap recent-training">
+        <div className="section-heading-row"><div><p className="eyebrow">KEEP YOUR MOMENTUM</p><h2>Recent training</h2></div><button className="subtle-action" onClick={() => setActiveTab("workouts")}>Open training <span>↗</span></button></div>
+        {sessions.length === 0 ? <div className="empty-training"><p className="muted">Your completed sessions will appear here. Start with a routine or build a one-off workout.</p><button onClick={() => setActiveTab("workouts")}>Build your first workout</button></div> :
+          <div className="recent-session-list">{sessions.slice(0, 3).map(session => {
+            const names = session.sets.map(set => set.exercise.name).filter((name, index, all) => all.indexOf(name) === index);
+            const completed = session.sets.filter(set => set.completed).length;
+            return <article className="recent-session" key={session.id}>
+              <span className="session-mark">↗</span>
+              <div><strong>{session.routine?.name ?? (names.slice(0, 2).join(" + ") || "Workout session")}</strong><small>{new Date(session.startedAt).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" })} · {names.length} movements</small></div>
+              <b>{completed} sets</b>
+            </article>;
+          })}</div>}
       </section>
       <section className="content-grid">
         <form className="panel" onSubmit={saveCheckIn}>

@@ -44,7 +44,7 @@ async function mockApplicationApi(page: Page, onSessionSave?: (body: any) => voi
       body = { routine };
     } else if (url.pathname === "/api/workouts/routines/routine-1" && method === "DELETE") {
       routines.splice(0, routines.length);
-      await route.fulfill({ status: 204 });
+      body = { deleted: true };
       return;
     } else if (url.pathname === "/api/workouts/sessions") {
       if (method === "POST") {

@@ -595,6 +595,29 @@ export default function App() {
           <div className="routine-grid">{routines.map(routine => <article className="routine-card" key={routine.id}><strong>{routine.name}</strong><p className="muted">{routine.exercises.map(item => item.exercise.name).join(" · ")}</p></article>)}</div>}
       </section>
       <section className="panel section-gap">
+        <p className="eyebrow">EXERCISE LIBRARY</p><h2>Explore movements</h2>
+        <div className="catalogue-grid">{exercises.map(exercise => <article className="catalogue-card" key={exercise.id}>
+          <strong>{exercise.name}</strong><span>{exercise.muscleGroup} · {exercise.equipment ?? "Equipment varies"}</span>
+          {exercise.movementPattern && <small>{exercise.movementPattern}</small>}
+          {exercise.instructions?.length ? <details><summary>Technique notes</summary><ol>{exercise.instructions.map((step, index) => <li key={index}>{step}</li>)}</ol></details> : null}
+          {exercise.muscles?.length ? <small>Targets: {exercise.muscles.map(link => link.muscle.name + (link.role === "PRIMARY" ? " (primary)" : "")).join(", ")}</small> : null}
+        </article>)}</div>
+      </section>
+      <section className="panel section-gap">
+        <p className="eyebrow">ANATOMY & TRAINING LOAD</p><h2>Muscle map</h2>
+        <p className="muted">Choose a muscle to inspect its logged training over the last 30 days. Front and back lists reflect the catalogue's anatomy labels.</p>
+        <div className="anatomy-switch"><button type="button" className={anatomyView === "front" ? "active" : "secondary"} onClick={() => setAnatomyView("front")}>Front view</button><button type="button" className={anatomyView === "back" ? "active" : "secondary"} onClick={() => setAnatomyView("back")}>Back view</button></div>
+        <div className="anatomy-layout">
+          <div className="muscle-map-list" aria-label={anatomyView + " muscle selection"}>
+            {muscleStats.filter(muscle => muscle.view === anatomyView || muscle.view === "both").map(muscle => <button type="button" key={muscle.id} className={selectedMuscle === muscle.slug ? "muscle-chip selected" : "muscle-chip"} onClick={() => setSelectedMuscle(muscle.slug)}><span>{muscle.name}</span><strong>{muscle.effectiveSets}</strong></button>)}
+          </div>
+          <aside className="muscle-detail" aria-live="polite">
+            {selectedMuscleDetail ? <><strong>{selectedMuscleDetail.name}</strong><p>{selectedMuscleDetail.effectiveSets} weighted sets</p><small>{selectedMuscleDetail.primarySets} primary · {selectedMuscleDetail.secondarySets} secondary</small><p>{selectedMuscleDetail.recoveryLabel}</p><small>Last trained: {selectedMuscleDetail.lastTrainedAt ? new Date(selectedMuscleDetail.lastTrainedAt).toLocaleString() : "No session in this period"}</small></> : <p className="muted">Choose a muscle to inspect its training history.</p>}
+          </aside>
+        </div>
+        <p className="chart-note">Method: a completed set contributes 1.0 for a primary muscle and 0.5 for a secondary muscle. Time-since-training labels are descriptive only and are not a recovery assessment.</p>
+      </section>
+      <section className="panel section-gap">
         <p className="eyebrow">TRAINING BREAKDOWN</p><h2>Sets by muscle group</h2>
         {muscleEntries.length === 0 ? <p className="muted">Log a workout to see how your completed sets are distributed.</p> :
           <div className="volume-list">{muscleEntries.map(([group, count]) => <div className="volume-row" key={group}><span>{group}</span><div className="volume-track"><span style={{ width: (count / Math.max(...muscleEntries.map(item => item[1])) * 100) + "%" }} /></div><strong>{count}</strong></div>)}</div>}

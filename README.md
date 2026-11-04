@@ -56,9 +56,9 @@ The frontend runs on port 5173, the API on port 4000 and the coach on port 8000.
 
 ## Current status and known gaps
 
-The first application flow is in place, including daily check-ins, routine creation, workout logging, friends, a feed and coach feedback. The project still needs deeper backend tests, an account and data deletion flow, stronger production authentication, notifications, offline sync and a proper usability evaluation.
+The first application flow is in place, including daily check-ins, routine creation, workout logging, friends, a feed and coach feedback. The exercise data model now supports structured instructions, aliases, movement patterns, equipment alternatives, media attribution and explicit primary/secondary muscle relationships. The initial first-party catalogue and canonical muscle records are being expanded; this work is not yet a complete exercise reference or interactive anatomy experience. The project still needs deeper backend tests, stronger production authentication, notifications, offline sync and a proper usability evaluation.
 
-The current workout logger records one selected exercise with a chosen number of sets and reps. It is a useful first pass, not yet a full live workout timer or multi-exercise session builder. The progress charts are simple summaries of logged data, not medical or performance assessments.
+The current workout logger records one selected exercise with a chosen number of sets and reps. It is not yet a full live multi-exercise session builder with per-exercise rest timers and set types. The progress charts are simple summaries of logged data, not medical or performance assessments.
 
 ## Privacy and safety
 

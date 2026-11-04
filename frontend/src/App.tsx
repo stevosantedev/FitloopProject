@@ -1,3 +1,11 @@
+/**
+ * Main FitLoop browser application.
+ *
+ * This component currently coordinates authentication and the three primary
+ * areas of the MVP: daily wellbeing, workouts and the friends community. API
+ * access is centralised in request() so private calls share the same token and
+ * error-handling behaviour.
+ */
 import { useEffect, useState } from "react";
 
 type User = { id: string; username: string };
@@ -34,10 +42,16 @@ type FeedPost = {
 type CoachMessage = { id: string; message: string; explanation: string; decision?: string };
 type CoachPreference = { style: "gentle" | "direct"; focus: "energy" | "consistency" | "recovery" };
 
+// Keep the API origin configurable for deployments while making local development
+// work without an extra environment variable.
 const API = import.meta.env.VITE_API_URL ?? "http://localhost:4000";
 
 export default function App() {
+  // Authentication state is restored from the browser between page reloads.
+  // The server remains responsible for validating the token on every private request.
   const [token, setToken] = useState(() => localStorage.getItem("fitloop-token") ?? "");
+  // Server records are kept in separate state groups so each tab can refresh
+  // only the data it needs without replacing unrelated parts of the dashboard.
   const [user, setUser] = useState<User | null>(null);
   const [logs, setLogs] = useState<DailyLog[]>([]);
   const [coachMessages, setCoachMessages] = useState<CoachMessage[]>([]);
@@ -66,6 +80,11 @@ export default function App() {
   const [friendUsername, setFriendUsername] = useState("");
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
 
+  /**
+   * Send a JSON request to the API and attach the current bearer token.
+   * Callers receive the parsed response body; non-2xx responses become errors
+   * so each form or action can show a useful message in its own context.
+   */
   async function request(path: string, options: RequestInit = {}) {
     // One request helper applies the same JSON and authentication rules to every private feature.
     const response = await fetch(`${API}${path}`, {
@@ -81,6 +100,8 @@ export default function App() {
     return data;
   }
 
+  // Registration and sign-in share the same form. The mode controls both the
+  // endpoint and whether the username field is included in the request body.
   async function authenticate(event: React.FormEvent) {
     event.preventDefault();
     try {
@@ -98,6 +119,8 @@ export default function App() {
     }
   }
 
+  // Load the overview data after authentication. These requests are kept together
+  // because the dashboard needs the profile, coach settings, check-ins and history.
   async function loadDashboard() {
     try {
       // Restore the profile and coaching preferences when a saved session is reopened in the browser.
@@ -114,6 +137,8 @@ export default function App() {
     }
   }
 
+  // Refresh all workout data in parallel. The exercise list is also used by the
+  // routine builder, so initialise its selection when the user has none yet.
   async function loadWorkouts() {
     try {
       // Load the library, saved routines and completed sessions together for a responsive workout view.
@@ -131,6 +156,8 @@ export default function App() {
     }
   }
 
+  // The API decides which friends and posts are visible; the browser never builds
+  // a feed by fetching arbitrary users' activity.
   async function loadCommunity() {
     try {
       // Friends and feed data use the same access-controlled API as the rest of the account.
@@ -145,6 +172,8 @@ export default function App() {
     }
   }
 
+  // Read the uncontrolled check-in form once, then convert optional fields into
+  // numbers. Empty fields are omitted so a user can record only what they know.
   async function saveCheckIn(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
@@ -171,6 +200,8 @@ export default function App() {
     }
   }
 
+  // Preferences affect the coach's tone and focus. The API validates the values
+  // again before storing them, even though the UI offers a fixed set of choices.
   async function saveCoachPreference(event: React.FormEvent) {
     event.preventDefault();
     try {
@@ -185,6 +216,8 @@ export default function App() {
     }
   }
 
+  // Save feedback against the original coach event so later evaluation can
+  // compare suggestions with the user's response.
   async function decideCoachMessage(id: string, decision: "approved" | "declined") {
     try {
       await request("/api/coach/events/" + id + "/decision", {
@@ -198,6 +231,8 @@ export default function App() {
     }
   }
 
+  // Ask the Python coaching service to review the recent check-ins. The response
+  // replaces the visible message list with the latest generated suggestions.
   async function askCoach() {
     try {
       const data = await request("/api/coach/check-in", { method: "POST", body: JSON.stringify({}) });
@@ -208,6 +243,8 @@ export default function App() {
     }
   }
 
+  // Convert the selected exercise IDs into ordered routine entries. The array
+  // position becomes sortOrder, preserving the sequence chosen in the builder.
   async function createRoutine(event: React.FormEvent) {
     event.preventDefault();
     try {
@@ -227,6 +264,8 @@ export default function App() {
     }
   }
 
+  // The current MVP form records one exercise with repeated sets. A later guided
+  // session builder can submit several exercise IDs through the same session API.
   async function recordWorkout(event: React.FormEvent) {
     event.preventDefault();
     try {
@@ -254,6 +293,8 @@ export default function App() {
     }
   }
 
+  // Friend requests are addressed by username; the API resolves that name and
+  // prevents self-requests or duplicate pending connections.
   async function sendFriendRequest(event: React.FormEvent) {
     event.preventDefault();
     try {
@@ -269,6 +310,8 @@ export default function App() {
     }
   }
 
+  // Accept only the request represented by this ID. The API checks that the
+  // signed-in account is its intended recipient before changing its status.
   async function acceptFriendRequest(id: string) {
     try {
       await request(`/api/social/friends/${id}/accept`, { method: "POST", body: JSON.stringify({}) });
@@ -279,6 +322,8 @@ export default function App() {
     }
   }
 
+  // A reaction is an account-level action on one visible post. Reloading the
+  // feed keeps reaction counts and the current user's selection in sync.
   async function reactToPost(id: string, value: string) {
     try {
       await request(`/api/social/posts/${id}/reactions`, {
@@ -291,6 +336,8 @@ export default function App() {
     }
   }
 
+  // Keep a separate draft per post so typing a comment on one card does not
+  // overwrite text entered on another card.
   async function commentOnPost(event: React.FormEvent, postId: string) {
     event.preventDefault();
     const text = commentDrafts[postId]?.trim();
@@ -308,6 +355,8 @@ export default function App() {
   }
 
 
+  // Account removal is intentionally harder to trigger than sign-out: the user
+  // must type the confirmation word and the API must verify their password.
   async function deleteAccount(event: React.FormEvent) {
     event.preventDefault();
     if (deleteConfirmation !== "DELETE") {
@@ -331,6 +380,8 @@ export default function App() {
     }
   }
 
+  // Sign-out clears this browser's session and cached private data. It does not
+  // call the account-deletion endpoint or remove records from the database.
   function signOut() {
     // Removing the browser token ends this local session without deleting any account records.
     localStorage.removeItem("fitloop-token");
@@ -381,6 +432,8 @@ export default function App() {
   const maxSteps = Math.max(1, ...chartLogs.map(log => log.steps ?? 0));
   const maxSleep = Math.max(1, ...chartLogs.map(log => log.sleepMinutes ?? 0));
   const maxFocus = Math.max(1, ...chartLogs.map(log => log.focusMinutes ?? 0));
+  // Count completed sets by the exercise's primary muscle group. This is a
+  // simple training-volume proxy, not a measure of muscle growth or recovery.
   const muscleVolume = sessions.flatMap(session => session.sets)
     .reduce<Record<string, number>>((totals, set) => {
       const group = set.exercise.muscleGroup || "Other";

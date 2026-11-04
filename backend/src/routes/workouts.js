@@ -180,6 +180,61 @@ router.post("/routines", async (req, res, next) => {
   }
 });
 
+// Replace a routine only when it belongs to the signed-in account. Revalidating
+// the full exercise list prevents stale or private IDs entering an edited template.
+router.put("/routines/:id", async (req, res, next) => {
+  try {
+    const input = routineInput.parse(req.body);
+    const existing = await prismaClient.workoutRoutine.findFirst({
+      where: { id: req.params.id, userId: req.userId },
+      select: { id: true }
+    });
+    if (!existing) return res.status(404).json({ error: "Workout routine not found." });
+
+    const exerciseIds = input.exercises.map(item => item.exerciseId);
+    const available = await prismaClient.exercise.findMany({
+      where: {
+        id: { in: exerciseIds },
+        OR: [{ isCustom: false }, { ownerId: req.userId }]
+      },
+      select: { id: true }
+    });
+    if (available.length !== exerciseIds.length) {
+      return res.status(400).json({ error: "One or more selected exercises do not exist." });
+    }
+
+    const routine = await prismaClient.workoutRoutine.update({
+      where: { id: existing.id },
+      data: {
+        name: input.name,
+        description: input.description,
+        exercises: {
+          deleteMany: {},
+          create: input.exercises.map((item, index) => ({ ...item, sortOrder: item.sortOrder ?? index }))
+        }
+      },
+      include: { exercises: { include: { exercise: true }, orderBy: { sortOrder: "asc" } } }
+    });
+    return res.json({ routine });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+// Delete only the caller's template. Past sessions keep their history; the
+// schema's SetNull relation removes the routine link rather than deleting logs.
+router.delete("/routines/:id", async (req, res, next) => {
+  try {
+    const result = await prismaClient.workoutRoutine.deleteMany({
+      where: { id: req.params.id, userId: req.userId }
+    });
+    if (result.count === 0) return res.status(404).json({ error: "Workout routine not found." });
+    return res.status(204).end();
+  } catch (error) {
+    return next(error);
+  }
+});
+
 // Return recent history newest-first. The limit keeps a dashboard request bounded;
 // a dedicated pagination endpoint can replace this when the history grows.
 router.get("/sessions", async (req, res, next) => {

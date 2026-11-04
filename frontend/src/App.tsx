@@ -17,7 +17,8 @@ type DailyLog = {
   mood?: number | null;
   focusMinutes?: number | null;
 };
-type Exercise = { id: string; name: string; muscleGroup: string; equipment?: string | null };
+type Exercise = { id: string; name: string; muscleGroup: string; equipment?: string | null; instructions?: string[]; movementPattern?: string | null; muscles?: Array<{ role: "PRIMARY" | "SECONDARY"; muscle: { name: string; slug: string } }> };
+type MuscleStat = { id: string; slug: string; name: string; bodyRegion: string; view: string; effectiveSets: number; primarySets: number; secondarySets: number; lastTrainedAt: string | null; recoveryLabel: string };
 type Routine = { id: string; name: string; exercises: Array<{ exercise: Exercise }> };
 type WorkoutSession = {
   id: string;
@@ -58,6 +59,12 @@ export default function App() {
   // Keep the selected coaching tone and focus available while the user edits their preferences.
   const [coachPreference, setCoachPreference] = useState<CoachPreference>({ style: "gentle", focus: "energy" });
   const [exercises, setExercises] = useState<Exercise[]>([]);
+  // Local filters keep catalogue searching responsive without repeated API calls.
+  const [exerciseSearch, setExerciseSearch] = useState("");
+  const [exerciseMuscleFilter, setExerciseMuscleFilter] = useState("all");
+  const [muscleStats, setMuscleStats] = useState<MuscleStat[]>([]);
+  const [selectedMuscle, setSelectedMuscle] = useState("");
+  const [anatomyView, setAnatomyView] = useState<"front" | "back">("front");
   const [routines, setRoutines] = useState<Routine[]>([]);
   const [sessions, setSessions] = useState<WorkoutSession[]>([]);
   const [connections, setConnections] = useState<FriendConnection[]>([]);
@@ -74,6 +81,11 @@ export default function App() {
   const [routineExerciseIds, setRoutineExerciseIds] = useState<string[]>([]);
   const [selectedRoutine, setSelectedRoutine] = useState("");
   const [selectedExercise, setSelectedExercise] = useState("");
+  // One live session can contain several exercises and their set sequences.
+  const [selectedExerciseIds, setSelectedExerciseIds] = useState<string[]>([]);
+  const [setType, setSetType] = useState("working");
+  const [restSeconds, setRestSeconds] = useState("90");
+  const [rir, setRir] = useState("");
   const [reps, setReps] = useState("10");
   const [sets, setSets] = useState("3");
   const [weight, setWeight] = useState("");

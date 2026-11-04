@@ -3,9 +3,12 @@ import assert from "node:assert/strict";
 import express from "express";
 import jwt from "jsonwebtoken";
 import { once } from "node:events";
-import { createAuthMiddleware } from "./auth.js";
-
 const secret = "test-only-secret-that-is-long-enough-for-hmac";
+// The application config validates required environment values at import time.
+// Supply test-only values before dynamically loading the middleware module.
+process.env.DATABASE_URL ??= "postgresql://test:test@localhost:5432/test";
+process.env.JWT_SECRET ??= secret;
+const { createAuthMiddleware } = await import("./auth.js");
 const token = (claims = {}, options = {}) => jwt.sign(claims, secret, {
   subject: "account-1", issuer: "fitloop-api", audience: "fitloop-web",
   algorithm: "HS256", expiresIn: "2h", ...options

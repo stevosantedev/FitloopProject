@@ -15,7 +15,7 @@ The idea is straightforward: make it easier to notice patterns and keep going, w
 
 ## Development standards
 
-Read [the implementation standards](docs/implementation-standards.md) before extending the exercise library, muscle maps or other substantial features. It defines the expected code-comment detail, writing style, openGym feature baseline and definition of done.
+Read [the implementation standards](docs/implementation-standards.md) before extending the exercise library, muscle maps or other substantial features. It defines the expected code-comment detail, writing style, exercise-library and muscle-map requirements, and definition of done.
 
 ## Project structure
 

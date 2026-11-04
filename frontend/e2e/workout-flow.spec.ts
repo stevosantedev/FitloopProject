@@ -6,8 +6,15 @@ const exercise = {
   muscleGroup: "Quadriceps",
   equipment: "Dumbbell",
   movementPattern: "Squat",
+  description: "A lower-body movement performed while holding a dumbbell at chest height.",
+  category: "Strength",
+  bodyRegion: "Lower body",
+  difficulty: "Beginner",
+  aliases: ["Dumbbell goblet squat"],
   instructions: ["Hold the weight close to your chest.", "Sit between your hips and stand tall."],
-  muscles: []
+  coachingCues: ["Keep your whole foot grounded.", "Brace before each repetition."],
+  equipmentAlternatives: ["Kettlebell"],
+  muscles: [{ role: "PRIMARY", muscle: { name: "Quadriceps", slug: "quadriceps" } }]
 };
 
 async function mockApplicationApi(page: Page, onSessionSave?: (body: any) => void) {
@@ -191,6 +198,22 @@ test("the app uses persistent navigation on desktop and a bottom tab bar on mobi
   await page.locator(".mobile-nav").getByRole("button", { name: "Community" }).click();
   await expect(page.getByRole("heading", { name: "Your community." })).toBeVisible();
   await expect(page.locator(".app-sidebar")).toBeHidden();
+});
+
+test("exercise guide opens technique, coaching and muscle information", async ({ page }) => {
+  await mockApplicationApi(page);
+  await signInAndOpenWorkouts(page);
+
+  const exerciseCard = page.locator(".exercise-choice").filter({ hasText: "Goblet squat" });
+  await exerciseCard.getByRole("button", { name: "Details" }).click();
+  const guide = page.getByRole("region", { name: "Goblet squat details" });
+  await expect(guide.getByRole("heading", { name: "Goblet squat" })).toBeVisible();
+  await expect(guide.getByText("Hold the weight close to your chest.")).toBeVisible();
+  await expect(guide.getByText("Keep your whole foot grounded.")).toBeVisible();
+  await expect(guide.getByText("Quadriceps")).toBeVisible();
+  await expect(guide.getByText("Kettlebell")).toBeVisible();
+  await guide.getByRole("button", { name: "Close" }).click();
+  await expect(guide).toHaveCount(0);
 });
 
 test("exercise filters and the selected-movement tray stay in sync", async ({ page }) => {

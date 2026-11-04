@@ -4,7 +4,7 @@ This document records the product and code-quality requirements for the next Fit
 
 ## Writing style
 
-Use the Humanizer skill as the editing reference for project prose: https://github.com/blader/humanizer/blob/main/SKILL.md
+Use the project's writing guidance below when editing prose.
 
 - Write in plain, natural technical English. Keep the tone appropriate to the audience: neutral and precise in code, API and architecture documentation.
 - Preserve the actual meaning and every supported technical detail when editing prose. Do not invent behaviour, test results, metrics, citations or implementation status.
@@ -59,9 +59,7 @@ A reader should be able to follow a complicated function from its comments witho
 
 ## Exercise library and muscle-map requirements
 
-The openGym project is the reference baseline for workout-library and muscle-map capabilities: https://github.com/DuarteSantos8/openGym
-
-FitLoop's existing 14-record starter list is insufficient. The target is parity with the capabilities and breadth described by openGym, followed by additional FitLoop functionality.
+The exercise catalogue and muscle-map experience are core FitLoop features. Build them as first-party product capabilities, with a broad, structured exercise dataset and useful training visualisations. The current 14-record starter list is only a temporary foundation and must be expanded substantially.
 
 ### Exercise catalogue
 
@@ -97,11 +95,11 @@ Do not present recovery estimates as medical facts. Explain the calculation and 
 
 ### Workout workflow
 
-The wider workout workflow should be developed towards the openGym baseline, including multi-exercise sessions, guided logging, rest timers, set types, per-exercise rest settings, workout history and editing. Additional FitLoop features should integrate with the existing friends feed and explainable coaching service without weakening account privacy.
+The workout workflow should include multi-exercise sessions, guided logging, rest timers, set types, per-exercise rest settings, workout history and editing. Additional FitLoop features should integrate with the existing friends feed and explainable coaching service without weakening account privacy.
 
 ### Data and licensing
 
-Before importing catalogue records, exercise media, anatomical paths or implementation code from an external project, verify the licence for that specific material. Keep attribution and licence notices with the relevant assets or data. The openGym repository identifies its application code as AGPL-3.0 and separately attributes its body-map geometry to MIT-licensed MuscleMap material; do not assume every file in the repository shares one licence.
+Before importing catalogue records, exercise media, anatomical paths or implementation code from an external project, verify the licence for that specific material. Keep attribution and licence notices with the relevant assets or data. Do not assume an external repository's top-level licence covers every asset or dataset. Record the source, applicable licence and required attribution for each imported component. Prefer independently authored implementation and properly licensed source data.
 
 ## Definition of done
 

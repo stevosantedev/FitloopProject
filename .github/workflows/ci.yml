@@ -9,6 +9,22 @@ on:
 jobs:
   application:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: fitloop
+          POSTGRES_PASSWORD: fitloop
+          POSTGRES_DB: fitloop
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U fitloop -d fitloop"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://fitloop:fitloop@localhost:5432/fitloop
     steps:
       - name: Check out the repository
         uses: actions/checkout@v4
@@ -22,16 +38,18 @@ jobs:
         run: npm install
 
       - name: Validate the Prisma data model
-        env:
-          DATABASE_URL: postgresql://fitloop:fitloop@localhost:5432/fitloop
         run: npm run db:validate
 
       - name: Generate the Prisma client
-        env:
-          DATABASE_URL: postgresql://fitloop:fitloop@localhost:5432/fitloop
         run: npm run db:generate
 
-      - name: Run backend tests
+      - name: Apply the migration baseline to a clean database
+        run: npm run db:migrate:deploy
+
+      - name: Seed the exercise and muscle catalogue
+        run: npm run db:seed
+
+      - name: Run backend unit and route integration tests
         run: npm test
 
       - name: Build the frontend and check backend syntax

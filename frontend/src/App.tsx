@@ -85,6 +85,8 @@ export default function App() {
   const [selectedExerciseIds, setSelectedExerciseIds] = useState<string[]>([]);
   const [setType, setSetType] = useState("working");
   const [restSeconds, setRestSeconds] = useState("90");
+  const [restRemaining, setRestRemaining] = useState<number | null>(null);
+  const [rpe, setRpe] = useState("");
   const [rir, setRir] = useState("");
   const [reps, setReps] = useState("10");
   const [sets, setSets] = useState("3");
@@ -294,7 +296,8 @@ export default function App() {
           exerciseId, setNumber: index + 1, reps: repetitions,
           weightKg: parsedWeight, completed: true, setType,
           restSeconds: Number(restSeconds),
-          ...(rir.trim() ? { rir: Number(rir) } : {})
+          ...(rir.trim() ? { rir: Number(rir) } : {}),
+          ...(rpe.trim() ? { rpe: Number(rpe) } : {})
         }))
       );
       await request("/api/workouts/sessions", {
@@ -412,6 +415,15 @@ export default function App() {
     setConnections([]);
     setPosts([]);
   }
+
+  // A one-second timeout chain avoids a permanent interval when the timer is stopped.
+  useEffect(() => {
+    if (restRemaining === null || restRemaining <= 0) return;
+    const timeout = window.setTimeout(() => {
+      setRestRemaining(current => current === null || current <= 1 ? null : current - 1);
+    }, 1000);
+    return () => window.clearTimeout(timeout);
+  }, [restRemaining]);
 
   useEffect(() => {
     // Each feature loads only when the account is signed in, keeping private requests out of the public screen.

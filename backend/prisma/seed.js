@@ -529,6 +529,18 @@ function validateCatalogue() {
     }
   }
 
+  // Every catalogue movement must have a guide, not just every guide entry
+  // point at a valid movement. This prevents new exercises being added without
+  // searchable technique content.
+  for (const exercise of exercises) {
+    if (!exerciseGuides[exercise.slug]) {
+      throw new Error(`Exercise ${exercise.slug} is missing its guide entry.`);
+    }
+    if (!exercise.description?.trim() || !exercise.aliases?.length || !exercise.coachingCues?.length) {
+      throw new Error(`Exercise ${exercise.slug} is missing required guide content.`);
+    }
+  }
+
   // Guide entries are keyed by the same stable slugs as catalogue rows. Catch
   // spelling drift before a seed run silently leaves an exercise without its
   // intended technique content.

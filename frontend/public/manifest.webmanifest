@@ -1,0 +1,28 @@
+{
+  "id": "/",
+  "name": "FitLoop",
+  "short_name": "FitLoop",
+  "description": "Your training space for guided workouts, exercise technique and steady progress.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "background_color": "#101c18",
+  "theme_color": "#101c18",
+  "orientation": "any",
+  "categories": ["fitness", "health", "lifestyle"],
+  "icons": [
+    {
+      "src": "/icons/fitloop.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/fitloop.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

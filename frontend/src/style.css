@@ -418,3 +418,22 @@ footer { padding: 22px 0 0; border-top: 1px solid #202c25; }
 }
 
 .active-set-meta { margin: 10px 0 0; color: #a9b9ac; font-size: .82rem; }
+
+
+/* Progress cards keep comparisons readable at a glance on narrow screens. */
+.progression-list { display: grid; gap: 12px; margin-top: 18px; }
+.progression-row { padding: 16px; border: 1px solid #2b3b30; border-radius: 13px; background: #121b15; }
+.progression-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.progression-heading strong { color: #edf5ed; font-size: .95rem; }
+.progression-heading span { color: #8d9c90; font-size: .75rem; }
+.progression-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 14px; }
+.progression-metrics > div { display: grid; gap: 5px; min-width: 0; }
+.progression-metrics strong { overflow-wrap: anywhere; color: #e8f2e6; font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+.progression-metrics span { color: #849387; font-size: .6rem; font-weight: 800; letter-spacing: .1em; }
+.progression-change { margin: 12px 0 0; color: #b7ed77; font-size: .78rem; }
+@media (max-width: 480px) {
+  .progression-row { padding: 13px; }
+  .progression-metrics { gap: 7px; }
+  .progression-metrics strong { font-size: .9rem; }
+  .progression-metrics span { font-size: .54rem; letter-spacing: .06em; }
+}

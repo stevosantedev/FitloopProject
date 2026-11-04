@@ -8,7 +8,7 @@
  */
 import { Router } from "express";
 import { z } from "zod";
-import { prisma } from "../prismaClient.js";
+import { prisma } from "../prisma.js";
 import { calculateMuscleVolume } from "../utils/muscleVolume.js";
 import { sessionInput } from "../utils/workoutSessionInput.js";
 

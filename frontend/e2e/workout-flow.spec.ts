@@ -198,6 +198,8 @@ test("movement progress compares the latest completed load with the previous ses
   await expect(progress).toBeVisible();
   await expect(progress.getByText("24 kg")).toBeVisible();
   await expect(progress.getByText("+2 kg from your previous session")).toBeVisible();
+  await expect(progress.getByLabel("Recent top-load trend")).toBeVisible();
+  await expect(progress.locator(".progression-bar-column")).toHaveCount(2);
   await expect(progress.getByText("1", { exact: true })).toBeVisible();
 });
 

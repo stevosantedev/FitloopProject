@@ -57,3 +57,12 @@ The Playwright suite starts the Vite app and mocks API responses so it can test 
 ## A few useful reminders
 
 Keep `.env` out of Git. Do not use real health or mood data in fixtures. When changing the Prisma schema, create a reviewed migration with `npm run db:migrate:dev`, inspect the generated SQL, and commit both the schema and migration. Use `npm run db:migrate:deploy` for deployment environments; it applies committed migrations without generating new ones. `npm run db:push` remains available for disposable local databases only. The initial migration is a baseline for a new empty database. If a database already contains the schema created with `db:push`, back it up and follow Prisma's baseline/adoption procedure before running deploy; do not apply the initial create-table script to an already-populated database.
+
+
+## Offline workout recording
+
+The installable browser app caches its application shell and static assets, but the service worker deliberately does not cache API traffic. After a user has signed in and the exercise catalogue has loaded once, FitLoop keeps that catalogue scoped to the account in browser storage so a previously authenticated user can build a workout without a network connection.
+
+Completed offline sessions are stored in IndexedDB with the owning account ID and a client-generated UUID. The bearer token is not copied into the queue. When connectivity returns, the app sends queued sessions using the currently signed-in account's token. The API stores the UUID as a unique nullable `WorkoutSession.clientRequestId`; retries return the original session rather than creating duplicate sets or feed posts. Queue entries are removed only after the API confirms success.
+
+Offline recording requires a prior successful sign-in and one successful exercise-catalogue load. If browser storage is unavailable, the app cannot promise offline persistence. Pending sessions remain on that browser until they sync; signing out does not delete them, and they are only read for the matching account. Clearing browser site data will remove unsynced sessions. This is a single-device queue, not cross-device sync or a backup.

@@ -59,6 +59,7 @@ async function signInAndOpenWorkouts(page: Page) {
   await page.getByRole("button", { name: "Workouts" }).click();
   await expect(page.getByRole("heading", { name: "Build a workout" })).toBeVisible();
   await expect(page.getByText("Goblet squat", { exact: true }).first()).toBeVisible();
+  await page.locator(".exercise-choice").filter({ hasText: "Goblet squat" }).locator("input").check();
 }
 
 test("guided sets mark only performed rows complete before saving", async ({ page }) => {

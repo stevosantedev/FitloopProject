@@ -33,7 +33,11 @@ const sessionInput = z.object({
     setNumber: z.number().int().min(1).max(50),
     reps: z.number().int().min(1).max(500),
     weightKg: z.number().min(0).max(1000).optional(),
-    completed: z.boolean().default(true)
+    completed: z.boolean().default(true),
+    setType: z.enum(["working", "warmup", "drop", "failure", "rest_pause", "amrap"]).default("working"),
+    restSeconds: z.number().int().min(0).max(900).optional(),
+    rir: z.number().int().min(0).max(10).optional(),
+    rpe: z.number().min(1).max(10).optional()
   })).max(200)
 });
 
@@ -79,6 +83,51 @@ router.get("/muscles", async (_req, res, next) => {
       orderBy: [{ bodyRegion: "asc" }, { sortOrder: "asc" }, { name: "asc" }]
     });
     return res.json({ muscles });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+// Summarise completed training by anatomical muscle over a bounded time window.
+// Primary links count as one set and secondary links as half a set. This is a
+// transparent programming estimate, not a claim about exact muscle stimulus.
+router.get("/muscle-stats", async (req, res, next) => {
+  try {
+    const rawDays = Number(req.query.days ?? 30);
+    const days = Number.isInteger(rawDays) ? Math.max(1, Math.min(365, rawDays)) : 30;
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+    const sets = await prisma.workoutSet.findMany({
+      where: { completed: true, session: { userId: req.userId, startedAt: { gte: since } } },
+      include: { exercise: { include: { muscles: { include: { muscle: true } } } }, session: { select: { startedAt: true } } }
+    });
+    const totals = new Map();
+    for (const set of sets) {
+      for (const link of set.exercise.muscles) {
+        const current = totals.get(link.muscle.slug) ?? {
+          muscle: link.muscle, effectiveSets: 0, primarySets: 0, secondarySets: 0, lastTrainedAt: null
+        };
+        const primary = link.role === "PRIMARY";
+        current.effectiveSets += primary ? 1 : 0.5;
+        if (primary) current.primarySets += 1;
+        else current.secondarySets += 1;
+        if (!current.lastTrainedAt || set.session.startedAt > current.lastTrainedAt) current.lastTrainedAt = set.session.startedAt;
+        totals.set(link.muscle.slug, current);
+      }
+    }
+    const muscles = await prisma.muscle.findMany({ orderBy: [{ bodyRegion: "asc" }, { sortOrder: "asc" }, { name: "asc" }] });
+    const stats = muscles.map(muscle => {
+      const total = totals.get(muscle.slug);
+      const hoursSince = total?.lastTrainedAt ? (Date.now() - new Date(total.lastTrainedAt).getTime()) / 3600000 : null;
+      return {
+        ...muscle,
+        effectiveSets: total?.effectiveSets ?? 0,
+        primarySets: total?.primarySets ?? 0,
+        secondarySets: total?.secondarySets ?? 0,
+        lastTrainedAt: total?.lastTrainedAt ?? null,
+        recoveryLabel: hoursSince === null ? "Not trained in this period" : hoursSince < 24 ? "Recently trained" : hoursSince < 48 ? "Trained within 48 hours" : "No recent session in 48 hours"
+      };
+    });
+    return res.json({ days, method: "Primary set = 1.0; secondary set = 0.5. Recovery labels use time since the last logged session and are not physiological measurements.", muscles: stats });
   } catch (error) {
     return next(error);
   }

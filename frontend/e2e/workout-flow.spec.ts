@@ -235,6 +235,12 @@ test("exercise filters and the selected-movement tray stay in sync", async ({ pa
   await expect(page.getByRole("button", { name: "Remove Goblet squat" })).toBeVisible();
   await page.getByRole("button", { name: "Remove Goblet squat" }).click();
   await expect(page.getByRole("button", { name: "Remove Goblet squat" })).toHaveCount(0);
+
+  await page.getByPlaceholder("Search exercises, technique or equipment").fill("movement-that-does-not-exist");
+  await expect(page.getByText("No movements match your search and filters. Try a different term or clear the filters.")).toBeVisible();
+  await page.getByRole("button", { name: "Clear filters" }).click();
+  await expect(page.locator(".exercise-choice").filter({ hasText: "Goblet squat" })).toBeVisible();
+  await expect(page.locator(".exercise-results-summary")).toContainText("Showing 1 of 1 movements");
 });
 
 

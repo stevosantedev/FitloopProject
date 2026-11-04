@@ -513,3 +513,26 @@ footer { padding: 22px 0 0; border-top: 1px solid #202c25; }
   .personal-record-metrics b { font-size: .9rem; }
   .personal-record-metrics span { font-size: .52rem; }
 }
+
+
+/* Exercise guide panels keep technique information beside the movement picker. */
+.exercise-choice { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; }
+.exercise-choice-select { display: grid; grid-template-columns: 18px minmax(0, 1fr) 24px; align-items: center; gap: 10px; min-width: 0; cursor: pointer; }
+.exercise-choice-select input { margin: 0; }
+.exercise-detail-trigger { width: auto; min-width: 58px; margin: 0; padding: 7px 9px; font-size: .72rem; }
+.exercise-detail-panel { display: grid; gap: 14px; margin: 14px 0; padding: 18px; border: 1px solid #35483a; border-radius: 14px; background: #111a14; }
+.exercise-detail-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.exercise-detail-heading h3 { margin: 3px 0 0; }
+.exercise-detail-heading button { width: auto; margin: 0; }
+.exercise-detail-panel h4 { margin: 0 0 8px; color: #dce8dc; font-size: .86rem; }
+.exercise-detail-panel ol, .exercise-detail-panel ul { display: grid; gap: 7px; margin: 0; padding-left: 22px; color: #b5c3b7; line-height: 1.55; }
+.exercise-detail-panel p { margin: 0; color: #b5c3b7; line-height: 1.55; }
+.exercise-detail-meta, .exercise-detail-muscles { display: flex; flex-wrap: wrap; gap: 8px; }
+.exercise-detail-meta span, .exercise-detail-muscles span { padding: 7px 10px; border: 1px solid #304034; border-radius: 9px; background: #19241c; color: #c2d0c4; font-size: .72rem; }
+.exercise-detail-muscles span { display: grid; gap: 3px; }
+.exercise-detail-muscles small, .exercise-detail-aliases { color: #91a194 !important; font-size: .72rem; }
+@media (max-width: 560px) {
+  .exercise-detail-panel { padding: 14px; }
+  .exercise-choice { gap: 5px; }
+  .exercise-choice-select { gap: 7px; }
+}

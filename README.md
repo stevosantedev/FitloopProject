@@ -7,7 +7,7 @@ The idea is straightforward: make it easier to notice patterns and keep going, w
 ## What is in the project
 
 - **Daily check-ins:** sleep, steps, mood and focused work or study time.
-- **Workout tracking:** a starter exercise library, reusable routines, completed sessions and a simple training breakdown.
+- **Workout tracking:** a structured exercise catalogue, reusable routines, multi-exercise sessions and muscle training summaries.
 - **Community:** friend requests, accepted connections, a friends-only feed, reactions and comments.
 - **Explainable coach:** a separate Python service that reviews recent check-ins and returns messages with reasons.
 - **Coach controls:** choose a gentle or direct tone, choose a focus area and record whether a message was helpful.
@@ -37,7 +37,7 @@ Read [the implementation standards](docs/implementation-standards.md) before ext
 2. Create a local PostgreSQL database and update `DATABASE_URL`.
 3. Install JavaScript dependencies with `npm install`.
 4. Generate the Prisma client with `npm run db:generate`.
-5. Apply the schema with `npm run db:migrate`.
+5. Apply the Prisma schema to your local database with `npm run db:push`.
 6. Add the starter exercises with `npm run db:seed`.
 7. Start the frontend and API with `npm run dev`.
 8. In another terminal, install `coach/requirements.txt` in a Python virtual environment, then run `uvicorn main:app --app-dir coach --reload --port 8000`.
@@ -50,7 +50,7 @@ The frontend runs on port 5173, the API on port 4000 and the coach on port 8000.
 - `npm run build`: check backend JavaScript syntax and create the frontend production build.
 - `npm test`: run the backend Node.js test command.
 - `npm run db:generate`: generate the Prisma client.
-- `npm run db:migrate`: apply local database changes.
+- `npm run db:push`: apply the current Prisma schema to a local database (development only; establish a reviewed migration baseline before production).
 - `npm run db:seed`: add the starter exercise library.
 - `pytest coach/test_coach.py`: run the Python coaching tests.
 

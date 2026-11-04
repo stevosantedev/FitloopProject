@@ -458,6 +458,15 @@ export default function App() {
       return totals;
     }, {});
   const muscleEntries = Object.entries(muscleVolume).sort((a, b) => b[1] - a[1]);
+  // Derive visible catalogue rows from the current filters rather than storing a
+  // second copy of the library that could become stale after a refresh.
+  const visibleExercises = exercises.filter(exercise => {
+    const term = exerciseSearch.trim().toLowerCase();
+    const matchesText = !term || [exercise.name, exercise.muscleGroup, exercise.equipment ?? "", exercise.movementPattern ?? ""].some(value => value.toLowerCase().includes(term));
+    const matchesMuscle = exerciseMuscleFilter === "all" || exercise.muscles?.some(link => link.muscle.slug === exerciseMuscleFilter);
+    return matchesText && matchesMuscle;
+  });
+  const selectedMuscleDetail = muscleStats.find(muscle => muscle.slug === selectedMuscle);
 
   return <main className="app-shell">
     <header className="topbar">

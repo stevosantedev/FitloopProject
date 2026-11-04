@@ -1,0 +1,215 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap');
+
+:root { font-family: 'DM Sans', sans-serif; color: #eaf2ec; background: #101c18; font-synthesis: none; }
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; }
+button, input, select { font: inherit; }
+button { cursor: pointer; border: 0; border-radius: 12px; padding: 13px 18px; background: #b7ed77; color: #142018; font-weight: 700; }
+button:hover { background: #c9f49a; }
+input, select { width: 100%; padding: 13px 14px; margin-top: 7px; border: 1px solid #35453d; border-radius: 10px; background: #172720; color: #f3f7f3; }
+label { display: block; margin: 15px 0; color: #c8d5cc; font-size: .9rem; }
+h1, h2, .brand { font-family: 'Manrope', sans-serif; }
+h1 { font-size: clamp(2.2rem, 5vw, 4rem); line-height: 1.05; margin: 10px 0; letter-spacing: -.05em; }
+h2 { font-size: 1.35rem; margin: 8px 0 20px; }
+.auth-shell { min-height: 100vh; display: grid; place-items: center; padding: 24px; background: radial-gradient(circle at 50% 0%, #263f31, #101c18 55%); }
+.auth-card { width: min(100%, 430px); padding: 38px; border: 1px solid #34483b; border-radius: 22px; background: #15241d; box-shadow: 0 24px 80px #0005; }
+.auth-card h1 { font-size: 3.2rem; }
+.auth-card form button { width: 100%; margin-top: 10px; }
+.app-shell { max-width: 1100px; margin: auto; padding: 28px 24px 60px; }
+.topbar { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #2a3b31; padding-bottom: 18px; }
+.brand { color: #f1f7f1; text-decoration: none; font-size: 1.6rem; font-weight: 800; }
+.brand span, h1 span { color: #b7ed77; }
+.account { display: flex; align-items: center; gap: 20px; color: #aebdb2; }
+.welcome { padding: 58px 0 30px; }
+.eyebrow { color: #b7ed77; font-size: .72rem; font-weight: 700; letter-spacing: .16em; }
+.muted, footer { color: #9cad9f; line-height: 1.6; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.stats article, .panel { border: 1px solid #304238; border-radius: 18px; background: #172720; padding: 22px; }
+.stats article span { display: block; color: #9cad9f; font-size: .85rem; }
+.stats article strong { display: block; font: 800 2rem 'Manrope'; margin-top: 10px; }
+.stats small { color: #9cad9f; font-size: 1rem; }
+.content-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px; }
+.panel button { width: 100%; margin-top: 8px; }
+.text-button { background: transparent; color: #b7ed77; padding: 10px 0; }
+.text-button:hover { background: transparent; color: #d2f5aa; }
+.auth-card .text-button { width: 100%; }
+.log-list { list-style: none; margin: 0; padding: 0; }
+.log-list li { display: flex; flex-direction: column; gap: 6px; padding: 15px 0; border-bottom: 1px solid #304238; }
+.log-list li span { color: #9cad9f; font-size: .85rem; }
+.coach-panel { margin-top: 14px; display: grid; grid-template-columns: 1fr 240px; align-items: center; gap: 10px 24px; }
+.coach-panel button { grid-column: 2; grid-row: 1; }
+.coach-message { grid-column: 1 / -1; padding-top: 14px; border-top: 1px solid #304238; }
+.notice { color: #d7f6b6; padding: 12px 14px; border: 1px solid #587343; border-radius: 10px; }
+footer { margin-top: 32px; font-size: .8rem; }
+@media (max-width: 700px) {
+  .content-grid, .stats { grid-template-columns: 1fr; }
+  .auth-card { padding: 26px; }
+  .welcome { padding-top: 38px; }
+  .coach-panel { grid-template-columns: 1fr; }
+  .coach-panel button { grid-column: 1; grid-row: auto; }
+  .account { gap: 10px; }
+}
+
+/* Navigation keeps the three main FitLoop areas easy to find on small and large screens. */
+.tab-nav { display: flex; gap: 8px; padding: 18px 0 4px; border-bottom: 1px solid #2a3b31; }
+.tab-nav button { width: auto; min-width: 110px; }
+.tab-nav .secondary { background: transparent; color: #aebdb2; border: 1px solid #35483d; }
+.tab-nav .secondary:hover { color: #eaf2ec; background: #1b2d24; }
+.tab-nav .active { background: #b7ed77; color: #142018; }
+.page-section { padding-top: 8px; }
+.welcome.compact { padding: 34px 0 24px; }
+.field-heading { color: #c8d5cc; font-size: .9rem; margin: 18px 0 8px; }
+.exercise-picker { max-height: 300px; overflow: auto; border: 1px solid #304238; border-radius: 12px; padding: 8px 12px; }
+.check-row { display: flex; align-items: center; gap: 10px; margin: 0; padding: 10px 0; border-bottom: 1px solid #304238; }
+.check-row:last-child { border-bottom: 0; }
+.check-row input { width: 18px; height: 18px; margin: 0; accent-color: #b7ed77; }
+.check-row span { display: flex; flex-direction: column; gap: 3px; }
+.check-row small { color: #9cad9f; }
+.section-gap { margin-top: 14px; }
+.routine-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.routine-card { border: 1px solid #304238; border-radius: 12px; padding: 16px; }
+.routine-card p { margin-bottom: 0; font-size: .9rem; }
+.feed-list { display: grid; gap: 12px; }
+.feed-card { padding: 18px 0; border-bottom: 1px solid #304238; }
+.feed-card:last-child { border-bottom: 0; }
+.feed-heading { display: flex; justify-content: space-between; gap: 12px; color: #eaf2ec; }
+.feed-heading span { color: #9cad9f; font-size: .8rem; }
+.reaction-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0; }
+.reaction-button, .small-button { width: auto !important; margin: 0 !important; padding: 8px 12px; border: 1px solid #435a49; background: #203329; color: #d8e7dc; font-size: .85rem; }
+.reaction-button:hover, .small-button:hover { background: #2b4334; }
+.comment { margin: 8px 0; padding: 8px 10px; border-radius: 8px; background: #1d3026; color: #c8d5cc; font-size: .9rem; }
+.comment-form { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+.comment-form input { margin: 0; }
+.comment-form button { width: auto; margin: 0; }
+button:disabled { opacity: .45; cursor: not-allowed; }
+@media (max-width: 700px) {
+  .tab-nav { overflow-x: auto; }
+  .tab-nav button { flex: 1; min-width: 0; padding: 11px 9px; }
+  .routine-grid { grid-template-columns: 1fr; }
+  .feed-heading { flex-direction: column; gap: 4px; }
+  .comment-form { align-items: stretch; }
+}
+
+/* Coach controls sit with the messages so preferences and feedback are easy to find. */
+.coach-preferences { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px 14px; align-items: end; border-top: 1px solid #304238; padding-top: 14px; }
+.coach-preferences .field-heading { grid-row: 1; margin: 0; }
+.coach-preferences select { margin: 0; }
+.coach-preferences button { width: auto; margin: 0; }
+.secondary-action { background: #b7ed77; }
+.decision-state { color: #9cad9f; font-size: .82rem; margin: 8px 0; text-transform: capitalize; }
+.decision-actions { display: flex; gap: 8px; }
+.decision-actions button { width: auto; }
+@media (max-width: 700px) {
+  .coach-preferences { grid-template-columns: 1fr; }
+  .coach-preferences .field-heading { grid-row: auto; }
+  .coach-preferences button { width: 100%; }
+}
+
+/* Compact charts show recorded habits without implying a target or medical score. */
+.mini-charts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.mini-chart { min-width: 0; padding: 12px; border: 1px solid #304238; border-radius: 12px; }
+.mini-chart > strong { display: block; font-size: .9rem; margin-bottom: 12px; }
+.bar-row { height: 112px; display: flex; align-items: end; justify-content: space-around; gap: 6px; border-bottom: 1px solid #52645a; }
+.bar-column { height: 100%; flex: 1; display: flex; flex-direction: column; justify-content: end; align-items: center; gap: 5px; min-width: 0; }
+.bar-column > span { display: block; width: min(22px, 80%); min-height: 0; border-radius: 5px 5px 0 0; background: #b7ed77; }
+.bar-column small { color: #9cad9f; font-size: .68rem; }
+.chart-note { color: #829488; font-size: .78rem; margin: 14px 0 0; line-height: 1.5; }
+.volume-list { display: grid; gap: 12px; }
+.volume-row { display: grid; grid-template-columns: 100px 1fr 28px; align-items: center; gap: 12px; font-size: .9rem; }
+.volume-track { height: 9px; overflow: hidden; border-radius: 99px; background: #2b3d32; }
+.volume-track span { display: block; height: 100%; border-radius: inherit; background: #b7ed77; }
+.volume-row strong { text-align: right; }
+@media (max-width: 700px) {
+  .mini-charts { grid-template-columns: 1fr; }
+  .volume-row { grid-template-columns: 78px 1fr 24px; gap: 8px; }
+}
+
+/* Account deletion is deliberately separated from everyday actions and requires two confirmations. */
+.account-danger { border-color: #68423d; }
+.danger-button { background: #e5a39a; color: #321714; }
+.danger-button:hover { background: #f0b4ab; }
+
+
+/* Exercise reference cards keep technique guidance beside the movement name. */
+.catalogue-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.catalogue-card { display: flex; flex-direction: column; gap: 7px; min-width: 0; padding: 15px; border: 1px solid #304238; border-radius: 12px; background: #1a2b22; }
+.catalogue-card > span, .catalogue-card > small { color: #9cad9f; font-size: .82rem; line-height: 1.5; }
+.catalogue-card details { color: #c8d5cc; font-size: .85rem; }
+.catalogue-card summary { color: #b7ed77; cursor: pointer; }
+.catalogue-card ol { padding-left: 20px; line-height: 1.55; }
+.anatomy-switch { display: flex; gap: 8px; margin: 12px 0; }
+.anatomy-switch button { width: auto; margin: 0; }
+.anatomy-switch .secondary { color: #c8d5cc; background: transparent; border: 1px solid #435a49; }
+.anatomy-layout { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(220px, .8fr); gap: 14px; align-items: start; }
+.muscle-map-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.muscle-chip { display: flex; justify-content: space-between; align-items: center; gap: 8px; width: 100%; margin: 0; padding: 11px 12px; text-align: left; color: #dce8df; background: #203329; border: 1px solid #435a49; font-size: .84rem; }
+.muscle-chip:hover, .muscle-chip.selected { background: #304936; border-color: #b7ed77; }
+.muscle-chip strong { color: #b7ed77; }
+.muscle-detail { min-height: 170px; padding: 18px; border: 1px solid #435a49; border-radius: 12px; background: #1a2b22; }
+.muscle-detail > strong { font: 700 1.1rem 'Manrope'; }
+.muscle-detail p { margin: 10px 0; color: #c8d5cc; }
+.muscle-detail small { color: #9cad9f; line-height: 1.5; }
+@media (max-width: 700px) {
+  .catalogue-grid, .anatomy-layout { grid-template-columns: 1fr; }
+  .muscle-map-list { grid-template-columns: 1fr 1fr; }
+}
+
+/* Rest countdown remains visible within the workout form and can be stopped by the user. */
+.rest-countdown { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border: 1px solid #587343; border-radius: 10px; color: #d7f6b6; font-variant-numeric: tabular-nums; }
+.rest-countdown .small-button { width: auto; }
+
+/* The anatomy diagram is original, simplified orientation artwork; labels remain the accurate controls. */
+.muscle-map-component { display: grid; grid-template-columns: minmax(150px, .7fr) minmax(0, 1.3fr); gap: 12px; align-items: start; min-width: 0; }
+.body-diagram { display: flex; flex-direction: column; align-items: center; padding: 12px; border: 1px solid #304238; border-radius: 12px; background: #1a2b22; }
+.body-diagram svg { display: block; width: min(100%, 220px); max-height: 390px; }
+.body-region { fill: #657c6c; opacity: .85; transition: fill .15s ease, opacity .15s ease; }
+.body-region.active { fill: #b7ed77; opacity: 1; }
+.body-diagram .chart-note { text-align: center; }
+.muscle-map-component .muscle-map-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 700px) {
+  .muscle-map-component { grid-template-columns: 1fr; }
+  .body-diagram svg { max-height: 300px; }
+}
+
+/* Individual set rows keep different loads, rep targets and completion states readable. */
+.set-entry-list { display: grid; gap: 8px; margin: 12px 0; }
+.set-entry-row { display: grid; grid-template-columns: 54px minmax(75px, 1fr) minmax(95px, 1fr) minmax(105px, auto) auto; gap: 8px; align-items: end; padding: 10px; border: 1px solid #304238; border-radius: 10px; background: #172720; }
+.set-entry-row label { min-width: 0; margin: 0; font-size: .78rem; }
+.set-entry-row input:not([type="checkbox"]) { min-width: 0; padding: 9px; }
+.set-entry-number { align-self: center; color: #b7ed77; font-size: .82rem; font-weight: 700; }
+.set-entry-row .completed-set-control { display: flex; align-items: center; gap: 7px; white-space: nowrap; }
+.set-entry-row .completed-set-control input { width: 18px; height: 18px; margin: 0; accent-color: #b7ed77; }
+.add-set-button { width: auto !important; margin: 0 0 12px !important; }
+@media (max-width: 700px) {
+  .set-entry-row { grid-template-columns: 1fr 1fr; align-items: center; }
+  .set-entry-number { grid-column: 1 / -1; }
+  .set-entry-row .completed-set-control { grid-column: 1; }
+  .set-entry-row > button { grid-column: 2; }
+}
+
+/* Each movement in a compound session has independent targets and loading. */
+.exercise-session-list { display: grid; gap: 10px; margin: 12px 0; }
+.exercise-session-card { padding: 13px; border: 1px solid #435a49; border-radius: 12px; background: #1a2b22; }
+.exercise-session-card > strong { display: block; margin-bottom: 8px; }
+.exercise-draft-fields { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.exercise-draft-fields label { min-width: 0; margin: 5px 0; font-size: .8rem; }
+.exercise-draft-fields select { min-width: 0; padding: 10px; }
+.exercise-draft-fields input { min-width: 0; padding: 10px; }
+@media (max-width: 700px) {
+  .exercise-draft-fields { grid-template-columns: 1fr; }
+}
+
+/* The guided timer is a focused panel with controls that remain usable on narrow screens. */
+.guided-timer { display: grid; gap: 8px; margin: 12px 0; padding: 16px; border: 1px solid #587343; border-radius: 12px; background: #1a2b22; }
+.guided-timer > div:first-child { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.guided-timer-current { margin: 4px 0; color: #d7f6b6; font-weight: 700; }
+.guided-timer .rest-countdown { margin: 0; font-size: 1.15rem; }
+.guided-timer-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.guided-timer-actions button { width: auto; margin: 0; }
+
+/* Individual muscle paths make the reference diagram more specific than a single highlighted body region. */
+.body-silhouette { fill: #405448; stroke: #8ba092; stroke-width: 2; }
+.muscle-shape { fill: #7e9885; stroke: #263a2e; stroke-width: 1.2; opacity: .92; transition: fill .15s ease, opacity .15s ease; }
+.muscle-shape.active { fill: #c5f28e; stroke: #f0ffd9; stroke-width: 1.8; opacity: 1; }
+.anatomy-centre-lines { fill: none; stroke: #23382c; stroke-width: 1; stroke-dasharray: 3 4; opacity: .75; pointer-events: none; }
+.body-diagram svg { overflow: visible; }

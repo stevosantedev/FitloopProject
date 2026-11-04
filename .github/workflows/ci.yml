@@ -1,0 +1,73 @@
+name: FitLoop checks
+
+on:
+  push:
+    branches: [main, "feat/**"]
+  pull_request:
+    branches: [main]
+
+jobs:
+  application:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: fitloop
+          POSTGRES_PASSWORD: fitloop
+          POSTGRES_DB: fitloop
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U fitloop -d fitloop"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://fitloop:fitloop@localhost:5432/fitloop
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install workspace dependencies
+        run: npm install
+
+      - name: Validate the Prisma data model
+        run: npm run db:validate
+
+      - name: Generate the Prisma client
+        run: npm run db:generate
+
+      - name: Apply the migration baseline to a clean database
+        run: npm run db:migrate:deploy
+
+      - name: Seed the exercise and muscle catalogue
+        run: npm run db:seed
+
+      - name: Run backend unit and route integration tests
+        run: npm test
+
+      - name: Build the frontend and check backend syntax
+        run: npm run build
+
+  coaching-service:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install coach dependencies
+        run: pip install -r coach/requirements.txt
+
+      - name: Test the coaching rules
+        run: pytest coach/test_coach.py

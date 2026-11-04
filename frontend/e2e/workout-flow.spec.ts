@@ -1,3 +1,20 @@
+test("app publishes an installable manifest and offline worker assets", async ({ page }) => {
+  const manifestResponse = await page.request.get("/manifest.webmanifest");
+  expect(manifestResponse.ok()).toBeTruthy();
+  const manifest = await manifestResponse.json();
+  expect(manifest.name).toBe("FitLoop");
+  expect(manifest.display).toBe("standalone");
+  expect(manifest.start_url).toBe("/");
+  expect(manifest.icons).toEqual(expect.arrayContaining([
+    expect.objectContaining({ src: "/icons/fitloop.svg", purpose: "any" })
+  ]));
+  const iconResponse = await page.request.get("/icons/fitloop.svg");
+  expect(iconResponse.ok()).toBeTruthy();
+  expect(iconResponse.headers()["content-type"]).toContain("image/svg+xml");
+  const workerResponse = await page.request.get("/sw.js");
+  expect(workerResponse.ok()).toBeTruthy();
+  expect(await workerResponse.text()).toContain("fitloop-shell-v1");
+});
 import { expect, test, type Page } from "@playwright/test";
 
 const exercise = {

@@ -97,13 +97,9 @@ export default function GuidedRestTimer({ items, onSetComplete }: Props) {
   function completeCurrentSet() {
     if (!current) return;
     onSetComplete(current.exerciseId, current.setId);
-    if (index === queue.length - 1) {
-      setIndex(null);
-      setRemaining(null);
-      setPhase("complete");
-      setMessage("All guided sets are complete.");
-      return;
-    }
+
+    // The final performed set still gets its configured rest period. The timer
+    // effect decides whether to show the next set or finish the guided sequence.
     if (current.restSeconds > 0) {
       setRemaining(current.restSeconds);
       setPhase("rest");

@@ -576,6 +576,14 @@ export default function App() {
     const matchesDifficulty = exerciseDifficultyFilter === "all" || (exercise.difficulty ?? "Unspecified") === exerciseDifficultyFilter;
     return matchesText && matchesMuscle && matchesEquipment && matchesPattern && matchesDifficulty;
   });
+  const hasActiveExerciseFilters = Boolean(exerciseSearch.trim()) || exerciseMuscleFilter !== "all" || exerciseEquipmentFilter !== "all" || exercisePatternFilter !== "all" || exerciseDifficultyFilter !== "all";
+  const clearExerciseFilters = () => {
+    setExerciseSearch("");
+    setExerciseMuscleFilter("all");
+    setExerciseEquipmentFilter("all");
+    setExercisePatternFilter("all");
+    setExerciseDifficultyFilter("all");
+  };
   const selectedMuscleDetail = muscleStats.find(muscle => muscle.slug === selectedMuscle);
   const selectedSession = sessions.find(session => session.id === selectedSessionId) ?? null;
   // Group the selected session by movement while preserving the recorded set order.
@@ -725,6 +733,10 @@ export default function App() {
             <label>Movement pattern<select value={exercisePatternFilter} onChange={event => setExercisePatternFilter(event.target.value)}><option value="all">All movement patterns</option>{Array.from(new Set(exercises.map(exercise => exercise.movementPattern ?? "Other"))).sort().map(pattern => <option key={pattern} value={pattern}>{pattern}</option>)}</select></label>
             <label>Difficulty<select value={exerciseDifficultyFilter} onChange={event => setExerciseDifficultyFilter(event.target.value)}><option value="all">Any difficulty</option>{Array.from(new Set(exercises.map(exercise => exercise.difficulty ?? "Unspecified"))).sort().map(level => <option key={level} value={level}>{level}</option>)}</select></label>
           </div>
+          <div className="exercise-results-summary" aria-live="polite">
+            <span>Showing <strong>{visibleExercises.length}</strong> of <strong>{exercises.length}</strong> movements</span>
+            {hasActiveExerciseFilters && <button type="button" className="text-button" onClick={clearExerciseFilters}>Clear filters</button>}
+          </div>
           <div className="exercise-picker exercise-choice-grid" aria-label="Select exercises for this session">
             {visibleExercises.map(exercise => <article className={"check-row exercise-choice" + (selectedExerciseIds.includes(exercise.id) ? " selected" : "")} key={exercise.id}>
               <label className="exercise-choice-select">
@@ -734,7 +746,7 @@ export default function App() {
               </label>
               <button type="button" className="exercise-detail-trigger" onClick={() => setExerciseDetailId(current => current === exercise.id ? "" : exercise.id)} aria-expanded={exerciseDetailId === exercise.id}>Details</button>
             </article>)}
-            {visibleExercises.length === 0 && <p className="muted">No exercises match those filters.</p>}
+            {visibleExercises.length === 0 && <p className="muted exercise-empty-state">No movements match your search and filters. Try a different term or clear the filters.</p>}
           </div>
           {(() => {
             const detail = exercises.find(item => item.id === exerciseDetailId);

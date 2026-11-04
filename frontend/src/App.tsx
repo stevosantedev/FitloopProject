@@ -176,7 +176,6 @@ export default function App() {
       setRoutines(routineData.routines);
       setSessions(sessionData.sessions);
       setMuscleStats(muscleData.muscles);
-      if (selectedExerciseIds.length === 0 && exerciseData.exercises[0]) setSelectedExerciseIds([exerciseData.exercises[0].id]);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Could not load workouts.");
     }

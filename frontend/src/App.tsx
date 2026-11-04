@@ -7,6 +7,7 @@
  * error-handling behaviour.
  */
 import { useEffect, useState } from "react";
+import MuscleMap from "./components/MuscleMap";
 
 type User = { id: string; username: string };
 type DailyLog = {
@@ -623,9 +624,7 @@ export default function App() {
         <p className="muted">Choose a muscle to inspect its logged training over the last 30 days. Front and back lists reflect the catalogue's anatomy labels.</p>
         <div className="anatomy-switch"><button type="button" className={anatomyView === "front" ? "active" : "secondary"} onClick={() => setAnatomyView("front")}>Front view</button><button type="button" className={anatomyView === "back" ? "active" : "secondary"} onClick={() => setAnatomyView("back")}>Back view</button></div>
         <div className="anatomy-layout">
-          <div className="muscle-map-list" aria-label={anatomyView + " muscle selection"}>
-            {muscleStats.filter(muscle => muscle.view === anatomyView || muscle.view === "both").map(muscle => <button type="button" key={muscle.id} className={selectedMuscle === muscle.slug ? "muscle-chip selected" : "muscle-chip"} onClick={() => setSelectedMuscle(muscle.slug)}><span>{muscle.name}</span><strong>{muscle.effectiveSets}</strong></button>)}
-          </div>
+          <MuscleMap view={anatomyView} muscles={muscleStats} selectedSlug={selectedMuscle} onSelect={setSelectedMuscle} />
           <aside className="muscle-detail" aria-live="polite">
             {selectedMuscleDetail ? <><strong>{selectedMuscleDetail.name}</strong><p>{selectedMuscleDetail.effectiveSets} weighted sets</p><small>{selectedMuscleDetail.primarySets} primary · {selectedMuscleDetail.secondarySets} secondary</small><p>{selectedMuscleDetail.recoveryLabel}</p><small>Last trained: {selectedMuscleDetail.lastTrainedAt ? new Date(selectedMuscleDetail.lastTrainedAt).toLocaleString() : "No session in this period"}</small></> : <p className="muted">Choose a muscle to inspect its training history.</p>}
           </aside>

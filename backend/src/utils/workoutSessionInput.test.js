@@ -20,11 +20,11 @@ test("accepts multiple exercises with their own set numbering", () => {
 
 test("accepts incomplete rows so skipped sets can remain in the session history", () => {
   const result = sessionInput.safeParse({
-    sets: [makeSet("squat", 1, { completed: false })]
+    sets: [makeSet("squat", 1), makeSet("squat", 2, { completed: false })]
   });
 
   assert.equal(result.success, true);
-  if (result.success) assert.equal(result.data.sets[0].completed, false);
+  if (result.success) assert.equal(result.data.sets[1].completed, false);
 });
 
 test("rejects a session with no set rows", () => {
@@ -58,4 +58,12 @@ test("rejects more than 50 rows for one exercise", () => {
 test("rejects values outside the supported rep and load bounds", () => {
   assert.equal(sessionInput.safeParse({ sets: [makeSet("squat", 1, { reps: 0 })] }).success, false);
   assert.equal(sessionInput.safeParse({ sets: [makeSet("squat", 1, { weightKg: -1 })] }).success, false);
+});
+
+test("rejects a workout when every set is incomplete", () => {
+  const result = sessionInput.safeParse({
+    sets: [makeSet("squat", 1, { completed: false })]
+  });
+
+  assert.equal(result.success, false);
 });

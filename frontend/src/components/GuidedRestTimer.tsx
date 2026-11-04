@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 export type GuidedRestItem = {
   label: string;
@@ -18,11 +18,12 @@ export default function GuidedRestTimer({ items }: Props) {
   const [index, setIndex] = useState<number | null>(null);
   const [remaining, setRemaining] = useState<number | null>(null);
   const [paused, setPaused] = useState(false);
+  const [message, setMessage] = useState("");
   const current = index === null ? null : queue[index];
 
   // Do not restart a running sequence when the parent creates a new array on
   // render. A sequence is snapshotted only when the user presses Start.
-  const availableCount = useMemo(() => items.length, [items.length]);
+  const availableCount = items.length;
 
   useEffect(() => {
     if (remaining === null || paused) return;
@@ -36,6 +37,7 @@ export default function GuidedRestTimer({ items }: Props) {
         setRemaining(null);
         setIndex(null);
         setQueue([]);
+        setMessage("Guided rest sequence complete.");
         return;
       }
       setIndex(nextIndex);
@@ -47,7 +49,11 @@ export default function GuidedRestTimer({ items }: Props) {
   function start() {
     // The last completed set has no following rest period, so it is not added.
     const sequence = items.slice(0, -1).filter(item => item.restSeconds > 0);
-    if (sequence.length === 0) return;
+    if (sequence.length === 0) {
+      setMessage("Set a rest duration above zero to use the guided timer.");
+      return;
+    }
+    setMessage("");
     setQueue(sequence);
     setIndex(0);
     setRemaining(sequence[0].restSeconds);
@@ -59,6 +65,7 @@ export default function GuidedRestTimer({ items }: Props) {
     setIndex(null);
     setRemaining(null);
     setPaused(false);
+    setMessage("Guided rest sequence stopped.");
   }
 
   function skip() {
@@ -91,7 +98,10 @@ export default function GuidedRestTimer({ items }: Props) {
           </div>
         </>
       ) : (
-        <button type="button" className="secondary-action" disabled={availableCount < 2} onClick={start}>Begin guided rest sequence</button>
+        <>
+          <button type="button" className="secondary-action" disabled={availableCount < 2} onClick={start}>Begin guided rest sequence</button>
+          {message && <p className="chart-note" role="status">{message}</p>}
+        </>
       )}
     </section>
   );

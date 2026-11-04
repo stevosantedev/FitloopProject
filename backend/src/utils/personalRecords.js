@@ -21,9 +21,12 @@ export function calculatePersonalRecords(sets) {
       highestSetVolume: null
     };
 
+    // The candidate is a numeric measurement; the stored record wraps it with
+    // its session metadata. Compare the number itself, not a nonexistent
+    // nested value property, so stronger results can replace older records.
     const candidate = (value, previous) => {
-      if (!previous || value.value > previous.value ||
-          (value.value === previous.value && date && (!previous.date || new Date(date) > new Date(previous.date)))) {
+      const isNewer = date && (!previous?.date || new Date(date) > new Date(previous.date));
+      if (!previous || value > previous.value || (value === previous.value && isNewer)) {
         return { value, date, sessionId: set.session?.id ?? null };
       }
       return previous;

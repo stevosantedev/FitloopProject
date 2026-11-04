@@ -62,6 +62,12 @@ jobs:
       - name: Build the frontend and check backend syntax
         run: npm run build
 
+      - name: Install Chromium for browser tests
+        run: npx playwright install --with-deps chromium
+
+      - name: Run browser-level workout tests
+        run: npm run test:e2e
+
   coaching-service:
     runs-on: ubuntu-latest
     steps:

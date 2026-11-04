@@ -504,7 +504,7 @@ export default function App() {
       <p className="sidebar-label">WORKSPACE</p>
       <nav className="sidebar-nav" aria-label="Main sections">
         <button className={activeTab === "home" ? "active" : ""} onClick={() => setActiveTab("home")}><span className="nav-symbol">⌂</span><span>Overview</span></button>
-        <button className={activeTab === "workouts" ? "active" : ""} onClick={() => setActiveTab("workouts")}><span className="nav-symbol">↗</span><span>Training</span></button>
+        <button className={activeTab === "workouts" ? "active" : ""} onClick={() => setActiveTab("workouts")}><span className="nav-symbol">↗</span><span>Workouts</span></button>
         <button className={activeTab === "community" ? "active" : ""} onClick={() => setActiveTab("community")}><span className="nav-symbol">◎</span><span>Community</span></button>
       </nav>
       <div className="sidebar-bottom">
@@ -514,12 +514,12 @@ export default function App() {
     </aside>
     <div className="app-main">
       <header className="topbar">
-        <div><p className="topbar-kicker">FITLOOP / WORKSPACE</p><strong>{activeTab === "home" ? "Overview" : activeTab === "workouts" ? "Training" : "Community"}</strong></div>
+        <div><p className="topbar-kicker">FITLOOP / WORKSPACE</p><strong>{activeTab === "home" ? "Overview" : activeTab === "workouts" ? "Workouts" : "Community"}</strong></div>
         <div className="account"><span className="account-status"><i /> Your space</span><button className="topbar-action" onClick={() => setActiveTab("workouts")}>Start a workout <span>↗</span></button></div>
       </header>
       <nav className="mobile-nav" aria-label="Main sections">
         <button className={activeTab === "home" ? "active" : ""} onClick={() => setActiveTab("home")}><span>⌂</span>Home</button>
-        <button className={activeTab === "workouts" ? "active" : ""} onClick={() => setActiveTab("workouts")}><span>↗</span>Train</button>
+        <button className={activeTab === "workouts" ? "active" : ""} onClick={() => setActiveTab("workouts")}><span>↗</span>Workouts</button>
         <button className={activeTab === "community" ? "active" : ""} onClick={() => setActiveTab("community")}><span>◎</span>Community</button>
       </nav>
 

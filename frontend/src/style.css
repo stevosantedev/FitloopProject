@@ -354,3 +354,8 @@ footer { padding: 22px 0 0; border-top: 1px solid #202c25; }
   .exercise-filter-row { grid-template-columns: 1fr; }
   .exercise-draft-fields { grid-template-columns: 1fr 1fr; }
 }
+
+
+/* The exercise-card internals override the generic stacked check-row layout. */
+.check-row .exercise-choice-copy { display: grid; flex-direction: initial; gap: 4px; min-width: 0; }
+.check-row .exercise-choice-indicator { display: grid; flex-direction: initial; flex: 0 0 24px; }

@@ -149,3 +149,46 @@ test("POST sessions rejects a routine owned by another account", async () => {
 
   assert.equal(exerciseLookups, 0);
 });
+
+
+test("POST sessions cannot use another account's private custom exercise", async () => {
+  let lookup;
+  let sessionWrites = 0;
+  const prisma = makePrisma({
+    exercise: { findMany: async args => { lookup = args; return []; } },
+    workoutSession: { create: async () => { sessionWrites += 1; return {}; } }
+  });
+
+  await withWorkoutApi(prisma, async baseUrl => {
+    const response = await fetch(baseUrl + "/api/workouts/sessions", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ sets: [{ exerciseId: "private-custom-id", setNumber: 1, reps: 8 }] })
+    });
+    assert.equal(response.status, 400);
+  });
+
+  assert.deepEqual(lookup.where.OR, [{ isCustom: false }, { ownerId: "user-a" }]);
+  assert.equal(sessionWrites, 0);
+});
+
+test("POST routines cannot link another account's private custom exercise", async () => {
+  let lookup;
+  let routineWrites = 0;
+  const prisma = makePrisma({
+    exercise: { findMany: async args => { lookup = args; return []; } },
+    workoutRoutine: { create: async () => { routineWrites += 1; return {}; } }
+  });
+
+  await withWorkoutApi(prisma, async baseUrl => {
+    const response = await fetch(baseUrl + "/api/workouts/routines", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ name: "Private movement test", exercises: [{ exerciseId: "private-custom-id", sortOrder: 0 }] })
+    });
+    assert.equal(response.status, 400);
+  });
+
+  assert.deepEqual(lookup.where.OR, [{ isCustom: false }, { ownerId: "user-a" }]);
+  assert.equal(routineWrites, 0);
+});

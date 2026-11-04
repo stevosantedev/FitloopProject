@@ -69,6 +69,8 @@ export default function App() {
   const [exerciseSearch, setExerciseSearch] = useState("");
   const [exerciseMuscleFilter, setExerciseMuscleFilter] = useState("all");
   const [exerciseEquipmentFilter, setExerciseEquipmentFilter] = useState("all");
+  const [exercisePatternFilter, setExercisePatternFilter] = useState("all");
+  const [exerciseDifficultyFilter, setExerciseDifficultyFilter] = useState("all");
   const [muscleStats, setMuscleStats] = useState<MuscleStat[]>([]);
   const [selectedMuscle, setSelectedMuscle] = useState("");
   const [anatomyView, setAnatomyView] = useState<"front" | "back">("front");
@@ -570,7 +572,9 @@ export default function App() {
     const matchesText = !term || searchable.some(value => value.toLowerCase().includes(term));
     const matchesMuscle = exerciseMuscleFilter === "all" || exercise.muscles?.some(link => link.muscle.slug === exerciseMuscleFilter);
     const matchesEquipment = exerciseEquipmentFilter === "all" || (exercise.equipment ?? "Other") === exerciseEquipmentFilter;
-    return matchesText && matchesMuscle && matchesEquipment;
+    const matchesPattern = exercisePatternFilter === "all" || (exercise.movementPattern ?? "Other") === exercisePatternFilter;
+    const matchesDifficulty = exerciseDifficultyFilter === "all" || (exercise.difficulty ?? "Unspecified") === exerciseDifficultyFilter;
+    return matchesText && matchesMuscle && matchesEquipment && matchesPattern && matchesDifficulty;
   });
   const selectedMuscleDetail = muscleStats.find(muscle => muscle.slug === selectedMuscle);
   const selectedSession = sessions.find(session => session.id === selectedSessionId) ?? null;
@@ -718,6 +722,8 @@ export default function App() {
           <div className="exercise-filter-row">
             <label>Muscle group<select value={exerciseMuscleFilter} onChange={event => setExerciseMuscleFilter(event.target.value)}><option value="all">All muscles</option>{muscleStats.map(muscle => <option key={muscle.id} value={muscle.slug}>{muscle.name}</option>)}</select></label>
             <label>Equipment<select value={exerciseEquipmentFilter} onChange={event => setExerciseEquipmentFilter(event.target.value)}><option value="all">Any equipment</option>{Array.from(new Set(exercises.map(exercise => exercise.equipment ?? "Other"))).sort().map(equipment => <option key={equipment} value={equipment}>{equipment}</option>)}</select></label>
+            <label>Movement pattern<select value={exercisePatternFilter} onChange={event => setExercisePatternFilter(event.target.value)}><option value="all">All movement patterns</option>{Array.from(new Set(exercises.map(exercise => exercise.movementPattern ?? "Other"))).sort().map(pattern => <option key={pattern} value={pattern}>{pattern}</option>)}</select></label>
+            <label>Difficulty<select value={exerciseDifficultyFilter} onChange={event => setExerciseDifficultyFilter(event.target.value)}><option value="all">Any difficulty</option>{Array.from(new Set(exercises.map(exercise => exercise.difficulty ?? "Unspecified"))).sort().map(level => <option key={level} value={level}>{level}</option>)}</select></label>
           </div>
           <div className="exercise-picker exercise-choice-grid" aria-label="Select exercises for this session">
             {visibleExercises.map(exercise => <article className={"check-row exercise-choice" + (selectedExerciseIds.includes(exercise.id) ? " selected" : "")} key={exercise.id}>

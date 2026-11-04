@@ -203,20 +203,20 @@ export default function App() {
       ]);
       setExercises(exerciseData.exercises);
       // The public exercise catalogue is safe to keep locally for offline workout building.
-      localStorage.setItem("fitloop-exercise-catalogue", JSON.stringify(exerciseData.exercises));
+      if (user?.id) localStorage.setItem(`fitloop-exercise-catalogue:${user.id}`, JSON.stringify(exerciseData.exercises));
       setRoutines(routineData.routines);
       setSessions(sessionData.sessions);
       setMuscleStats(muscleData.muscles);
       setPersonalRecords(recordData.records);
     } catch (error) {
       if (!navigator.onLine) {
-        const cachedCatalogue = localStorage.getItem("fitloop-exercise-catalogue");
+        const cachedCatalogue = user?.id ? localStorage.getItem(`fitloop-exercise-catalogue:${user.id}`) : null;
         if (cachedCatalogue) {
           try {
             setExercises(JSON.parse(cachedCatalogue) as Exercise[]);
             setNotice("You are offline. Your saved exercise library is available; new workouts will sync later.");
           } catch {
-            localStorage.removeItem("fitloop-exercise-catalogue");
+            if (user?.id) localStorage.removeItem(`fitloop-exercise-catalogue:${user.id}`);
             setNotice("The offline exercise library could not be read. Reconnect to reload it.");
           }
         } else {

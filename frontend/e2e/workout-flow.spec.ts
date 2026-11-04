@@ -11,6 +11,7 @@ const exercise = {
 };
 
 async function mockApplicationApi(page: Page, onSessionSave?: (body: any) => void) {
+  const routines: any[] = [];
   await page.route("http://localhost:4000/**", async route => {
     const request = route.request();
     const url = new URL(request.url());
@@ -29,8 +30,22 @@ async function mockApplicationApi(page: Page, onSessionSave?: (body: any) => voi
       body = { events: [] };
     } else if (url.pathname === "/api/workouts/exercises") {
       body = { exercises: [exercise] };
-    } else if (url.pathname === "/api/workouts/routines") {
-      body = method === "GET" ? { routines: [] } : { routine: { id: "routine-1" } };
+    } else if (url.pathname === "/api/workouts/routines" && method === "GET") {
+      body = { routines };
+    } else if (url.pathname === "/api/workouts/routines" && method === "POST") {
+      const input = request.postDataJSON();
+      const routine = { id: "routine-1", name: input.name, exercises: input.exercises.map((item: any) => ({ exercise })) };
+      routines.push(routine);
+      body = { routine };
+    } else if (url.pathname === "/api/workouts/routines/routine-1" && method === "PUT") {
+      const input = request.postDataJSON();
+      const routine = { id: "routine-1", name: input.name, exercises: input.exercises.map((item: any) => ({ exercise })) };
+      routines.splice(0, routines.length, routine);
+      body = { routine };
+    } else if (url.pathname === "/api/workouts/routines/routine-1" && method === "DELETE") {
+      routines.splice(0, routines.length);
+      await route.fulfill({ status: 204 });
+      return;
     } else if (url.pathname === "/api/workouts/sessions") {
       if (method === "POST") {
         onSessionSave?.(request.postDataJSON());
@@ -61,6 +76,28 @@ async function signInAndOpenWorkouts(page: Page) {
   await expect(page.getByText("Goblet squat", { exact: true }).first()).toBeVisible();
   await page.locator(".exercise-choice").filter({ hasText: "Goblet squat" }).locator("input").check();
 }
+
+test("saved routines can be edited and deleted without losing the workout builder", async ({ page }) => {
+  await mockApplicationApi(page);
+  await signInAndOpenWorkouts(page);
+
+  await page.getByLabel("Routine name").fill("Starter routine");
+  await page.locator(".panel").filter({ has: page.getByRole("heading", { name: "Create a routine" }) })
+    .locator(".exercise-picker input").check();
+  await page.getByRole("button", { name: "Save routine" }).click();
+  await expect(page.getByRole("article").filter({ hasText: "Starter routine" })).toBeVisible();
+
+  const routineCard = page.getByRole("article").filter({ hasText: "Starter routine" });
+  await routineCard.getByRole("button", { name: "Edit" }).click();
+  await expect(page.getByRole("heading", { name: "Edit routine" })).toBeVisible();
+  await page.getByLabel("Routine name").fill("Updated routine");
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await expect(page.getByRole("article").filter({ hasText: "Updated routine" })).toBeVisible();
+
+  page.once("dialog", dialog => dialog.accept());
+  await page.getByRole("article").filter({ hasText: "Updated routine" }).getByRole("button", { name: "Delete" }).click();
+  await expect(page.getByText("No routines yet.")).toBeVisible();
+});
 
 test("guided sets mark only performed rows complete before saving", async ({ page }) => {
   let savedSession: any;

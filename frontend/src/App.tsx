@@ -597,8 +597,8 @@ export default function App() {
           <button disabled={!routineName.trim() || routineExerciseIds.length === 0}>Save routine</button>
         </form>
         <form className="panel" onSubmit={recordWorkout}>
-          <p className="eyebrow">GUIDED SESSION</p><h2>Build a workout</h2>
-          <p className="muted">Choose several movements and record them together as one session.</p>
+          <p className="eyebrow">WORKOUT BUILDER</p><h2>Build a workout</h2>
+          <p className="muted">Choose movements, edit each set and save the session together.</p>
           <label>Routine (optional)<select value={selectedRoutine} onChange={event => {
             const routine = routines.find(item => item.id === event.target.value);
             setSelectedRoutine(event.target.value);

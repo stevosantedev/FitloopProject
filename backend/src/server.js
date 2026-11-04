@@ -21,7 +21,13 @@ app.use(cors({ origin: config.FRONTEND_ORIGIN }));
 app.use(express.json({ limit: "32kb" }));
 
 // Login and registration are rate-limited because password endpoints attract automated guessing.
-app.use("/api/auth", rateLimit({ windowMs: 15 * 60 * 1000, limit: 20 }));
+app.use("/api/auth", rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true
+}));
 app.get("/health", (_req, res) => res.json({ status: "ok", service: "fitloop-api" }));
 
 // This endpoint restores the signed-in profile after a page refresh without storing profile data in the token.

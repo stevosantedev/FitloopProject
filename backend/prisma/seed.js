@@ -153,6 +153,136 @@ const exercises = [
 ];
 
 
+// Curated guide content for frequently used movements. Keep these notes tied
+// to the actual setup and execution of each movement rather than filling every
+// catalogue record with the same generic coaching language.
+const exerciseGuides = {
+  "push-up": {
+    description: "A bodyweight horizontal press performed from a rigid plank, using the chest, triceps and front shoulders to move the body.",
+    aliases: ["press-up"],
+    coachingCues: ["Keep the ribs and hips moving together", "Lower under control", "Press the floor away"]
+  },
+  "bench-press": {
+    description: "A barbell horizontal press performed on a bench, commonly used to develop pressing strength through the chest, triceps and shoulders.",
+    aliases: ["barbell bench press", "flat bench press"],
+    coachingCues: ["Keep both feet planted", "Lower towards the mid-chest", "Keep wrists stacked over the forearms"],
+    equipmentAlternatives: ["Dumbbell", "Smith machine"]
+  },
+  "incline-dumbbell-press": {
+    description: "A dumbbell press performed on an inclined bench to train the upper portion of the chest alongside the front shoulders and triceps.",
+    aliases: ["incline DB press"],
+    coachingCues: ["Use a modest bench incline", "Keep forearms close to vertical", "Lower both dumbbells evenly"],
+    equipmentAlternatives: ["Barbell", "Smith machine"]
+  },
+  "overhead-press": {
+    description: "A standing barbell press that moves a load from shoulder height to overhead, training the shoulders and triceps while the trunk stabilises the body.",
+    aliases: ["standing shoulder press", "military press"],
+    coachingCues: ["Brace before each press", "Move the head clear of the bar", "Finish with the bar over the mid-foot"],
+    equipmentAlternatives: ["Dumbbell", "Machine"]
+  },
+  "lateral-raise": {
+    description: "A shoulder isolation movement that raises the arms out to the sides against resistance, with emphasis on the lateral deltoids.",
+    aliases: ["side raise", "dumbbell lateral raise"],
+    coachingCues: ["Lead with the elbows", "Keep the torso still", "Use a load you can lower slowly"],
+    equipmentAlternatives: ["Cable", "Resistance band"]
+  },
+  "pull-up": {
+    description: "A vertical bodyweight pull from a hanging position, using the back and elbow flexors to raise the body towards a fixed bar.",
+    aliases: ["overhand pull-up"],
+    coachingCues: ["Start from a controlled hang", "Drive the elbows down", "Avoid swinging to create momentum"],
+    equipmentAlternatives: ["Assisted pull-up machine", "Lat pulldown", "Resistance band"]
+  },
+  "lat-pulldown": {
+    description: "A cable-based vertical pull that brings an overhead bar towards the upper chest to train the lats and supporting upper-back muscles.",
+    aliases: ["lat pull-down"],
+    coachingCues: ["Keep the torso steady", "Pull the elbows towards the sides", "Allow the arms to extend on the return"],
+    equipmentAlternatives: ["Resistance band", "Assisted pull-up machine"]
+  },
+  "seated-cable-row": {
+    description: "A seated horizontal cable pull that trains the lats and mid-back while the trunk maintains a stable position.",
+    aliases: ["seated row", "cable row"],
+    coachingCues: ["Sit tall without leaning back", "Pull towards the lower ribs", "Reach forwards without rounding the lower back"],
+    equipmentAlternatives: ["Dumbbell", "Resistance band", "Chest-supported row machine"]
+  },
+  "barbell-row": {
+    description: "A hip-hinged barbell pull that brings the bar towards the torso, loading the lats, mid-back and supporting posterior-chain muscles.",
+    aliases: ["bent-over row", "bent over barbell row"],
+    coachingCues: ["Set the hip hinge before rowing", "Keep the bar close to the body", "Avoid using torso momentum"],
+    equipmentAlternatives: ["Dumbbell", "Cable", "Chest-supported row machine"]
+  },
+  "biceps-curl": {
+    description: "An elbow-flexion exercise that raises a dumbbell towards the shoulder to train the biceps and supporting forearm muscles.",
+    aliases: ["dumbbell curl", "DB curl"],
+    coachingCues: ["Keep the upper arms close to the torso", "Avoid swinging the hips", "Lower through a controlled range"],
+    equipmentAlternatives: ["Barbell", "EZ bar", "Cable", "Resistance band"]
+  },
+  "hammer-curl": {
+    description: "A neutral-grip curl that trains the brachialis and biceps while also challenging the forearm muscles.",
+    aliases: ["neutral-grip curl"],
+    coachingCues: ["Keep palms facing each other", "Keep wrists neutral", "Move only through the elbows"],
+    equipmentAlternatives: ["Cable rope", "Resistance band"]
+  },
+  "triceps-pushdown": {
+    description: "A cable elbow-extension exercise performed with the upper arms held near the torso to emphasise the triceps.",
+    aliases: ["cable triceps pushdown", "tricep pushdown"],
+    coachingCues: ["Keep elbows close to the sides", "Extend without rocking the torso", "Return the handle slowly"],
+    equipmentAlternatives: ["Resistance band", "Dumbbell"]
+  },
+  "squat": {
+    description: "A compound lower-body movement in which the hips and knees bend together before the lifter stands, training the quadriceps and glutes.",
+    aliases: ["barbell back squat", "back squat"],
+    coachingCues: ["Keep the whole foot grounded", "Let the knees track with the toes", "Brace before descending"],
+    equipmentAlternatives: ["Dumbbell", "Goblet squat", "Leg press"]
+  },
+  "goblet-squat": {
+    description: "A squat variation with one dumbbell or kettlebell held close to the chest, making it useful for learning a balanced squat pattern.",
+    aliases: ["kettlebell goblet squat", "DB goblet squat"],
+    coachingCues: ["Keep the weight close to the chest", "Allow the knees to track with the toes", "Keep pressure across the whole foot"],
+    equipmentAlternatives: ["Kettlebell", "Bodyweight"]
+  },
+  "romanian-deadlift": {
+    description: "A hip-hinge strength exercise that lowers a barbell along the legs with softly bent knees, loading the hamstrings and glutes.",
+    aliases: ["RDL", "barbell RDL"],
+    coachingCues: ["Push the hips backwards", "Keep the bar close to the legs", "Stop when the hips can no longer travel back without losing position"],
+    equipmentAlternatives: ["Dumbbell", "Kettlebell", "Cable"]
+  },
+  "deadlift": {
+    description: "A barbell lift from the floor to standing that combines leg drive and hip extension to train the glutes, hamstrings, quadriceps and trunk.",
+    aliases: ["conventional deadlift", "barbell deadlift"],
+    coachingCues: ["Set the bar over the mid-foot", "Brace before the bar leaves the floor", "Keep the bar close as it travels"],
+    equipmentAlternatives: ["Trap bar", "Dumbbell", "Kettlebell"]
+  },
+  "lunge": {
+    description: "A single-leg squat pattern performed with a forward step, training the quadriceps and glutes while challenging balance.",
+    aliases: ["forward lunge"],
+    coachingCues: ["Use a stride you can control", "Keep the front foot planted", "Drive through the front foot to stand"],
+    equipmentAlternatives: ["Dumbbell", "Smith machine", "Bodyweight"]
+  },
+  "leg-press": {
+    description: "A machine-based lower-body press that trains the quadriceps and glutes with the back supported against a pad.",
+    aliases: ["45-degree leg press", "sled leg press"],
+    coachingCues: ["Keep the pelvis supported", "Lower only as far as you can maintain position", "Avoid forcefully locking the knees"],
+    equipmentAlternatives: ["Squat", "Goblet squat", "Hack squat"]
+  },
+  "plank": {
+    description: "A static anti-extension exercise in which the trunk resists the pull of gravity while the body is supported on the forearms and toes.",
+    aliases: ["forearm plank"],
+    coachingCues: ["Keep shoulders, hips and ankles aligned", "Brace without holding your breath", "Avoid letting the lower back sag"],
+    equipmentAlternatives: ["Incline plank", "Knee plank"]
+  },
+  "hip-thrust": {
+    description: "A loaded hip-extension exercise performed with the upper back supported on a bench, primarily targeting the gluteus maximus.",
+    aliases: ["barbell glute bridge"],
+    coachingCues: ["Keep the chin gently tucked", "Finish by extending the hips, not arching the back", "Control the descent"],
+    equipmentAlternatives: ["Dumbbell", "Smith machine", "Glute bridge"]
+  }
+};
+
+for (const exercise of exercises) {
+  const guide = exerciseGuides[exercise.slug];
+  if (guide) Object.assign(exercise, guide);
+}
+
 /**
  * Fail before any database writes if catalogue data is internally inconsistent.
  * Stable unique slugs and resolvable muscle links are required because both are

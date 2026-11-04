@@ -151,3 +151,25 @@ test("exercise filters and the selected-movement tray stay in sync", async ({ pa
   await page.getByRole("button", { name: "Remove Goblet squat" }).click();
   await expect(page.getByRole("button", { name: "Remove Goblet squat" })).toHaveCount(0);
 });
+
+
+test("active workout mode shows live progress and a completion summary", async ({ page }) => {
+  await mockApplicationApi(page);
+  await signInAndOpenWorkouts(page);
+
+  await page.getByLabel("Rest (seconds)").fill("0");
+  await page.getByRole("button", { name: "Start guided workout" }).click();
+  const activeWorkout = page.getByRole("region", { name: "Active workout" });
+  await expect(activeWorkout).toBeVisible();
+  await expect(activeWorkout.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "0");
+  await expect(activeWorkout.getByText("Next set: Goblet squat · Set 1")).toBeVisible();
+
+  await activeWorkout.getByRole("button", { name: "Set complete" }).click();
+  await expect(activeWorkout.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "1");
+  await expect(activeWorkout.getByText("Next set: Goblet squat · Set 2")).toBeVisible();
+
+  await activeWorkout.getByRole("button", { name: "Set complete" }).click();
+  await activeWorkout.getByRole("button", { name: "Set complete" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "SESSION FINISHED" })).toBeVisible();
+  await expect(page.getByText("3 sets completed in guided mode")).toBeVisible();
+});

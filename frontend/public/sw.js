@@ -33,11 +33,12 @@ self.addEventListener("fetch", event => {
     event.respondWith(
       fetch(request)
         .then(response => {
-          if (response.ok) {
-            const copy = response.clone();
-            caches.open(CACHE_NAME).then(cache => cache.put("/", copy));
-          }
-          return response;
+          if (!response.ok) return response;
+
+          // Wait for the refreshed app shell to be written before ending the fetch event.
+          return caches.open(CACHE_NAME)
+            .then(cache => cache.put("/", response.clone()))
+            .then(() => response);
         })
         .catch(async () => (await caches.match(request)) || (await caches.match("/")))
     );
@@ -48,11 +49,13 @@ self.addEventListener("fetch", event => {
     caches.match(request).then(cached => {
       if (cached) return cached;
       return fetch(request).then(response => {
-        if (response.ok && response.type === "basic") {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(request, copy));
-        }
-        return response;
+        if (!response.ok || response.type !== "basic") return response;
+
+        // Keep the response alive until its cache write finishes; a terminated
+        // service worker must not silently lose the newly downloaded asset.
+        return caches.open(CACHE_NAME)
+          .then(cache => cache.put(request, response.clone()))
+          .then(() => response);
       });
     })
   );

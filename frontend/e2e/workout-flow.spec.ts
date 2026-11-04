@@ -53,6 +53,14 @@ async function mockApplicationApi(page: Page, onSessionSave?: (body: any) => voi
       } else {
         body = { sessions: [] };
       }
+    } else if (url.pathname === "/api/workouts/personal-records") {
+      body = { records: [{
+        exerciseId: "exercise-1",
+        exerciseName: "Goblet squat",
+        heaviestLoad: { value: 32, date: "2026-11-03T18:00:00.000Z", sessionId: "session-pr" },
+        mostReps: { value: 12, date: "2026-11-02T18:00:00.000Z", sessionId: "session-pr-old" },
+        highestSetVolume: { value: 320, date: "2026-11-03T18:00:00.000Z", sessionId: "session-pr" }
+      }] };
     } else if (url.pathname === "/api/workouts/muscle-stats") {
       body = { muscles: [] };
     } else if (url.pathname === "/api/social/friends") {
@@ -76,6 +84,17 @@ async function signInAndOpenWorkouts(page: Page) {
   await expect(page.getByText("Goblet squat", { exact: true }).first()).toBeVisible();
   await page.locator(".exercise-choice").filter({ hasText: "Goblet squat" }).locator("input").check();
 }
+
+test("personal records show the best completed load, reps and set volume", async ({ page }) => {
+  await mockApplicationApi(page);
+  await signInAndOpenWorkouts(page);
+
+  await expect(page.getByRole("heading", { name: "Personal records" })).toBeVisible();
+  const record = page.locator(".personal-record-card").filter({ hasText: "Goblet squat" });
+  await expect(record.getByText("32 kg")).toBeVisible();
+  await expect(record.getByText("12 reps")).toBeVisible();
+  await expect(record.getByText("320 kg")).toBeVisible();
+});
 
 test("saved routines can be edited and deleted without losing the workout builder", async ({ page }) => {
   await mockApplicationApi(page);

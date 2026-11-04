@@ -43,6 +43,35 @@ function makePrisma(overrides = {}) {
   };
 }
 
+test("GET personal records scopes completed sets to the authenticated account", async () => {
+  let query;
+  const prisma = makePrisma({
+    workoutSet: {
+      findMany: async args => {
+        query = args;
+        return [{
+          completed: true,
+          reps: 8,
+          weightKg: 70,
+          exercise: { id: "bench", name: "Bench press" },
+          session: { id: "session-a", startedAt: new Date("2026-10-01T10:00:00.000Z") }
+        }];
+      }
+    }
+  });
+
+  await withWorkoutApi(prisma, async baseUrl => {
+    const response = await fetch(baseUrl + "/api/workouts/personal-records");
+    assert.equal(response.status, 200);
+    const data = await response.json();
+    assert.equal(data.records[0].exerciseName, "Bench press");
+    assert.equal(data.records[0].heaviestLoad.value, 70);
+  });
+
+  assert.deepEqual(query.where, { completed: true, session: { userId: "user-a" } });
+  assert.deepEqual(query.include.exercise.select, { id: true, name: true });
+});
+
 test("GET routines scopes the database query to the authenticated account", async () => {
   let query;
   const prisma = makePrisma({

@@ -173,6 +173,28 @@ test("the workout cannot be saved until at least one set is completed", async ({
   await expect(page.getByRole("status").filter({ hasText: "Complete at least one set before saving" })).toBeVisible();
 });
 
+test("completed workouts queue offline and sync once connectivity returns", async ({ page, context }) => {
+  let savedSession: any;
+  await mockApplicationApi(page, body => { savedSession = body; });
+  await signInAndOpenWorkouts(page);
+
+  await page.getByLabel("Rest (seconds)").fill("0");
+  await page.getByRole("button", { name: "Start guided workout" }).click();
+  await page.getByRole("button", { name: "Set complete — start rest" }).click();
+  await page.getByRole("button", { name: "End session" }).click();
+
+  await context.setOffline(true);
+  await page.getByRole("button", { name: "Save complete session" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "saved on this device" })).toBeVisible();
+  await expect(page.locator(".offline-queue-status")).toContainText("1 workout waiting to sync");
+  expect(savedSession).toBeUndefined();
+
+  await context.setOffline(false);
+  await expect(page.getByRole("status").filter({ hasText: "offline workouts have synced" })).toBeVisible();
+  await expect(page.locator(".offline-queue-status")).toHaveCount(0);
+  expect(savedSession.clientRequestId).toMatch(/^[0-9a-f-]{36}$/i);
+});
+
 test("the guided rest timer can pause, resume and skip its countdown", async ({ page }) => {
   await mockApplicationApi(page);
   await signInAndOpenWorkouts(page);

@@ -17,10 +17,9 @@ type Props = {
 };
 
 /**
- * Guides a workout one set at a time. The user confirms when a set is finished;
- * the component then runs that exercise's rest period and advances to the next
- * pending set. The queue is snapshotted at start so editing the builder while a
- * timer is active cannot reorder the sequence underneath the current countdown.
+ * Runs a stable snapshot of the workout as a focused training session.
+ * The full-screen stage keeps the active set, progress and rest controls
+ * visible without exposing the editing form as competing primary content.
  */
 export default function GuidedRestTimer({ items, onSetComplete }: Props) {
   const [queue, setQueue] = useState<GuidedRestItem[]>([]);
@@ -31,10 +30,12 @@ export default function GuidedRestTimer({ items, onSetComplete }: Props) {
   const [message, setMessage] = useState("");
   const current = index === null ? null : queue[index];
   const pendingCount = items.filter(item => !item.completed).length;
+  const completedCount = index === null ? (phase === "complete" ? queue.length : 0) : index + (phase === "rest" ? 1 : 0);
+  const progress = queue.length ? Math.min(100, (completedCount / queue.length) * 100) : 0;
+  const next = index === null ? null : queue[index + 1];
 
-  // A timeout chain cleans itself up on pause, skip, stop and unmount.
-  // Finishing a rest period advances to the next set rather than starting its
-  // rest timer immediately; the user performs that set before starting a rest.
+  // Each timeout represents one second. Cleanup prevents an old countdown
+  // from advancing the queue after pause, skip, stop or component unmount.
   useEffect(() => {
     if (phase !== "rest" || remaining === null || paused) return;
     const timeout = window.setTimeout(() => {
@@ -97,9 +98,6 @@ export default function GuidedRestTimer({ items, onSetComplete }: Props) {
   function completeCurrentSet() {
     if (!current) return;
     onSetComplete(current.exerciseId, current.setId);
-
-    // The final performed set still gets its configured rest period. The timer
-    // effect decides whether to show the next set or finish the guided sequence.
     if (current.restSeconds > 0) {
       setRemaining(current.restSeconds);
       setPhase("rest");
@@ -114,44 +112,74 @@ export default function GuidedRestTimer({ items, onSetComplete }: Props) {
     advance();
   }
 
+  const clock = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+
   return (
     <section className="guided-timer" aria-label="Guided workout timer">
-      <div>
-        <strong>Guided workout</strong>
-        <p className="chart-note">Work through each pending set. Confirm a set when you finish to start its rest period.</p>
-      </div>
       {phase === "idle" && (
-        <>
+        <div className="guided-launcher">
+          <div>
+            <span className="guided-kicker">TRAINING MODE</span>
+            <strong>Ready when you are</strong>
+            <p className="chart-note">Follow one set at a time. FitLoop will track completed sets and guide your rest periods.</p>
+          </div>
           <button type="button" className="secondary-action" disabled={pendingCount === 0} onClick={start}>Start guided workout</button>
           {message && <p className="chart-note" role="status">{message}</p>}
-        </>
+        </div>
       )}
-      {phase === "set" && current && (
-        <>
-          <p className="guided-timer-current">Next set: {current.label} · Set {current.setNumber}</p>
-          <p className="chart-note">Target: {current.reps} reps · Load: {current.weight.trim() || "Bodyweight / not set"}</p>
-          <div className="guided-timer-actions">
-            <button type="button" className="secondary-action" onClick={completeCurrentSet}>Set complete — start rest</button>
-            <button type="button" className="small-button" onClick={advance}>Skip set</button>
-            <button type="button" className="small-button" onClick={stop}>Stop workout</button>
+
+      {(phase === "set" || phase === "rest") && current && (
+        <div className="active-workout" role="region" aria-label="Active workout">
+          <div className="active-workout-top">
+            <div><span className="guided-kicker">FITLOOP SESSION</span><strong>Workout in progress</strong></div>
+            <button type="button" className="small-button active-stop" onClick={stop}>End session</button>
           </div>
-        </>
-      )}
-      {phase === "rest" && current && (
-        <>
-          <p className="guided-timer-current">Rest after {current.label} · Set {current.setNumber}</p>
-          <p className="rest-countdown" role="timer" aria-live="off">
-            {Math.floor((remaining ?? 0) / 60)}:{String((remaining ?? 0) % 60).padStart(2, "0")} remaining
-          </p>
-          <div className="guided-timer-actions">
-            <button type="button" className="small-button" onClick={() => setPaused(value => !value)}>{paused ? "Resume" : "Pause"}</button>
-            <button type="button" className="small-button" onClick={skipRest}>Skip rest</button>
-            <button type="button" className="small-button" onClick={stop}>Stop workout</button>
+          <div className="workout-progress-copy"><span>SESSION PROGRESS</span><strong>{completedCount} / {queue.length} sets</strong></div>
+          <div className="workout-progress-track" role="progressbar" aria-label="Workout progress" aria-valuemin={0} aria-valuemax={queue.length} aria-valuenow={completedCount}><span style={{ width: progress + "%" }} /></div>
+
+          {phase === "set" ? (
+            <div className="active-set-stage">
+              <span className="active-phase-label">UP NEXT · SET {current.setNumber}</span>
+              <h3>{current.label}</h3>
+              <div className="active-targets">
+                <div><strong>{current.reps}</strong><span>REPS</span></div>
+                <div><strong>{current.weight.trim() || "Bodyweight"}</strong><span>LOAD</span></div>
+              </div>
+              <p className="active-coaching-line">Focus on controlled reps. Confirm the set when you finish.</p>
+              <div className="active-primary-actions">
+                <button type="button" className="active-complete-button" onClick={completeCurrentSet}>Set complete <span>→</span></button>
+                <button type="button" className="small-button" onClick={advance}>Skip set</button>
+              </div>
+            </div>
+          ) : (
+            <div className="active-rest-stage">
+              <span className="active-phase-label">{paused ? "REST PAUSED" : "RECOVER BEFORE THE NEXT SET"}</span>
+              <h3>Take your rest.</h3>
+              <p className="rest-countdown active-rest-clock" role="timer" aria-live="off">{clock(remaining ?? 0)}</p>
+              <p className="active-rest-caption">Time remaining</p>
+              <div className="active-primary-actions">
+                <button type="button" className="active-complete-button" onClick={() => setPaused(value => !value)}>{paused ? "Resume rest" : "Pause rest"}</button>
+                <button type="button" className="small-button" onClick={skipRest}>Skip rest</button>
+              </div>
+            </div>
+          )}
+
+          <div className="active-workout-footer">
+            <span>{current.label} · Set {current.setNumber}</span>
+            {next ? <span>Then: {next.label} · Set {next.setNumber}</span> : <span>Final set in this session</span>}
           </div>
-        </>
+        </div>
       )}
+
       {phase === "complete" && (
-        <p className="chart-note" role="status">{message || "All guided sets are complete."}</p>
+        <div className="workout-complete" role="status">
+          <span className="completion-mark">✓</span>
+          <span className="guided-kicker">SESSION FINISHED</span>
+          <h3>Strong work.</h3>
+          <p>{message || "All guided sets are complete."}</p>
+          <strong>{queue.length} sets completed in guided mode</strong>
+          <button type="button" className="secondary-action" onClick={stop}>Back to workout summary</button>
+        </div>
       )}
     </section>
   );

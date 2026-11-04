@@ -45,7 +45,6 @@ async function mockApplicationApi(page: Page, onSessionSave?: (body: any) => voi
     } else if (url.pathname === "/api/workouts/routines/routine-1" && method === "DELETE") {
       routines.splice(0, routines.length);
       body = { deleted: true };
-      return;
     } else if (url.pathname === "/api/workouts/sessions") {
       if (method === "POST") {
         onSessionSave?.(request.postDataJSON());

@@ -290,3 +290,27 @@ footer { padding: 22px 0 0; border-top: 1px solid #202c25; }
   .stats article { min-height: 104px; }
   .panel { padding: 17px; }
 }
+
+
+/* Training history is the primary dashboard signal, with check-ins kept alongside it. */
+.stats article small { display: block; margin-top: 5px; color: #788b7d; font-size: .72rem; font-weight: 500; }
+.section-heading-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.section-heading-row h2 { margin-bottom: 0; }
+.subtle-action { width: auto !important; margin: 0 !important; padding: 9px 12px; border: 1px solid #35483a; background: transparent; color: #c5f28e; font-size: .78rem; }
+.subtle-action:hover { background: #1b2a20; }
+.subtle-action span { margin-left: 7px; }
+.empty-training { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-top: 18px; }
+.empty-training p { max-width: 560px; margin: 0; }
+.empty-training button { width: auto; flex: 0 0 auto; margin: 0; }
+.recent-session-list { display: grid; gap: 0; margin-top: 14px; }
+.recent-session { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 13px 0; border-top: 1px solid #26362b; }
+.session-mark { display: grid; width: 34px; height: 34px; place-items: center; border: 1px solid #435a39; border-radius: 10px; background: #1d2c20; color: #c5f28e; }
+.recent-session > div { display: grid; gap: 4px; min-width: 0; }
+.recent-session strong { overflow: hidden; color: #e7efe9; font-size: .88rem; text-overflow: ellipsis; white-space: nowrap; }
+.recent-session small { color: #819186; font-size: .73rem; }
+.recent-session b { color: #c5f28e; font-size: .78rem; white-space: nowrap; }
+@media (max-width: 560px) {
+  .section-heading-row { align-items: flex-start; }
+  .empty-training { align-items: stretch; flex-direction: column; }
+  .empty-training button { width: 100%; }
+}

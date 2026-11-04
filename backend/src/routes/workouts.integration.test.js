@@ -406,3 +406,38 @@ test("POST sessions returns the original session when an offline request is retr
   assert.equal(writes, 1);
   assert.equal(savedSession.clientRequestId, requestId);
 });
+
+test("POST sessions handles simultaneous offline retries with the unique database key", async () => {
+  let lookupCount = 0;
+  let savedSession;
+  const requestId = "cd8cc63e-3f65-44f5-98d4-2a3cc56d75a8";
+  const prisma = makePrisma({
+    exercise: { findMany: async () => [{ id: "bench" }] },
+    workoutSession: {
+      findFirst: async () => {
+        lookupCount += 1;
+        return lookupCount === 1 ? null : savedSession;
+      },
+      create: async args => {
+        savedSession = { id: "session-from-other-tab", ...args.data };
+        const conflict = new Error("Unique request key already exists.");
+        conflict.code = "P2002";
+        throw conflict;
+      }
+    }
+  });
+
+  await withWorkoutApi(prisma, async baseUrl => {
+    const response = await fetch(baseUrl + "/api/workouts/sessions", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        clientRequestId: requestId,
+        sets: [{ exerciseId: "bench", setNumber: 1, reps: 8 }]
+      })
+    });
+    assert.equal(response.status, 200);
+    assert.equal((await response.json()).session.id, "session-from-other-tab");
+  });
+  assert.equal(lookupCount, 2);
+});

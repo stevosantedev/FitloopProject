@@ -13,7 +13,11 @@ test("app publishes an installable manifest and offline worker assets", async ({
   expect(iconResponse.headers()["content-type"]).toContain("image/svg+xml");
   const workerResponse = await page.request.get("/sw.js");
   expect(workerResponse.ok()).toBeTruthy();
-  expect(await workerResponse.text()).toContain("fitloop-shell-v1");
+  const workerSource = await workerResponse.text();
+  expect(workerSource).toContain("fitloop-shell-v1");
+  expect(workerSource).toContain('url.pathname.startsWith("/api/")');
+  expect(workerSource).toContain('cache.put("/", response.clone())');
+  expect(workerSource).toContain('cache.put(request, response.clone())');
 });
 import { expect, test, type Page } from "@playwright/test";
 

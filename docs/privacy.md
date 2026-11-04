@@ -22,3 +22,8 @@ The coach uses simple rules and explains which measurements informed each sugges
 The local development setup uses bearer tokens for simplicity. Before a public release, move to secure session handling, HTTPS, stronger operational monitoring and a tested account deletion process. Set a clear retention period and check that deletion covers the database records and any backups or exported data covered by the project policy.
 
 Never commit the real `.env` file or share access tokens in chat, issue descriptions or screenshots.
+
+
+## Offline workout data
+
+When offline recording is used, completed workout submissions are temporarily stored in the browser's IndexedDB database until the API confirms receipt. Each queued item is associated with the account that created it; FitLoop does not store an authentication token in the queue. The exercise catalogue is cached separately per account in local browser storage to allow the workout builder to reopen offline. These local copies remain on the device until browser data is cleared or the app removes them. Unsynced workouts can be lost if the user clears site data, uninstalls the browser profile, or loses the device. Do not use a shared or public device for private workout logging.

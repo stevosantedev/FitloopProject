@@ -153,3 +153,7 @@ button:disabled { opacity: .45; cursor: not-allowed; }
   .catalogue-grid, .anatomy-layout { grid-template-columns: 1fr; }
   .muscle-map-list { grid-template-columns: 1fr 1fr; }
 }
+
+/* Rest countdown remains visible within the workout form and can be stopped by the user. */
+.rest-countdown { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border: 1px solid #587343; border-radius: 10px; color: #d7f6b6; font-variant-numeric: tabular-nums; }
+.rest-countdown .small-button { width: auto; }

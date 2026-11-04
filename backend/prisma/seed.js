@@ -40,7 +40,8 @@ const muscles = [
   ["peroneals", "Peroneal muscles", "Lower legs", "both"],
   ["lower-trapezius", "Lower trapezius", "Back", "back"],
   ["transverse-abdominis", "Transverse abdominis", "Core", "front"],
-  ["gluteus-minimus", "Gluteus minimus", "Hips", "both"]
+  ["gluteus-minimus", "Gluteus minimus", "Hips", "both"],
+  ["levator-scapulae", "Levator scapulae", "Back", "back"]
 ];
 
 // Each entry includes prime movers and supporting muscles. The exercise

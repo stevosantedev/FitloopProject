@@ -134,3 +134,17 @@ test("the app uses persistent navigation on desktop and a bottom tab bar on mobi
   await expect(page.getByRole("heading", { name: "Your community." })).toBeVisible();
   await expect(page.locator(".app-sidebar")).toBeHidden();
 });
+
+test("exercise filters and the selected-movement tray stay in sync", async ({ page }) => {
+  await mockApplicationApi(page);
+  await signInAndOpenWorkouts(page);
+
+  await page.getByLabel("Equipment").selectOption("Dumbbell");
+  const exerciseChoice = page.locator(".exercise-choice").filter({ hasText: "Goblet squat" });
+  await expect(exerciseChoice).toBeVisible();
+  await exerciseChoice.locator("input").check();
+  await expect(page.getByText("2", { exact: true }).first()).toBeVisible();
+  await expect(page.getByRole("button", { name: "Remove Goblet squat" })).toBeVisible();
+  await page.getByRole("button", { name: "Remove Goblet squat" }).click();
+  await expect(page.getByRole("button", { name: "Remove Goblet squat" })).toHaveCount(0);
+});

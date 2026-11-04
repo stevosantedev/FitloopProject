@@ -86,7 +86,7 @@ export default function App() {
   const [selectedRoutine, setSelectedRoutine] = useState("");
   // One live session can contain several exercises and their set sequences.
   const [selectedExerciseIds, setSelectedExerciseIds] = useState<string[]>([]);
-  // Per-exercise drafts allow different set counts, rep targets and loads in one session.
+  // Each exercise draft keeps independent set rows and exercise-level effort/rest settings.
   const [exerciseDrafts, setExerciseDrafts] = useState<Record<string, ExerciseDraft>>({});
 
   // New exercise cards start with three editable rows. Each row remains a
@@ -605,7 +605,7 @@ export default function App() {
             {visibleExercises.length === 0 && <p className="muted">No exercises match those filters.</p>}
           </div>
           <p className="field-heading">{selectedExerciseIds.length} exercises selected</p>
-          <GuidedRestTimer items={selectedExerciseIds.flatMap(exerciseId => {
+          <GuidedRestTimer key={selectedExerciseIds.join("|")} items={selectedExerciseIds.flatMap(exerciseId => {
             const exercise = exercises.find(item => item.id === exerciseId);
             const draft = exerciseDrafts[exerciseId] ?? createDefaultExerciseDraft();
             return draft.setEntries.flatMap((entry, index) => entry.completed ? [{

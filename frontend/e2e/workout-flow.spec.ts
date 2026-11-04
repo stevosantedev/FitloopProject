@@ -142,8 +142,10 @@ test("exercise filters and the selected-movement tray stay in sync", async ({ pa
   await page.getByLabel("Equipment").selectOption("Dumbbell");
   const exerciseChoice = page.locator(".exercise-choice").filter({ hasText: "Goblet squat" });
   await expect(exerciseChoice).toBeVisible();
+  await exerciseChoice.locator("input").uncheck();
+  await expect(page.getByText("0 movements in this session")).toBeVisible();
   await exerciseChoice.locator("input").check();
-  await expect(page.getByText("2", { exact: true }).first()).toBeVisible();
+  await expect(page.getByText("1 movements in this session")).toBeVisible();
   await expect(page.getByRole("button", { name: "Remove Goblet squat" })).toBeVisible();
   await page.getByRole("button", { name: "Remove Goblet squat" }).click();
   await expect(page.getByRole("button", { name: "Remove Goblet squat" })).toHaveCount(0);

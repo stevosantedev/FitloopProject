@@ -13,6 +13,10 @@ The idea is straightforward: make it easier to notice patterns and keep going, w
 - **Coach controls:** choose a gentle or direct tone, choose a focus area and record whether a message was helpful.
 - **Progress view:** recent habit charts and a breakdown of completed sets by muscle group.
 
+## Development standards
+
+Read [the implementation standards](docs/implementation-standards.md) before extending the exercise library, muscle maps or other substantial features. It defines the expected code-comment detail, writing style, openGym feature baseline and definition of done.
+
 ## Project structure
 
 - `frontend/`: React app and browser interface.

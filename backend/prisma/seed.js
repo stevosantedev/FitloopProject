@@ -466,6 +466,18 @@ function validateCatalogue() {
       }
     }
   }
+
+  // Guide entries are keyed by the same stable slugs as catalogue rows. Catch
+  // spelling drift before a seed run silently leaves an exercise without its
+  // intended technique content.
+  for (const [slug, guide] of Object.entries(exerciseGuides)) {
+    if (!exerciseSlugs.has(slug)) {
+      throw new Error(`Exercise guide references unknown exercise ${slug}.`);
+    }
+    if (!guide.description?.trim() || !guide.aliases?.length || !guide.coachingCues?.length) {
+      throw new Error(`Exercise guide ${slug} is missing its description, aliases or coaching cues.`);
+    }
+  }
 }
 
 validateCatalogue();

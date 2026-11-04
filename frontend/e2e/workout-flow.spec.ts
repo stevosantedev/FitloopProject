@@ -251,7 +251,7 @@ test("movement progress compares the latest completed load with the previous ses
   await signInAndOpenWorkouts(page);
   const progress = page.locator(".progression-row").filter({ hasText: "Goblet squat" });
   await expect(progress).toBeVisible();
-  await expect(progress.getByText("24 kg")).toBeVisible();
+  await expect(progress.locator(".progression-metrics > div:first-child strong")).toHaveText("24 kg");
   await expect(progress.getByText("+2 kg from your previous session")).toBeVisible();
   await expect(progress.getByLabel("Recent top-load trend")).toBeVisible();
   await expect(progress.locator(".progression-bar-column")).toHaveCount(2);

@@ -157,3 +157,16 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 /* Rest countdown remains visible within the workout form and can be stopped by the user. */
 .rest-countdown { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border: 1px solid #587343; border-radius: 10px; color: #d7f6b6; font-variant-numeric: tabular-nums; }
 .rest-countdown .small-button { width: auto; }
+
+/* The anatomy diagram is original, simplified orientation artwork; labels remain the accurate controls. */
+.muscle-map-component { display: grid; grid-template-columns: minmax(150px, .7fr) minmax(0, 1.3fr); gap: 12px; align-items: start; min-width: 0; }
+.body-diagram { display: flex; flex-direction: column; align-items: center; padding: 12px; border: 1px solid #304238; border-radius: 12px; background: #1a2b22; }
+.body-diagram svg { display: block; width: min(100%, 220px); max-height: 390px; }
+.body-region { fill: #657c6c; opacity: .85; transition: fill .15s ease, opacity .15s ease; }
+.body-region.active { fill: #b7ed77; opacity: 1; }
+.body-diagram .chart-note { text-align: center; }
+.muscle-map-component .muscle-map-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 700px) {
+  .muscle-map-component { grid-template-columns: 1fr; }
+  .body-diagram svg { max-height: 300px; }
+}

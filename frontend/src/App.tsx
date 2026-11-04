@@ -494,6 +494,31 @@ export default function App() {
       return totals;
     }, {});
   const muscleEntries = Object.entries(muscleVolume).sort((a, b) => b[1] - a[1]);
+  // Compare the latest logged performance for each movement with its previous appearance.
+  const exerciseProgress = Object.values(sessions.flatMap(session => {
+    const grouped = new Map<string, typeof session.sets>();
+    session.sets.filter(set => set.completed).forEach(set => {
+      grouped.set(set.exercise.id, [...(grouped.get(set.exercise.id) ?? []), set]);
+    });
+    return [...grouped.entries()].map(([exerciseId, sets]) => ({
+      exerciseId, name: sets[0].exercise.name, date: session.startedAt, sets
+    }));
+  }).reduce<Record<string, Array<{ exerciseId: string; name: string; date: string; sets: WorkoutSession["sets"] }>>>((groups, item) => {
+    (groups[item.exerciseId] ??= []).push(item);
+    return groups;
+  }, {})).map(entries => {
+    const ordered = [...entries].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    const latest = ordered[0], previous = ordered[1];
+    const topLoad = (sets: WorkoutSession["sets"]) => Math.max(0, ...sets.map(set => set.weightKg ?? 0));
+    const latestLoad = topLoad(latest.sets), previousLoad = previous ? topLoad(previous.sets) : 0;
+    return {
+      exerciseId: latest.exerciseId, name: latest.name, date: latest.date, sessions: ordered.length,
+      completedSets: latest.sets.length, bestLoad: latestLoad,
+      loadChange: previous && latestLoad > 0 && previousLoad > 0 ? latestLoad - previousLoad : null,
+      latestVolume: latest.sets.reduce((sum, set) => sum + set.reps * (set.weightKg ?? 0), 0)
+    };
+  }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 6);
+
   // Derive visible catalogue rows from the current filters rather than storing a
   // second copy of the library that could become stale after a refresh.
   const visibleExercises = exercises.filter(exercise => {
@@ -769,7 +794,23 @@ export default function App() {
           <div className="volume-list">{muscleEntries.map(([group, count]) => <div className="volume-row" key={group}><span>{group}</span><div className="volume-track"><span style={{ width: (count / Math.max(...muscleEntries.map(item => item[1])) * 100) + "%" }} /></div><strong>{count}</strong></div>)}</div>}
         <p className="chart-note">This counts completed sets in the sessions currently loaded. It is not a measure of training quality.</p>
       </section>
-      <section className="panel section-gap">
+      
+<section className="panel section-gap">
+  <p className="eyebrow">PROGRESSION</p><h2>Movement progress</h2>
+  <p className="muted">Compare your latest completed sets with your previous session for each movement.</p>
+  {exerciseProgress.length === 0 ? <p className="muted">Log a completed workout to start building your movement history.</p> :
+    <div className="progression-list">{exerciseProgress.map(item => <article className="progression-row" key={item.exerciseId}>
+      <div className="progression-heading"><strong>{item.name}</strong><span>{new Date(item.date).toLocaleDateString()}</span></div>
+      <div className="progression-metrics">
+        <div><strong>{item.bestLoad > 0 ? item.bestLoad + " kg" : "Bodyweight"}</strong><span>TOP LOAD</span></div>
+        <div><strong>{item.completedSets}</strong><span>SETS LOGGED</span></div>
+        <div><strong>{item.latestVolume > 0 ? Math.round(item.latestVolume).toLocaleString() + " kg" : "—"}</strong><span>SESSION VOLUME</span></div>
+      </div>
+      <p className="progression-change">{item.loadChange === null ? (item.sessions > 1 ? "Load comparison unavailable for these sessions" : "Your next session will add a comparison") : item.loadChange > 0 ? "+" + item.loadChange + " kg from your previous session" : item.loadChange < 0 ? item.loadChange + " kg from your previous session" : "Same top load as your previous session"}</p>
+    </article>)}</div>}
+  <p className="chart-note">Load and volume use logged completed sets only. Bodyweight movements are not assigned an estimated load.</p>
+</section>
+<section className="panel section-gap">
         <p className="eyebrow">WORKOUT HISTORY</p><h2>Recent sessions</h2>
         {sessions.length === 0 ? <p className="muted">Completed workouts will show up here.</p> :
           <ul className="log-list">{sessions.map(session => <li key={session.id}><strong>{session.routine?.name ?? "One-off workout"}</strong><span>{new Date(session.startedAt).toLocaleDateString()} · {session.sets.length} sets · {session.sets.map(item => item.exercise.name).filter((name, index, all) => all.indexOf(name) === index).join(", ")}</span></li>)}</ul>}

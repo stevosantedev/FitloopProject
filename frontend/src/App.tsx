@@ -9,7 +9,7 @@
 import { useEffect, useState } from "react";
 import MuscleMap from "./components/MuscleMap";
 import GuidedRestTimer from "./components/GuidedRestTimer";
-import { getQueuedWorkouts, queueWorkout, removeQueuedWorkout } from "./offlineWorkoutQueue";
+import { clearQueuedWorkouts, getQueuedWorkouts, queueWorkout, removeQueuedWorkout } from "./offlineWorkoutQueue";
 
 type User = { id: string; username: string };
 
@@ -516,11 +516,16 @@ export default function App() {
       return;
     }
     try {
+      const deletedUserId = user?.id;
       await request("/api/auth/account", {
         method: "DELETE",
         body: JSON.stringify({ password: deletePassword, confirmation: deleteConfirmation })
       });
-      // Clear the local session only after the server confirms that the account was deleted.
+      // Clear this account's offline queue and catalogue only after server-side deletion succeeds.
+      if (deletedUserId) {
+        try { await clearQueuedWorkouts(deletedUserId); } catch (cleanupError) { console.error("Could not clear deleted account offline queue.", cleanupError); }
+        localStorage.removeItem("fitloop-exercise-catalogue:" + deletedUserId);
+      }
       localStorage.removeItem("fitloop-token");
       localStorage.removeItem("fitloop-user");
       setToken("");
@@ -533,10 +538,10 @@ export default function App() {
     }
   }
 
-  // Sign-out clears this browser's session and cached private data. It does not
-  // call the account-deletion endpoint or remove records from the database.
+  // Sign-out clears the active view and token but preserves queued workouts for
+  // this account, allowing them to sync after the user signs in again.
   function signOut() {
-    // Removing the browser token ends this local session without deleting any account records.
+    // Removing the browser token ends this local session without deleting account records or offline drafts.
     localStorage.removeItem("fitloop-token");
     localStorage.removeItem("fitloop-user");
     setToken("");

@@ -213,3 +213,80 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 .muscle-shape.active { fill: #c5f28e; stroke: #f0ffd9; stroke-width: 1.8; opacity: 1; }
 .anatomy-centre-lines { fill: none; stroke: #23382c; stroke-width: 1; stroke-dasharray: 3 4; opacity: .75; pointer-events: none; }
 .body-diagram svg { overflow: visible; }
+
+
+/* App-first shell: persistent desktop navigation and a compact mobile tab bar. */
+:root { color-scheme: dark; background: #0b100e; }
+html { min-width: 320px; background: #0b100e; }
+body { min-width: 320px; min-height: 100vh; background: #0b100e; color: #edf4ee; }
+.app-shell { display: grid; grid-template-columns: 248px minmax(0, 1fr); width: 100%; max-width: none; min-height: 100vh; margin: 0; padding: 0; background: #0b100e; }
+.app-sidebar { position: sticky; top: 0; display: flex; flex-direction: column; height: 100vh; padding: 30px 18px 20px; border-right: 1px solid #202c25; background: #101814; }
+.app-sidebar .brand { display: inline-block; padding: 0 14px; font-size: 1.72rem; letter-spacing: -.06em; }
+.sidebar-label { margin: 52px 14px 14px; color: #74857a; font-size: .66rem; font-weight: 700; letter-spacing: .16em; }
+.sidebar-nav { display: grid; gap: 7px; }
+.sidebar-nav button { display: flex; align-items: center; gap: 13px; width: 100%; min-height: 48px; padding: 0 14px; border: 1px solid transparent; border-radius: 11px; background: transparent; color: #a7b5ab; text-align: left; font-size: .91rem; font-weight: 600; }
+.sidebar-nav button:hover { background: #18231c; color: #f0f6f1; }
+.sidebar-nav button.active { border-color: #34483a; background: #1c2a20; color: #c5f28e; }
+.nav-symbol { display: grid; width: 23px; height: 23px; place-items: center; font-size: 1.25rem; line-height: 1; }
+.sidebar-bottom { display: grid; gap: 14px; margin-top: auto; padding: 16px 8px 0; border-top: 1px solid #26342b; }
+.sidebar-profile { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.profile-avatar { display: grid; flex: 0 0 36px; width: 36px; height: 36px; place-items: center; border: 1px solid #53664c; border-radius: 50%; background: #293a2b; color: #c5f28e; font-weight: 800; }
+.sidebar-profile > span:last-child { display: grid; gap: 3px; min-width: 0; }
+.sidebar-profile strong { overflow: hidden; color: #e6eee8; font-size: .84rem; text-overflow: ellipsis; white-space: nowrap; }
+.sidebar-profile small { color: #7f9084; font-size: .72rem; }
+.sidebar-signout { width: 100%; padding: 9px 12px; border: 1px solid #2b3a30; border-radius: 9px; background: transparent; color: #a7b5ab; text-align: left; font-size: .82rem; }
+.sidebar-signout:hover { background: #1b2820; color: #fff; }
+.app-main { min-width: 0; max-width: 1600px; width: 100%; margin: 0 auto; padding: 0 clamp(22px, 4vw, 58px) 48px; }
+.topbar { position: sticky; z-index: 5; top: 0; display: flex; align-items: center; justify-content: space-between; min-height: 78px; margin: 0 calc(clamp(22px, 4vw, 58px) * -1); padding: 0 clamp(22px, 4vw, 58px); border-bottom: 1px solid #202c25; background: rgb(11 16 14 / 92%); backdrop-filter: blur(18px); }
+.topbar > div:first-child { display: grid; gap: 3px; }
+.topbar-kicker { margin: 0; color: #7d8d82; font-size: .63rem; font-weight: 700; letter-spacing: .15em; }
+.topbar > div:first-child > strong { color: #edf4ee; font: 700 1rem 'Manrope', sans-serif; }
+.account { gap: 16px; color: #a7b5ab; font-size: .8rem; }
+.account-status { display: inline-flex; align-items: center; gap: 8px; }
+.account-status i { width: 7px; height: 7px; border-radius: 50%; background: #b7ed77; box-shadow: 0 0 12px #b7ed7770; }
+.topbar-action { width: auto; margin: 0; padding: 10px 14px; border: 1px solid #435b39; border-radius: 9px; background: #b7ed77; color: #142018; font-size: .8rem; }
+.topbar-action span { margin-left: 8px; }
+.mobile-nav { display: none; }
+.welcome { padding: 46px 0 26px; }
+.welcome h1 { max-width: 780px; font-size: clamp(2rem, 4vw, 3.25rem); }
+.welcome .muted { margin: 8px 0 0; }
+.stats { gap: 14px; }
+.stats article, .panel { border-color: #27372d; border-radius: 14px; background: #121c16; }
+.stats article { min-height: 126px; padding: 20px 22px; }
+.stats article strong { font-size: 2.15rem; }
+.content-grid { gap: 14px; }
+.panel { padding: 22px; }
+.panel h2 { margin-bottom: 18px; font-size: 1.22rem; }
+.panel button:not(.text-button):not(.reaction-button):not(.small-button) { border-radius: 9px; }
+.page-section { padding-top: 4px; }
+.welcome.compact { padding: 38px 0 22px; }
+.exercise-picker { background: #0e1711; }
+.exercise-session-card, .catalogue-card, .mini-chart, .muscle-detail { border-color: #2b3b30; background: #17231b; }
+.guided-timer { border-color: #526b3d; background: #17231b; }
+.notice { background: #18271b; }
+footer { padding: 22px 0 0; border-top: 1px solid #202c25; }
+@media (min-width: 1100px) {
+  .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .content-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 820px) {
+  .app-shell { display: block; padding-bottom: 78px; }
+  .app-sidebar { display: none; }
+  .app-main { padding: 0 18px 34px; }
+  .topbar { min-height: 68px; margin: 0 -18px; padding: 0 18px; }
+  .topbar-action { padding: 9px 11px; }
+  .account-status { display: none; }
+  .mobile-nav { position: fixed; z-index: 20; right: 0; bottom: 0; left: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 9px 12px max(9px, env(safe-area-inset-bottom)); border-top: 1px solid #2a382e; background: rgb(13 20 15 / 96%); backdrop-filter: blur(18px); }
+  .mobile-nav button { display: grid; justify-items: center; gap: 3px; min-height: 48px; padding: 5px; border: 0; border-radius: 9px; background: transparent; color: #829287; font-size: .68rem; font-weight: 600; }
+  .mobile-nav button span { font-size: 1.2rem; line-height: 1.2; }
+  .mobile-nav button.active { background: #1d2c20; color: #c5f28e; }
+  .welcome { padding-top: 34px; }
+  .welcome.compact { padding-top: 30px; }
+}
+@media (max-width: 520px) {
+  .app-main { padding-right: 14px; padding-left: 14px; }
+  .topbar { margin-right: -14px; margin-left: -14px; padding-right: 14px; padding-left: 14px; }
+  .topbar-action { font-size: .72rem; }
+  .stats article { min-height: 104px; }
+  .panel { padding: 17px; }
+}

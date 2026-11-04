@@ -175,8 +175,9 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 .exercise-session-list { display: grid; gap: 10px; margin: 12px 0; }
 .exercise-session-card { padding: 13px; border: 1px solid #435a49; border-radius: 12px; background: #1a2b22; }
 .exercise-session-card > strong { display: block; margin-bottom: 8px; }
-.exercise-draft-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.exercise-draft-fields { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
 .exercise-draft-fields label { min-width: 0; margin: 5px 0; font-size: .8rem; }
+.exercise-draft-fields select { min-width: 0; padding: 10px; }
 .exercise-draft-fields input { min-width: 0; padding: 10px; }
 @media (max-width: 700px) {
   .exercise-draft-fields { grid-template-columns: 1fr; }

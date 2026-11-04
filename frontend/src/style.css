@@ -314,3 +314,43 @@ footer { padding: 22px 0 0; border-top: 1px solid #202c25; }
   .empty-training { align-items: stretch; flex-direction: column; }
   .empty-training button { width: 100%; }
 }
+
+
+/* Workout building is a focused app workspace rather than two competing form columns. */
+.page-section > .content-grid { display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; gap: 18px; }
+.page-section > .content-grid > form:nth-child(1) { order: 2; }
+.page-section > .content-grid > form:nth-child(2) { order: 1; }
+.page-section > .content-grid > form { min-width: 0; }
+.exercise-filter-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 12px 0 16px; }
+.exercise-choice-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; max-height: 390px; padding: 10px; overflow: auto; border: 1px solid #2a3a2f; border-radius: 12px; }
+.exercise-choice { position: relative; display: flex; align-items: center; gap: 11px; min-width: 0; min-height: 72px; margin: 0; padding: 12px; border: 1px solid #293a2f; border-radius: 10px; background: #121d16; cursor: pointer; transition: border-color .15s ease, background .15s ease; }
+.exercise-choice:hover { border-color: #526b3d; background: #1a281e; }
+.exercise-choice.selected { border-color: #829f5b; background: #1d2c20; }
+.exercise-choice > input { width: 17px; height: 17px; flex: 0 0 17px; margin: 0; accent-color: #b7ed77; }
+.exercise-choice-copy { display: grid; flex: 1; gap: 4px; min-width: 0; }
+.exercise-choice-copy strong { overflow: hidden; color: #e8f0e9; font-size: .86rem; text-overflow: ellipsis; white-space: nowrap; }
+.exercise-choice-copy small { color: #89998e; font-size: .7rem; }
+.exercise-choice-indicator { display: grid; flex: 0 0 24px; width: 24px; height: 24px; place-items: center; border: 1px solid #3b4d40; border-radius: 50%; color: #9daf9f; font-size: .8rem; }
+.exercise-choice.selected .exercise-choice-indicator { border-color: #b7ed77; background: #b7ed77; color: #142018; font-weight: 900; }
+.selection-tray { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin: 13px 0 18px; padding: 13px 14px; border: 1px solid #314336; border-radius: 10px; background: #101a14; color: #a6b5aa; font-size: .78rem; }
+.selection-tray > span { flex: 0 0 auto; padding-top: 5px; }
+.selection-tray > span strong { color: #c5f28e; font-size: 1rem; }
+.selection-chips { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+.selection-chips button { width: auto !important; margin: 0 !important; padding: 5px 9px; border: 1px solid #465b42; border-radius: 999px; background: #1c2a20; color: #d9e9d7; font-size: .7rem; }
+.selection-chips button span { color: #c5f28e; }
+.exercise-session-list { display: grid; gap: 12px; }
+.exercise-session-card { padding: 18px; border-radius: 12px; }
+.exercise-session-card > strong { display: block; margin-bottom: 13px; color: #eff6ef; font-size: 1rem; }
+.set-entry-row { padding: 12px 0; border-top: 1px solid #2b3b30; }
+.exercise-draft-fields { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 14px; padding-top: 14px; border-top: 1px solid #2b3b30; }
+.guided-timer { position: relative; border-radius: 12px; }
+@media (max-width: 700px) {
+  .exercise-choice-grid { grid-template-columns: 1fr; max-height: 330px; }
+  .exercise-draft-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .selection-tray { flex-direction: column; }
+  .selection-chips { justify-content: flex-start; }
+}
+@media (max-width: 460px) {
+  .exercise-filter-row { grid-template-columns: 1fr; }
+  .exercise-draft-fields { grid-template-columns: 1fr 1fr; }
+}

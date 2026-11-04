@@ -42,9 +42,9 @@ function openQueueDatabase(): Promise<IDBDatabase> {
   });
 }
 
-export async function queueWorkout(userId: string, payload: OfflineWorkoutPayload): Promise<QueuedWorkout> {
+export async function queueWorkout(userId: string, payload: OfflineWorkoutPayload, id = crypto.randomUUID()): Promise<QueuedWorkout> {
   const entry: QueuedWorkout = {
-    id: crypto.randomUUID(),
+    id,
     userId,
     createdAt: new Date().toISOString(),
     payload

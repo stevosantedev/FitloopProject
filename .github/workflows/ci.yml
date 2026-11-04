@@ -46,6 +46,13 @@ jobs:
       - name: Apply the migration baseline to a clean database
         run: npm run db:migrate:deploy
 
+      - name: Compare applied migrations with the Prisma schema
+        env:
+          SHADOW_DATABASE_URL: postgresql://fitloop:fitloop@localhost:5432/fitloop_shadow
+        run: |
+          createdb -h localhost -U fitloop fitloop_shadow
+          npx prisma migrate diff --from-migrations backend/prisma/migrations --to-schema-datamodel backend/prisma/schema.prisma --shadow-database-url "$SHADOW_DATABASE_URL" --exit-code
+
       - name: Seed the exercise and muscle catalogue
         run: npm run db:seed
 

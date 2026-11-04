@@ -152,6 +152,44 @@ const exercises = [
 
 ];
 
+
+/**
+ * Fail before any database writes if catalogue data is internally inconsistent.
+ * Stable unique slugs and resolvable muscle links are required because both are
+ * used as identifiers by the API, filters, analytics and anatomy interface.
+ */
+function validateCatalogue() {
+  const muscleSlugs = new Set(muscles.map(([slug]) => slug));
+  if (muscleSlugs.size !== muscles.length) {
+    throw new Error("The muscle catalogue contains duplicate slugs.");
+  }
+
+  const exerciseSlugs = new Set();
+  for (const exercise of exercises) {
+    if (exerciseSlugs.has(exercise.slug)) {
+      throw new Error(`Duplicate exercise slug: ${exercise.slug}`);
+    }
+    exerciseSlugs.add(exercise.slug);
+
+    if (!exercise.primary.length) {
+      throw new Error(`Exercise ${exercise.slug} must have at least one primary muscle.`);
+    }
+
+    const linkedSlugs = [...exercise.primary, ...exercise.secondary];
+    if (new Set(linkedSlugs).size !== linkedSlugs.length) {
+      throw new Error(`Exercise ${exercise.slug} links the same muscle more than once.`);
+    }
+
+    for (const muscleSlug of linkedSlugs) {
+      if (!muscleSlugs.has(muscleSlug)) {
+        throw new Error(`Exercise ${exercise.slug} references unknown muscle ${muscleSlug}.`);
+      }
+    }
+  }
+}
+
+validateCatalogue();
+
 async function seedCatalogue() {
   // Upsert anatomy rows first because exercise links depend on their stable slugs.
   for (const [slug, name, bodyRegion, view] of muscles) {

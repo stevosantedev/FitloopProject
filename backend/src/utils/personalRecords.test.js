@@ -31,6 +31,7 @@ test("bodyweight movements do not receive an external-load record", () => {
   ]);
   assert.equal(records[0].heaviestLoad, null);
   assert.equal(records[0].mostReps.value, 12);
+  assert.equal(records[0].highestSetVolume, null);
 });
 
 test("equal records prefer the most recent logged session", () => {

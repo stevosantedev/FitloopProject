@@ -597,9 +597,21 @@ export default function App() {
             {visibleExercises.length === 0 && <p className="muted">No exercises match those filters.</p>}
           </div>
           <p className="field-heading">{selectedExerciseIds.length} exercises selected</p>
-          <label>Sets per exercise<input required type="number" min="1" max="50" value={sets} onChange={event => setSets(event.target.value)} /></label>
-          <label>Reps per set<input required type="number" min="1" max="500" value={reps} onChange={event => setReps(event.target.value)} /></label>
-          <label>Weight in kg (optional)<input type="number" min="0" max="1000" step="0.5" value={weight} onChange={event => setWeight(event.target.value)} placeholder="Leave blank for bodyweight" /></label>
+          <div className="exercise-session-list">
+            {selectedExerciseIds.map(exerciseId => {
+              const exercise = exercises.find(item => item.id === exerciseId);
+              const draft = exerciseDrafts[exerciseId] ?? { sets, reps, weight };
+              if (!exercise) return null;
+              return <article className="exercise-session-card" key={exerciseId}>
+                <strong>{exercise.name}</strong>
+                <div className="exercise-draft-fields">
+                  <label>Sets<input required type="number" min="1" max="50" value={draft.sets} onChange={event => setExerciseDrafts(current => ({ ...current, [exerciseId]: { ...draft, sets: event.target.value } }))} /></label>
+                  <label>Reps per set<input required type="number" min="1" max="500" value={draft.reps} onChange={event => setExerciseDrafts(current => ({ ...current, [exerciseId]: { ...draft, reps: event.target.value } }))} /></label>
+                  <label>Weight (kg)<input type="number" min="0" max="1000" step="0.5" value={draft.weight} onChange={event => setExerciseDrafts(current => ({ ...current, [exerciseId]: { ...draft, weight: event.target.value } }))} placeholder="Bodyweight" /></label>
+                </div>
+              </article>;
+            })}
+          </div>
           <label>Set type<select value={setType} onChange={event => setSetType(event.target.value)}><option value="working">Working set</option><option value="warmup">Warm-up</option><option value="drop">Drop set</option><option value="failure">To failure</option><option value="rest_pause">Rest-pause</option><option value="amrap">AMRAP</option></select></label>
           <label>Rest after each set (seconds)<input type="number" min="0" max="900" value={restSeconds} onChange={event => setRestSeconds(event.target.value)} /></label>
           <label>Reps in reserve (optional)<input type="number" min="0" max="10" value={rir} onChange={event => setRir(event.target.value)} placeholder="0–10" /></label>

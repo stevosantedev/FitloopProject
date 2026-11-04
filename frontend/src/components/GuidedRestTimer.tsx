@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 export type GuidedRestItem = {
   exerciseId: string;
+  setId: string;
   label: string;
   setNumber: number;
   reps: string;
@@ -12,7 +13,7 @@ export type GuidedRestItem = {
 
 type Props = {
   items: GuidedRestItem[];
-  onSetComplete: (exerciseId: string, setNumber: number) => void;
+  onSetComplete: (exerciseId: string, setId: string) => void;
 };
 
 /**
@@ -95,7 +96,7 @@ export default function GuidedRestTimer({ items, onSetComplete }: Props) {
 
   function completeCurrentSet() {
     if (!current) return;
-    onSetComplete(current.exerciseId, current.setNumber);
+    onSetComplete(current.exerciseId, current.setId);
     if (index === queue.length - 1) {
       setIndex(null);
       setRemaining(null);

@@ -322,6 +322,11 @@ export default function App() {
           };
         });
       });
+      // An abandoned draft may contain incomplete rows, but a saved workout
+      // must include at least one set the user actually performed.
+      if (!workoutSets.some(set => set.completed)) {
+        throw new Error("Complete at least one set before saving this workout.");
+      }
       await request("/api/workouts/sessions", {
         method: "POST",
         body: JSON.stringify({ routineId: selectedRoutine || undefined, sets: workoutSets })

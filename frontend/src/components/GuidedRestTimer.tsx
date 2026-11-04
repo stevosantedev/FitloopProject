@@ -148,7 +148,7 @@ export default function GuidedRestTimer({ items, onSetComplete }: Props) {
               </div>
               <p className="active-coaching-line">Focus on controlled reps. Confirm the set when you finish.</p>
               <div className="active-primary-actions">
-                <button type="button" className="active-complete-button" onClick={completeCurrentSet}>Set complete <span>→</span></button>
+                <button type="button" className="active-complete-button" onClick={completeCurrentSet}>Set complete — start rest <span>→</span></button>
                 <button type="button" className="small-button" onClick={advance}>Skip set</button>
               </div>
             </div>

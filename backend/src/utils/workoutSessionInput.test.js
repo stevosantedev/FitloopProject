@@ -67,3 +67,20 @@ test("rejects a workout when every set is incomplete", () => {
 
   assert.equal(result.success, false);
 });
+
+
+test("accepts a valid client request ID for offline sync", () => {
+  const result = sessionInput.safeParse({
+    clientRequestId: "b8a9d47d-f7d0-4b5f-9f58-43e6b0f7b2e2",
+    sets: [makeSet("squat", 1)]
+  });
+  assert.equal(result.success, true);
+});
+
+test("rejects malformed client request IDs", () => {
+  const result = sessionInput.safeParse({
+    clientRequestId: "not-a-uuid",
+    sets: [makeSet("squat", 1)]
+  });
+  assert.equal(result.success, false);
+});

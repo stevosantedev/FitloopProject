@@ -570,3 +570,21 @@ footer { padding: 22px 0 0; border-top: 1px solid #202c25; }
     transition-duration: .01ms !important;
   }
 }
+
+
+.offline-queue-status {
+  display: inline-flex;
+  align-items: center;
+  max-width: 230px;
+  padding: 7px 10px;
+  border: 1px solid #665236;
+  border-radius: 999px;
+  background: #292116;
+  color: #e5c58f;
+  font-size: .7rem;
+  font-weight: 650;
+  text-align: center;
+}
+@media (max-width: 820px) {
+  .offline-queue-status { max-width: 150px; font-size: .62rem; }
+}

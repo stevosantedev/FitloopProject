@@ -270,7 +270,7 @@ footer { padding: 22px 0 0; border-top: 1px solid #202c25; }
   .content-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 820px) {
-  .app-shell { display: block; padding-bottom: 78px; }
+  .app-shell { display: block; padding-bottom: calc(78px + env(safe-area-inset-bottom, 0px)); }
   .app-sidebar { display: none; }
   .app-main { padding: 0 18px 34px; }
   .topbar { min-height: 68px; margin: 0 -18px; padding: 0 18px; }
@@ -543,3 +543,30 @@ footer { padding: 22px 0 0; border-top: 1px solid #202c25; }
 .exercise-results-summary strong { color: #dce8dc; font-variant-numeric: tabular-nums; }
 .exercise-results-summary .text-button { width: auto; margin: 0; padding: 5px 8px; color: #c5f28e; font-size: .72rem; }
 .exercise-empty-state { grid-column: 1 / -1; margin: 0; padding: 20px 14px; border: 1px dashed #35483a; border-radius: 10px; text-align: center; }
+
+
+/* Touch and keyboard affordances remain clear across installed and browser layouts. */
+:where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid #c5f28e;
+  outline-offset: 3px;
+}
+@media (max-width: 820px) {
+  .mobile-nav {
+    padding-bottom: max(9px, env(safe-area-inset-bottom, 0px));
+  }
+  .mobile-nav button {
+    min-height: 52px;
+    touch-action: manipulation;
+  }
+  .app-main {
+    padding-bottom: calc(34px + env(safe-area-inset-bottom, 0px));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}

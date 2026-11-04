@@ -224,6 +224,8 @@ test("exercise filters and the selected-movement tray stay in sync", async ({ pa
   await signInAndOpenWorkouts(page);
 
   await page.getByLabel("Equipment").selectOption("Dumbbell");
+  await page.getByLabel("Movement pattern").selectOption("Squat");
+  await page.getByLabel("Difficulty").selectOption("Beginner");
   const exerciseChoice = page.locator(".exercise-choice").filter({ hasText: "Goblet squat" });
   await expect(exerciseChoice).toBeVisible();
   await exerciseChoice.locator("input").uncheck();

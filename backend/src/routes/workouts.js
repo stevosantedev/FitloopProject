@@ -8,10 +8,18 @@
  */
 import { Router } from "express";
 import { z } from "zod";
-import { prisma } from "../prisma.js";
+import { prisma } from "../prismaClient.js";
 import { calculateMuscleVolume } from "../utils/muscleVolume.js";
 import { sessionInput } from "../utils/workoutSessionInput.js";
 
+/**
+ * Create the workout router with an injectable Prisma client.
+ *
+ * Production uses the shared client imported above. Tests can provide a small
+ * in-memory fake, exercising HTTP parsing, validation and ownership decisions
+ * without requiring a running PostgreSQL server.
+ */
+export function createWorkoutRouter(prismaClient = prisma) {
 const router = Router();
 
 // Validate routine templates before touching the database. The exercise IDs are
@@ -49,7 +57,7 @@ router.get("/exercises", async (req, res, next) => {
       ...(category ? [{ category: { equals: category, mode: "insensitive" } }] : [])
     ];
 
-    const exercises = await prisma.exercise.findMany({
+    const exercises = await prismaClient.exercise.findMany({
       where: { AND: filters },
       include: { muscles: { include: { muscle: true }, orderBy: { role: "asc" } } },
       orderBy: [{ muscleGroup: "asc" }, { name: "asc" }],
@@ -65,7 +73,7 @@ router.get("/exercises", async (req, res, next) => {
 // Returning a stable order keeps the visual map and accessible list consistent.
 router.get("/muscles", async (_req, res, next) => {
   try {
-    const muscles = await prisma.muscle.findMany({
+    const muscles = await prismaClient.muscle.findMany({
       orderBy: [{ bodyRegion: "asc" }, { sortOrder: "asc" }, { name: "asc" }]
     });
     return res.json({ muscles });
@@ -82,13 +90,13 @@ router.get("/muscle-stats", async (req, res, next) => {
     const rawDays = Number(req.query.days ?? 30);
     const days = Number.isInteger(rawDays) ? Math.max(1, Math.min(365, rawDays)) : 30;
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-    const sets = await prisma.workoutSet.findMany({
+    const sets = await prismaClient.workoutSet.findMany({
       where: { completed: true, session: { userId: req.userId, startedAt: { gte: since } } },
       include: { exercise: { include: { muscles: { include: { muscle: true } } } }, session: { select: { startedAt: true } } }
     });
     // Keep the weighting calculation in a pure helper so it can be tested without a database.
     const totals = calculateMuscleVolume(sets);
-    const muscles = await prisma.muscle.findMany({ orderBy: [{ bodyRegion: "asc" }, { sortOrder: "asc" }, { name: "asc" }] });
+    const muscles = await prismaClient.muscle.findMany({ orderBy: [{ bodyRegion: "asc" }, { sortOrder: "asc" }, { name: "asc" }] });
     const stats = muscles.map(muscle => {
       const total = totals.get(muscle.slug);
       const hoursSince = total?.lastTrainedAt ? (Date.now() - new Date(total.lastTrainedAt).getTime()) / 3600000 : null;
@@ -111,7 +119,7 @@ router.get("/muscle-stats", async (req, res, next) => {
 // exercise records avoids a second request for every routine card in the UI.
 router.get("/routines", async (req, res, next) => {
   try {
-    const routines = await prisma.workoutRoutine.findMany({
+    const routines = await prismaClient.workoutRoutine.findMany({
       where: { userId: req.userId },
       include: { exercises: { include: { exercise: true }, orderBy: { sortOrder: "asc" } } },
       orderBy: { createdAt: "desc" }
@@ -133,12 +141,12 @@ router.post("/routines", async (req, res, next) => {
     const exerciseIds = [...new Set(input.exercises.map(item => item.exerciseId))];
 
     // Confirm every exercise exists before linking it, so a user cannot create broken routine entries.
-    const available = await prisma.exercise.findMany({ where: { id: { in: exerciseIds } }, select: { id: true } });
+    const available = await prismaClient.exercise.findMany({ where: { id: { in: exerciseIds } }, select: { id: true } });
     if (available.length !== exerciseIds.length) {
       return res.status(400).json({ error: "One or more selected exercises do not exist." });
     }
 
-    const routine = await prisma.workoutRoutine.create({
+    const routine = await prismaClient.workoutRoutine.create({
       data: {
         userId: req.userId,
         name: input.name,
@@ -157,7 +165,7 @@ router.post("/routines", async (req, res, next) => {
 // a dedicated pagination endpoint can replace this when the history grows.
 router.get("/sessions", async (req, res, next) => {
   try {
-    const sessions = await prisma.workoutSession.findMany({
+    const sessions = await prismaClient.workoutSession.findMany({
       where: { userId: req.userId },
       include: { routine: true, sets: { include: { exercise: true }, orderBy: [{ exerciseId: "asc" }, { setNumber: "asc" }] } },
       orderBy: { startedAt: "desc" },
@@ -178,7 +186,7 @@ router.post("/sessions", async (req, res, next) => {
 
     // A routine must belong to the signed-in user; knowing another routine ID grants no access.
     if (input.routineId) {
-      const routine = await prisma.workoutRoutine.findFirst({
+      const routine = await prismaClient.workoutRoutine.findFirst({
         where: { id: input.routineId, userId: req.userId },
         select: { id: true }
       });
@@ -188,14 +196,14 @@ router.post("/sessions", async (req, res, next) => {
     // Validate every referenced exercise before writing any sets. A single bad
     // ID rejects the whole session, avoiding a partially recorded workout.
     const exerciseIds = [...new Set(input.sets.map(item => item.exerciseId))];
-    const available = await prisma.exercise.findMany({ where: { id: { in: exerciseIds } }, select: { id: true } });
+    const available = await prismaClient.exercise.findMany({ where: { id: { in: exerciseIds } }, select: { id: true } });
     if (available.length !== exerciseIds.length) {
       return res.status(400).json({ error: "One or more selected exercises do not exist." });
     }
 
     // The nested post create is part of the same Prisma operation. This keeps the
     // session and its social announcement consistent if either write fails.
-    const session = await prisma.workoutSession.create({
+    const session = await prismaClient.workoutSession.create({
       data: {
         userId: req.userId,
         routineId: input.routineId,
@@ -213,4 +221,7 @@ router.post("/sessions", async (req, res, next) => {
   }
 });
 
-export default router;
+return router;
+}
+
+export default createWorkoutRouter();

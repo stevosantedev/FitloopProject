@@ -216,6 +216,10 @@ test("the app uses persistent navigation on desktop and a bottom tab bar on mobi
 
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.locator(".mobile-nav")).toBeVisible();
+  await expect(page.locator('meta[name="viewport"]')).toHaveAttribute("content", /viewport-fit=cover/);
+  const mobileNavButton = page.locator(".mobile-nav button").first();
+  await expect.poll(() => mobileNavButton.evaluate(element => getComputedStyle(element).minHeight)).toBe("52px");
+  await expect.poll(() => page.locator(".mobile-nav").evaluate(element => getComputedStyle(element).position)).toBe("fixed");
   await page.locator(".mobile-nav").getByRole("button", { name: "Community" }).click();
   await expect(page.getByRole("heading", { name: "Your community." })).toBeVisible();
   await expect(page.locator(".app-sidebar")).toBeHidden();

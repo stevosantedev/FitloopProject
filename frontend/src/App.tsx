@@ -154,15 +154,18 @@ export default function App() {
   async function loadWorkouts() {
     try {
       // Load the library, saved routines and completed sessions together for a responsive workout view.
-      const [exerciseData, routineData, sessionData] = await Promise.all([
+      const [exerciseData, routineData, sessionData, muscleData] = await Promise.all([
         request("/api/workouts/exercises"),
         request("/api/workouts/routines"),
-        request("/api/workouts/sessions")
+        request("/api/workouts/sessions"),
+        request("/api/workouts/muscle-stats?days=30")
       ]);
       setExercises(exerciseData.exercises);
       setRoutines(routineData.routines);
       setSessions(sessionData.sessions);
+      setMuscleStats(muscleData.muscles);
       if (!selectedExercise && exerciseData.exercises[0]) setSelectedExercise(exerciseData.exercises[0].id);
+      if (selectedExerciseIds.length === 0 && exerciseData.exercises[0]) setSelectedExerciseIds([exerciseData.exercises[0].id]);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Could not load workouts.");
     }

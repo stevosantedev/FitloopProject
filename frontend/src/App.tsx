@@ -598,6 +598,9 @@ export default function App() {
           <label>Set type<select value={setType} onChange={event => setSetType(event.target.value)}><option value="working">Working set</option><option value="warmup">Warm-up</option><option value="drop">Drop set</option><option value="failure">To failure</option><option value="rest_pause">Rest-pause</option><option value="amrap">AMRAP</option></select></label>
           <label>Rest after each set (seconds)<input type="number" min="0" max="900" value={restSeconds} onChange={event => setRestSeconds(event.target.value)} /></label>
           <label>Reps in reserve (optional)<input type="number" min="0" max="10" value={rir} onChange={event => setRir(event.target.value)} placeholder="0–10" /></label>
+          <label>Rate of perceived exertion (optional)<input type="number" min="1" max="10" step="0.5" value={rpe} onChange={event => setRpe(event.target.value)} placeholder="1–10" /></label>
+          <button type="button" className="secondary-action" onClick={() => setRestRemaining(Number(restSeconds))}>Start rest timer</button>
+          {restRemaining !== null && <p className="rest-countdown" role="timer" aria-live="polite">{Math.floor(restRemaining / 60)}:{String(restRemaining % 60).padStart(2, "0")} remaining <button type="button" className="small-button" onClick={() => setRestRemaining(null)}>Stop</button></p>}
           <button disabled={selectedExerciseIds.length === 0}>Save complete session</button>
         </form>
       </div>

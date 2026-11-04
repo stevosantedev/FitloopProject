@@ -149,6 +149,7 @@ model WorkoutSession {
   startedAt  DateTime @default(now())
   endedAt    DateTime?
   notes      String?
+  clientRequestId String? @unique
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   routine    WorkoutRoutine? @relation(fields: [routineId], references: [id], onDelete: SetNull)
   sets       WorkoutSet[]

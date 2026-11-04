@@ -19,7 +19,7 @@ type DailyLog = {
   mood?: number | null;
   focusMinutes?: number | null;
 };
-type Exercise = { id: string; name: string; muscleGroup: string; equipment?: string | null; instructions?: string[]; movementPattern?: string | null; muscles?: Array<{ role: "PRIMARY" | "SECONDARY"; muscle: { name: string; slug: string } }> };
+type Exercise = { id: string; name: string; muscleGroup: string; equipment?: string | null; description?: string | null; aliases?: string[]; instructions?: string[]; coachingCues?: string[]; equipmentAlternatives?: string[]; category?: string | null; movementPattern?: string | null; bodyRegion?: string | null; difficulty?: string | null; mediaUrl?: string | null; mediaSource?: string | null; mediaLicense?: string | null; muscles?: Array<{ role: "PRIMARY" | "SECONDARY"; muscle: { name: string; slug: string } }> };
 type MuscleStat = { id: string; slug: string; name: string; bodyRegion: string; view: string; effectiveSets: number; primarySets: number; secondarySets: number; lastTrainedAt: string | null; recoveryLabel: string };
 type WorkoutSetDraft = { id: string; reps: string; weight: string; completed: boolean };
 type ExerciseDraft = { setEntries: WorkoutSetDraft[]; setType: string; restSeconds: string; rir: string; rpe: string };
@@ -91,7 +91,7 @@ export default function App() {
   const [editingRoutineId, setEditingRoutineId] = useState("");
   const [selectedRoutine, setSelectedRoutine] = useState("");
   // One live session can contain several exercises and their set sequences.
-  const [selectedExerciseIds, setSelectedExerciseIds] = useState<string[]>([]);
+  const [selectedExerciseIds, setSelectedExerciseIds] = useState<string[]>([]);\n  const [exerciseDetailId, setExerciseDetailId] = useState("");
   // Each exercise draft keeps independent set rows and exercise-level effort/rest settings.
   const [exerciseDrafts, setExerciseDrafts] = useState<Record<string, ExerciseDraft>>({});
 
@@ -718,13 +718,30 @@ export default function App() {
             <label>Equipment<select value={exerciseEquipmentFilter} onChange={event => setExerciseEquipmentFilter(event.target.value)}><option value="all">Any equipment</option>{Array.from(new Set(exercises.map(exercise => exercise.equipment ?? "Other"))).sort().map(equipment => <option key={equipment} value={equipment}>{equipment}</option>)}</select></label>
           </div>
           <div className="exercise-picker exercise-choice-grid" aria-label="Select exercises for this session">
-            {visibleExercises.map(exercise => <label className={"check-row exercise-choice" + (selectedExerciseIds.includes(exercise.id) ? " selected" : "")} key={exercise.id}>
-              <input type="checkbox" checked={selectedExerciseIds.includes(exercise.id)} onChange={event => setSelectedExerciseIds(current => event.target.checked ? [...current, exercise.id] : current.filter(id => id !== exercise.id))} />
-              <span className="exercise-choice-copy"><strong>{exercise.name}</strong><small>{exercise.muscleGroup} · {exercise.equipment ?? "Equipment varies"}</small>{exercise.movementPattern && <small>{exercise.movementPattern}</small>}</span>
-              <span className="exercise-choice-indicator" aria-hidden="true">{selectedExerciseIds.includes(exercise.id) ? "✓" : "+"}</span>
-            </label>)}
+            {visibleExercises.map(exercise => <article className={"check-row exercise-choice" + (selectedExerciseIds.includes(exercise.id) ? " selected" : "")} key={exercise.id}>
+              <label className="exercise-choice-select">
+                <input type="checkbox" checked={selectedExerciseIds.includes(exercise.id)} onChange={event => setSelectedExerciseIds(current => event.target.checked ? [...current, exercise.id] : current.filter(id => id !== exercise.id))} />
+                <span className="exercise-choice-copy"><strong>{exercise.name}</strong><small>{exercise.muscleGroup} · {exercise.equipment ?? "Equipment varies"}</small>{exercise.movementPattern && <small>{exercise.movementPattern}</small>}</span>
+                <span className="exercise-choice-indicator" aria-hidden="true">{selectedExerciseIds.includes(exercise.id) ? "✓" : "+"}</span>
+              </label>
+              <button type="button" className="exercise-detail-trigger" onClick={() => setExerciseDetailId(current => current === exercise.id ? "" : exercise.id)} aria-expanded={exerciseDetailId === exercise.id}>Details</button>
+            </article>)}
             {visibleExercises.length === 0 && <p className="muted">No exercises match those filters.</p>}
           </div>
+          {(() => {
+            const detail = exercises.find(item => item.id === exerciseDetailId);
+            if (!detail) return null;
+            return <section className="exercise-detail-panel" aria-label={detail.name + " details"}>
+              <div className="exercise-detail-heading"><div><p className="eyebrow">EXERCISE GUIDE</p><h3>{detail.name}</h3></div><button type="button" className="secondary" onClick={() => setExerciseDetailId("")}>Close</button></div>
+              {detail.description && <p>{detail.description}</p>}
+              <div className="exercise-detail-meta"><span>{detail.difficulty ?? "Difficulty not specified"}</span><span>{detail.category ?? "General training"}</span><span>{detail.bodyRegion ?? detail.muscleGroup}</span></div>
+              {detail.instructions?.length ? <div><h4>How to perform it</h4><ol>{detail.instructions.map((step, index) => <li key={index}>{step}</li>)}</ol></div> : null}
+              {detail.coachingCues?.length ? <div><h4>Coaching cues</h4><ul>{detail.coachingCues.map(cue => <li key={cue}>{cue}</li>)}</ul></div> : null}
+              {detail.muscles?.length ? <div><h4>Muscles involved</h4><div className="exercise-detail-muscles">{detail.muscles.map(link => <span key={link.muscle.slug}><b>{link.muscle.name}</b><small>{link.role === "PRIMARY" ? "Primary" : "Secondary"}</small></span>)}</div></div> : null}
+              {detail.equipmentAlternatives?.length ? <div><h4>Equipment alternatives</h4><p>{detail.equipmentAlternatives.join(" · ")}</p></div> : null}
+              {detail.aliases?.length ? <p className="exercise-detail-aliases">Also known as: {detail.aliases.join(", ")}</p> : null}
+            </section>;
+          })()}
           <div className="selection-tray" aria-live="polite">
             <span><strong>{selectedExerciseIds.length}</strong> movements in this session</span>
             {selectedExerciseIds.length > 0 && <div className="selection-chips">{selectedExerciseIds.map(id => {

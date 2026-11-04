@@ -9,8 +9,16 @@
 import { useEffect, useState } from "react";
 import MuscleMap from "./components/MuscleMap";
 import GuidedRestTimer from "./components/GuidedRestTimer";
+import { getQueuedWorkouts, queueWorkout, removeQueuedWorkout } from "./offlineWorkoutQueue";
 
 type User = { id: string; username: string };
+
+class ApiRequestError extends Error {
+  constructor(message: string, readonly status: number) {
+    super(message);
+    this.name = "ApiRequestError";
+  }
+}
 type DailyLog = {
   id: string;
   date: string;
@@ -76,6 +84,7 @@ export default function App() {
   const [anatomyView, setAnatomyView] = useState<"front" | "back">("front");
   const [routines, setRoutines] = useState<Routine[]>([]);
   const [sessions, setSessions] = useState<WorkoutSession[]>([]);
+  const [pendingWorkoutCount, setPendingWorkoutCount] = useState(0);
   const [personalRecords, setPersonalRecords] = useState<PersonalRecord[]>([]);
   const [selectedSessionId, setSelectedSessionId] = useState("");
   const [connections, setConnections] = useState<FriendConnection[]>([]);
@@ -125,7 +134,7 @@ export default function App() {
       }
     });
     const data = await response.json();
-    if (!response.ok) throw new Error(data.error ?? "The request could not be completed.");
+    if (!response.ok) throw new ApiRequestError(data.error ?? "The request could not be completed.", response.status);
     return data;
   }
 
@@ -367,14 +376,42 @@ export default function App() {
       if (!workoutSets.some(set => set.completed)) {
         throw new Error("Complete at least one set before saving this workout.");
       }
-      await request("/api/workouts/sessions", {
-        method: "POST",
-        body: JSON.stringify({ routineId: selectedRoutine || undefined, sets: workoutSets })
-      });
-      setNotice("Workout saved. It has also been shared to your friends-only feed.");
+      if (!user) throw new Error("Sign in again before saving this workout.");
+      const payload = { routineId: selectedRoutine || undefined, sets: workoutSets };
+      const requestId = crypto.randomUUID();
+
+      // Persist before attempting the network request. If the connection drops
+      // after the server commits, the same identifier makes the retry idempotent.
+      await queueWorkout(user.id, payload, requestId);
+      const queued = await getQueuedWorkouts(user.id);
+      setPendingWorkoutCount(queued.length);
+
+      if (!navigator.onLine) {
+        setNotice("Workout saved on this device. It will sync when you're back online.");
+      } else {
+        try {
+          await request("/api/workouts/sessions", {
+            method: "POST",
+            body: JSON.stringify({ ...payload, clientRequestId: requestId })
+          });
+          await removeQueuedWorkout(requestId);
+          setPendingWorkoutCount((count) => Math.max(0, count - 1));
+          setNotice("Workout saved. It has also been shared to your friends-only feed.");
+          await Promise.all([loadWorkouts(), loadCommunity()]);
+        } catch (syncError) {
+          // Keep network failures and expired sessions queued. A definite
+          // validation/authentication response is surfaced rather than silently discarded.
+          if (syncError instanceof ApiRequestError && syncError.status >= 400 && syncError.status < 500 && syncError.status !== 401) {
+            await removeQueuedWorkout(requestId);
+            setPendingWorkoutCount((count) => Math.max(0, count - 1));
+            throw syncError;
+          }
+          setNotice("Workout saved on this device. FitLoop will retry syncing it when the connection is available.");
+        }
+      }
+
       setSelectedExerciseIds([]);
       setExerciseDrafts({});
-      await Promise.all([loadWorkouts(), loadCommunity()]);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Could not save that workout.");
     }
@@ -493,6 +530,55 @@ export default function App() {
     if (token && activeTab === "workouts") void loadWorkouts();
     if (token && activeTab === "community") void loadCommunity();
   }, [token, activeTab]);
+
+  useEffect(() => {
+    // A queued session belongs to one account. It is never sent with a different
+    // user's token, and the queue stores no bearer credentials of its own.
+    if (!token || !user) {
+      setPendingWorkoutCount(0);
+      return;
+    }
+
+    let syncing = false;
+    const syncQueuedWorkouts = async () => {
+      if (syncing || !navigator.onLine) return;
+      syncing = true;
+      try {
+        const queued = await getQueuedWorkouts(user.id);
+        setPendingWorkoutCount(queued.length);
+        for (const entry of queued) {
+          try {
+            await request("/api/workouts/sessions", {
+              method: "POST",
+              body: JSON.stringify({ ...entry.payload, clientRequestId: entry.id })
+            });
+            await removeQueuedWorkout(entry.id);
+            setPendingWorkoutCount((count) => Math.max(0, count - 1));
+          } catch (error) {
+            // Stop at the first failure so queued sessions retain their original order.
+            setNotice(error instanceof Error
+              ? `A saved workout is waiting to sync: ${error.message}`
+              : "A saved workout is waiting for a connection.");
+            break;
+          }
+        }
+        const remaining = await getQueuedWorkouts(user.id);
+        setPendingWorkoutCount(remaining.length);
+        if (remaining.length === 0 && queued.length > 0) {
+          setNotice("Your saved offline workouts have synced.");
+          await Promise.all([loadWorkouts(), loadCommunity()]);
+        }
+      } catch (error) {
+        setNotice(error instanceof Error ? error.message : "Could not check the offline workout queue.");
+      } finally {
+        syncing = false;
+      }
+    };
+
+    window.addEventListener("online", syncQueuedWorkouts);
+    void syncQueuedWorkouts();
+    return () => window.removeEventListener("online", syncQueuedWorkouts);
+  }, [token, user?.id]);
 
   if (!token) {
     return <main className="auth-shell">
@@ -614,7 +700,7 @@ export default function App() {
     <div className="app-main">
       <header className="topbar">
         <div><p className="topbar-kicker">FITLOOP / WORKSPACE</p><strong>{activeTab === "home" ? "Overview" : activeTab === "workouts" ? "Workouts" : "Community"}</strong></div>
-        <div className="account"><span className="account-status"><i /> Your space</span><button className="topbar-action" onClick={() => setActiveTab("workouts")}>Start a workout <span>↗</span></button></div>
+        <div className="account">{pendingWorkoutCount > 0 && <span className="offline-queue-status" role="status">{pendingWorkoutCount} workout{pendingWorkoutCount === 1 ? "" : "s"} waiting to sync</span>}<span className="account-status"><i /> Your space</span><button className="topbar-action" onClick={() => setActiveTab("workouts")}>Start a workout <span>↗</span></button></div>
       </header>
       <nav className="mobile-nav" aria-label="Main sections">
         <button className={activeTab === "home" ? "active" : ""} onClick={() => setActiveTab("home")}><span>⌂</span>Home</button>

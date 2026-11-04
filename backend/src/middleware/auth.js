@@ -1,23 +1,38 @@
 import jwt from "jsonwebtoken";
 import { config } from "../config.js";
 
-// Routes use this middleware so ownership always comes from the verified session, not request data.
-export function requireAuth(req, res, next) {
-  const header = req.get("authorization");
-  const token = header?.startsWith("Bearer ") ? header.slice(7) : null;
+const TOKEN_ISSUER = "fitloop-api";
+const TOKEN_AUDIENCE = "fitloop-web";
 
-  if (!token) return res.status(401).json({ error: "Sign in to continue." });
+/**
+ * Build the bearer-token guard with an explicit signing secret. Keeping the
+ * factory injectable lets the token contract be tested without application secrets.
+ */
+export function createAuthMiddleware(secret) {
+  return function requireAuth(req, res, next) {
+    const header = req.get("authorization");
+    const token = header?.startsWith("Bearer ") ? header.slice(7) : null;
 
-  try {
-    const payload = jwt.verify(token, config.JWT_SECRET);
-    if (typeof payload.sub !== "string") {
-      return res.status(401).json({ error: "Your session is invalid." });
+    if (!token) return res.status(401).json({ error: "Sign in to continue." });
+
+    try {
+      const payload = jwt.verify(token, secret, {
+        algorithms: ["HS256"],
+        issuer: TOKEN_ISSUER,
+        audience: TOKEN_AUDIENCE
+      });
+      if (typeof payload.sub !== "string" || payload.sub.length === 0) {
+        return res.status(401).json({ error: "Your session is invalid." });
+      }
+
+      // The account ID is accepted only from a verified token, never request data.
+      req.userId = payload.sub;
+      return next();
+    } catch {
+      // Keep malformed, expired and incorrectly signed tokens indistinguishable.
+      return res.status(401).json({ error: "Your session has expired. Please sign in again." });
     }
-
-    req.userId = payload.sub;
-    return next();
-  } catch {
-    // Do not reveal whether a token was malformed, expired or signed with the wrong secret.
-    return res.status(401).json({ error: "Your session has expired. Please sign in again." });
-  }
+  };
 }
+
+export const requireAuth = createAuthMiddleware(config.JWT_SECRET);

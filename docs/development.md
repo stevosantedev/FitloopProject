@@ -43,7 +43,14 @@ On Windows, activate the environment with `.venv\\Scripts\\activate`. The coach 
 The GitHub Actions workflow runs schema validation, client generation, backend checks, the frontend build and Python tests on pushes and pull requests.
 
 
-### Browser tests
+#
+## Authentication and deployment security
+
+The API issues short-lived bearer tokens (two hours). Tokens are signed with HS256 and checked against a fixed issuer and audience; the verifier explicitly allows only HS256. Authentication failures return a generic response, and failed authentication requests are limited to 10 per IP in a 15-minute window. Helmet security headers, a configured frontend origin and a 32 KB JSON body limit are applied before API routes.
+
+The current browser client stores its bearer token in local storage. This is acceptable only as an MVP trade-off: any successful script injection in the app's origin could read it. Before a public production deployment, move session handling to Secure, HttpOnly, SameSite cookies (with CSRF protection), review the hosting proxy and HTTPS configuration, and add monitoring and abuse controls. Do not treat the current rate limit as a substitute for an edge firewall or a production security review.
+
+## Browser tests
 
 The Playwright suite starts the Vite app and mocks API responses so it can test the real browser interface without a local database. Install the Chromium browser once with `npx playwright install chromium`, then run `npm run test:e2e`. The suite covers sign-in, guided set progression, rest-timer controls and workout-save validation. The CI workflow installs Chromium and runs the same suite on every branch update.
 

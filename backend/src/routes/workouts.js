@@ -37,14 +37,48 @@ const sessionInput = z.object({
   })).max(200)
 });
 
-// Only exercises already in the shared library are returned; custom exercises need ownership rules first.
-router.get("/exercises", async (_req, res, next) => {
+// Return shared exercises plus custom records owned by the signed-in user.
+// Optional filters are composed in the database so the API never downloads the
+// whole catalogue merely to search it in the browser.
+router.get("/exercises", async (req, res, next) => {
   try {
+    const search = typeof req.query.search === "string" ? req.query.search.trim() : "";
+    const muscle = typeof req.query.muscle === "string" ? req.query.muscle.trim() : "";
+    const equipment = typeof req.query.equipment === "string" ? req.query.equipment.trim() : "";
+    const category = typeof req.query.category === "string" ? req.query.category.trim() : "";
+
+    const filters = [
+      { OR: [{ isCustom: false }, { ownerId: req.userId }] },
+      ...(search ? [{ OR: [
+        { name: { contains: search, mode: "insensitive" } },
+        { description: { contains: search, mode: "insensitive" } },
+        { aliases: { has: search } }
+      ] }] : []),
+      ...(muscle ? [{ muscles: { some: { muscle: { slug: muscle } } } }] : []),
+      ...(equipment ? [{ equipment: { contains: equipment, mode: "insensitive" } }] : []),
+      ...(category ? [{ category: { equals: category, mode: "insensitive" } }] : [])
+    ];
+
     const exercises = await prisma.exercise.findMany({
-      where: { isCustom: false },
-      orderBy: [{ muscleGroup: "asc" }, { name: "asc" }]
+      where: { AND: filters },
+      include: { muscles: { include: { muscle: true }, orderBy: { role: "asc" } } },
+      orderBy: [{ muscleGroup: "asc" }, { name: "asc" }],
+      take: 250
     });
     return res.json({ exercises });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+// The canonical muscle list drives filters and the front/back anatomy interface.
+// Returning a stable order keeps the visual map and accessible list consistent.
+router.get("/muscles", async (_req, res, next) => {
+  try {
+    const muscles = await prisma.muscle.findMany({
+      orderBy: [{ bodyRegion: "asc" }, { sortOrder: "asc" }, { name: "asc" }]
+    });
+    return res.json({ muscles });
   } catch (error) {
     return next(error);
   }

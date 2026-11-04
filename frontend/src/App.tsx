@@ -20,7 +20,8 @@ type DailyLog = {
 };
 type Exercise = { id: string; name: string; muscleGroup: string; equipment?: string | null; instructions?: string[]; movementPattern?: string | null; muscles?: Array<{ role: "PRIMARY" | "SECONDARY"; muscle: { name: string; slug: string } }> };
 type MuscleStat = { id: string; slug: string; name: string; bodyRegion: string; view: string; effectiveSets: number; primarySets: number; secondarySets: number; lastTrainedAt: string | null; recoveryLabel: string };
-type ExerciseDraft = { sets: string; reps: string; weight: string; setType: string; restSeconds: string; rir: string; rpe: string };
+type WorkoutSetDraft = { reps: string; weight: string; completed: boolean };
+type ExerciseDraft = { setEntries: WorkoutSetDraft[]; setType: string; restSeconds: string; rir: string; rpe: string };
 type Routine = { id: string; name: string; exercises: Array<{ exercise: Exercise }> };
 type WorkoutSession = {
   id: string;
@@ -87,9 +88,15 @@ export default function App() {
   // Per-exercise drafts allow different set counts, rep targets and loads in one session.
   const [exerciseDrafts, setExerciseDrafts] = useState<Record<string, ExerciseDraft>>({});
   const [restRemaining, setRestRemaining] = useState<number | null>(null);
-  const [reps, setReps] = useState("10");
-  const [sets, setSets] = useState("3");
-  const [weight, setWeight] = useState("");
+
+  // New exercise cards start with three editable rows. Each row remains a
+  // separate record so uneven reps, loads and skipped sets survive in history.
+  function createDefaultExerciseDraft(): ExerciseDraft {
+    return {
+      setEntries: Array.from({ length: 3 }, () => ({ reps: "10", weight: "", completed: true })),
+      setType: "working", restSeconds: "90", rir: "", rpe: ""
+    };
+  }
   const [friendUsername, setFriendUsername] = useState("");
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
 
@@ -285,40 +292,41 @@ export default function App() {
     event.preventDefault();
     try {
       const workoutSets = selectedExerciseIds.flatMap(exerciseId => {
-        const draft = exerciseDrafts[exerciseId] ?? {
-          sets, reps, weight, setType: "working", restSeconds: "90", rir: "", rpe: ""
-        };
-        const count = Number(draft.sets);
-        const repetitions = Number(draft.reps);
-        const parsedWeight = draft.weight.trim() === "" ? undefined : Number(draft.weight);
+        const draft = exerciseDrafts[exerciseId] ?? createDefaultExerciseDraft();
         const rest = Number(draft.restSeconds);
 
-        // Catch invalid or out-of-range values before constructing an incomplete payload.
-        if (!Number.isInteger(count) || count < 1 || count > 50 ||
-            !Number.isInteger(repetitions) || repetitions < 1 || repetitions > 500 ||
-            (parsedWeight !== undefined && (!Number.isFinite(parsedWeight) || parsedWeight < 0 || parsedWeight > 1000)) ||
+        // Validate each row independently because sets can use different rep
+        // targets and loads, and an incomplete row must remain distinguishable.
+        if (draft.setEntries.length < 1 || draft.setEntries.length > 50 ||
             !Number.isInteger(rest) || rest < 0 || rest > 900 ||
             (draft.rir.trim() !== "" && (!Number.isInteger(Number(draft.rir)) || Number(draft.rir) < 0 || Number(draft.rir) > 10)) ||
             (draft.rpe.trim() !== "" && (!Number.isFinite(Number(draft.rpe)) || Number(draft.rpe) < 1 || Number(draft.rpe) > 10))) {
-          throw new Error("Check the set count, reps, weight, rest and effort values for each exercise.");
+          throw new Error("Check the set count, rest and effort values for each exercise.");
         }
 
-        // Set numbering restarts for each exercise, while technique and rest metadata
-        // are copied onto every set so history retains the settings used for that movement.
-        return Array.from({ length: count }, (_, index) => ({
-          exerciseId, setNumber: index + 1, reps: repetitions,
-          weightKg: parsedWeight, completed: true, setType: draft.setType,
-          restSeconds: rest,
-          ...(draft.rir.trim() ? { rir: Number(draft.rir) } : {}),
-          ...(draft.rpe.trim() ? { rpe: Number(draft.rpe) } : {})
-        }));
+        // Preserve row order as setNumber. Incomplete rows are saved but excluded
+        // from completed-volume calculations by the API.
+        return draft.setEntries.map((entry, index) => {
+          const repetitions = Number(entry.reps);
+          const parsedWeight = entry.weight.trim() === "" ? undefined : Number(entry.weight);
+          if (!Number.isInteger(repetitions) || repetitions < 1 || repetitions > 500 ||
+              (parsedWeight !== undefined && (!Number.isFinite(parsedWeight) || parsedWeight < 0 || parsedWeight > 1000))) {
+            throw new Error("Check the reps and weight for every set row.");
+          }
+          return {
+            exerciseId, setNumber: index + 1, reps: repetitions,
+            weightKg: parsedWeight, completed: entry.completed, setType: draft.setType,
+            restSeconds: rest,
+            ...(draft.rir.trim() ? { rir: Number(draft.rir) } : {}),
+            ...(draft.rpe.trim() ? { rpe: Number(draft.rpe) } : {})
+          };
+        });
       });
       await request("/api/workouts/sessions", {
         method: "POST",
         body: JSON.stringify({ routineId: selectedRoutine || undefined, sets: workoutSets })
       });
       setNotice("Workout saved. It has also been shared to your friends-only feed.");
-      setWeight("");
       setSelectedExerciseIds([]);
       setExerciseDrafts({});
       await Promise.all([loadWorkouts(), loadCommunity()]);
@@ -609,22 +617,48 @@ export default function App() {
           <div className="exercise-session-list">
             {selectedExerciseIds.map(exerciseId => {
               const exercise = exercises.find(item => item.id === exerciseId);
-              const draft = exerciseDrafts[exerciseId] ?? {
-                sets, reps, weight, setType: "working", restSeconds: "90", rir: "", rpe: ""
-              };
-              const updateDraft = (field: keyof ExerciseDraft, value: string) => {
+              const draft = exerciseDrafts[exerciseId] ?? createDefaultExerciseDraft();
+              const updateDraft = (field: keyof Omit<ExerciseDraft, "setEntries">, value: string) => {
                 setExerciseDrafts(current => ({
                   ...current,
                   [exerciseId]: { ...(current[exerciseId] ?? draft), [field]: value }
                 }));
               };
+              const updateSetEntry = (index: number, field: keyof WorkoutSetDraft, value: string | boolean) => {
+                setExerciseDrafts(current => {
+                  const currentDraft = current[exerciseId] ?? draft;
+                  return {
+                    ...current,
+                    [exerciseId]: {
+                      ...currentDraft,
+                      setEntries: currentDraft.setEntries.map((entry, entryIndex) =>
+                        entryIndex === index ? { ...entry, [field]: value } : entry
+                      )
+                    }
+                  };
+                });
+              };
               if (!exercise) return null;
               return <article className="exercise-session-card" key={exerciseId}>
                 <strong>{exercise.name}</strong>
+                <div className="set-entry-list">
+                  {draft.setEntries.map((entry, index) => <div className="set-entry-row" key={index}>
+                    <span className="set-entry-number">Set {index + 1}</span>
+                    <label>Reps<input aria-label={exercise.name + ", set " + (index + 1) + ", reps"} required type="number" min="1" max="500" value={entry.reps} onChange={event => updateSetEntry(index, "reps", event.target.value)} /></label>
+                    <label>Weight (kg)<input aria-label={exercise.name + ", set " + (index + 1) + ", weight in kilograms"} type="number" min="0" max="1000" step="0.5" value={entry.weight} onChange={event => updateSetEntry(index, "weight", event.target.value)} placeholder="Bodyweight" /></label>
+                    <label className="completed-set-control"><input type="checkbox" checked={entry.completed} onChange={event => updateSetEntry(index, "completed", event.target.checked)} /> Completed</label>
+                    <button type="button" className="small-button" disabled={draft.setEntries.length === 1} onClick={() => setExerciseDrafts(current => {
+                      const currentDraft = current[exerciseId] ?? draft;
+                      return { ...current, [exerciseId]: { ...currentDraft, setEntries: currentDraft.setEntries.filter((_, entryIndex) => entryIndex !== index) } };
+                    })}>Remove</button>
+                  </div>)}
+                </div>
+                <button type="button" className="small-button add-set-button" disabled={draft.setEntries.length >= 50} onClick={() => setExerciseDrafts(current => {
+                  const currentDraft = current[exerciseId] ?? draft;
+                  const previous = currentDraft.setEntries[currentDraft.setEntries.length - 1];
+                  return { ...current, [exerciseId]: { ...currentDraft, setEntries: [...currentDraft.setEntries, { reps: previous?.reps ?? "10", weight: previous?.weight ?? "", completed: true }] } };
+                })}>Add set</button>
                 <div className="exercise-draft-fields">
-                  <label>Sets<input required type="number" min="1" max="50" value={draft.sets} onChange={event => updateDraft("sets", event.target.value)} /></label>
-                  <label>Reps per set<input required type="number" min="1" max="500" value={draft.reps} onChange={event => updateDraft("reps", event.target.value)} /></label>
-                  <label>Weight (kg)<input type="number" min="0" max="1000" step="0.5" value={draft.weight} onChange={event => updateDraft("weight", event.target.value)} placeholder="Bodyweight" /></label>
                   <label>Set type<select value={draft.setType} onChange={event => updateDraft("setType", event.target.value)}><option value="working">Working set</option><option value="warmup">Warm-up</option><option value="drop">Drop set</option><option value="failure">To failure</option><option value="rest_pause">Rest-pause</option><option value="amrap">AMRAP</option></select></label>
                   <label>Rest (seconds)<input type="number" min="0" max="900" value={draft.restSeconds} onChange={event => updateDraft("restSeconds", event.target.value)} /></label>
                   <label>Reps in reserve<input type="number" min="0" max="10" value={draft.rir} onChange={event => updateDraft("rir", event.target.value)} placeholder="Optional" /></label>

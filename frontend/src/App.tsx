@@ -517,7 +517,15 @@ export default function App() {
       exerciseId: latest.exerciseId, name: latest.name, date: latest.date, sessions: ordered.length,
       completedSets: latest.sets.length, bestLoad: latestLoad,
       loadChange: previous && latestLoad > 0 && previousLoad > 0 ? latestLoad - previousLoad : null,
-      latestVolume: latest.sets.reduce((sum, set) => sum + set.reps * (set.weightKg ?? 0), 0)
+      latestVolume: latest.sets.reduce((sum, set) => sum + set.reps * (set.weightKg ?? 0), 0),
+      // Keep a short recent timeline so the dashboard can show a real trend,
+      // rather than implying that two sessions establish a long-term pattern.
+      history: ordered.slice(0, 6).reverse().map(entry => ({
+        date: entry.date,
+        topLoad: topLoad(entry.sets),
+        completedSets: entry.sets.length,
+        volume: entry.sets.reduce((sum, set) => sum + set.reps * (set.weightKg ?? 0), 0)
+      }))
     };
   }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 6);
 
@@ -820,6 +828,20 @@ export default function App() {
         <div><strong>{item.latestVolume > 0 ? Math.round(item.latestVolume).toLocaleString() + " kg" : "—"}</strong><span>SESSION VOLUME</span></div>
       </div>
       <p className="progression-change">{item.loadChange === null ? (item.sessions > 1 ? "Load comparison unavailable for these sessions" : "Your next session will add a comparison") : item.loadChange > 0 ? "+" + item.loadChange + " kg from your previous session" : item.loadChange < 0 ? item.loadChange + " kg from your previous session" : "Same top load as your previous session"}</p>
+      <div className="progression-trend" aria-label="Recent top-load trend">
+        <div className="progression-trend-heading"><span>RECENT TOP-LOAD TREND</span><small>{item.history.length} sessions</small></div>
+        <div className="progression-bars">
+          {item.history.map((point, index) => {
+            const maximum = Math.max(1, ...item.history.map(entry => entry.topLoad));
+            const height = point.topLoad > 0 ? Math.max(12, point.topLoad / maximum * 100) : 8;
+            return <div className="progression-bar-column" key={point.date + index} title={new Date(point.date).toLocaleDateString() + ": " + (point.topLoad > 0 ? point.topLoad + " kg" : "No external load logged")}>
+              <strong>{point.topLoad > 0 ? point.topLoad + " kg" : "—"}</strong>
+              <span className="progression-bar-track"><i style={{ height: height + "%" }} /></span>
+              <small>{new Date(point.date).toLocaleDateString(undefined, { day: "numeric", month: "short" })}</small>
+            </div>;
+          })}
+        </div>
+      </div>
     </article>)}</div>}
   <p className="chart-note">Load and volume use logged completed sets only. Bodyweight movements are not assigned an estimated load.</p>
 </section>

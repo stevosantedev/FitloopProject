@@ -229,7 +229,7 @@ router.delete("/routines/:id", async (req, res, next) => {
       where: { id: req.params.id, userId: req.userId }
     });
     if (result.count === 0) return res.status(404).json({ error: "Workout routine not found." });
-    return res.status(204).end();
+    return res.json({ deleted: true });
   } catch (error) {
     return next(error);
   }

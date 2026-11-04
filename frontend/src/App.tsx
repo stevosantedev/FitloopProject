@@ -151,6 +151,7 @@ export default function App() {
       localStorage.setItem("fitloop-token", data.token);
       setToken(data.token);
       setUser(data.user);
+      localStorage.setItem("fitloop-user", JSON.stringify(data.user));
       setNotice("");
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Unable to sign in.");
@@ -164,6 +165,7 @@ export default function App() {
       // Restore the profile and coaching preferences when a saved session is reopened in the browser.
       const profile = await request("/api/me");
       setUser(profile.user);
+      localStorage.setItem("fitloop-user", JSON.stringify(profile.user));
       const preferenceData = await request("/api/coach/preferences");
       setCoachPreference(preferenceData.preference);
       const data = await request("/api/daily-logs?days=7");
@@ -174,7 +176,16 @@ export default function App() {
       const workoutHistory = await request("/api/workouts/sessions");
       setSessions(workoutHistory.sessions);
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Could not load your dashboard.");
+      // Keep the signed-in shell available when a previously authenticated user reopens FitLoop offline.
+      if (!navigator.onLine) {
+        const cachedUser = localStorage.getItem("fitloop-user");
+        if (cachedUser) {
+          try { setUser(JSON.parse(cachedUser) as User); } catch { localStorage.removeItem("fitloop-user"); }
+        }
+        setNotice("You are offline. You can record a workout and it will sync when connected.");
+      } else {
+        setNotice(error instanceof Error ? error.message : "Could not load your dashboard.");
+      }
     }
   }
 
@@ -191,12 +202,29 @@ export default function App() {
         request("/api/workouts/personal-records")
       ]);
       setExercises(exerciseData.exercises);
+      // The public exercise catalogue is safe to keep locally for offline workout building.
+      localStorage.setItem("fitloop-exercise-catalogue", JSON.stringify(exerciseData.exercises));
       setRoutines(routineData.routines);
       setSessions(sessionData.sessions);
       setMuscleStats(muscleData.muscles);
       setPersonalRecords(recordData.records);
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Could not load workouts.");
+      if (!navigator.onLine) {
+        const cachedCatalogue = localStorage.getItem("fitloop-exercise-catalogue");
+        if (cachedCatalogue) {
+          try {
+            setExercises(JSON.parse(cachedCatalogue) as Exercise[]);
+            setNotice("You are offline. Your saved exercise library is available; new workouts will sync later.");
+          } catch {
+            localStorage.removeItem("fitloop-exercise-catalogue");
+            setNotice("The offline exercise library could not be read. Reconnect to reload it.");
+          }
+        } else {
+          setNotice("Connect once to make the exercise library available offline.");
+        }
+      } else {
+        setNotice(error instanceof Error ? error.message : "Could not load workouts.");
+      }
     }
   }
 
@@ -494,6 +522,7 @@ export default function App() {
       });
       // Clear the local session only after the server confirms that the account was deleted.
       localStorage.removeItem("fitloop-token");
+      localStorage.removeItem("fitloop-user");
       setToken("");
       setUser(null);
       setDeletePassword("");
@@ -509,6 +538,7 @@ export default function App() {
   function signOut() {
     // Removing the browser token ends this local session without deleting any account records.
     localStorage.removeItem("fitloop-token");
+    localStorage.removeItem("fitloop-user");
     setToken("");
     setUser(null);
     setLogs([]);

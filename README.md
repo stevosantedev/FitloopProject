@@ -58,7 +58,7 @@ The frontend runs on port 5173, the API on port 4000 and the coach on port 8000.
 
 The first application flow is in place, including daily check-ins, routine creation, workout logging, friends, a feed and coach feedback. The exercise data model now supports structured instructions, aliases, movement patterns, equipment alternatives, media attribution and explicit primary/secondary muscle relationships. The first-party seed now contains 58 exercise definitions and 31 canonical muscle records, with primary and secondary muscle mappings. The app includes exercise technique cards, a selectable front/back muscle explorer, and 30-day weighted-set summaries. This is a substantial first pass, not yet a complete reference library or detailed anatomical illustration. The project still needs deeper backend tests, stronger production authentication, notifications, offline sync and a proper usability evaluation.
 
-The workout logger supports multi-exercise sessions, set labels, rest settings, RIR/RPE logging and a manual rest countdown. Per-exercise set-by-set editing, individual weights/reps per exercise and an automatically guided timer flow remain future work. The progress charts are simple summaries of logged data, not medical or performance assessments.
+The workout logger supports multi-exercise sessions, set labels, rest settings, RIR/RPE logging and a manual rest countdown. Per-set individual logging, exercise-specific set types/rest settings and an automatically guided timer flow remain future work. The progress charts are simple summaries of logged data, not medical or performance assessments.
 
 ## Privacy and safety
 

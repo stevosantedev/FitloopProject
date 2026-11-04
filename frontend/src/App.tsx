@@ -292,7 +292,6 @@ export default function App() {
         const repetitions = Number(draft.reps);
         const parsedWeight = draft.weight.trim() === "" ? undefined : Number(draft.weight);
         const rest = Number(draft.restSeconds);
-        const effortValues = [draft.rir, draft.rpe].filter(value => value.trim() !== "").map(Number);
 
         // Catch invalid or out-of-range values before constructing an incomplete payload.
         if (!Number.isInteger(count) || count < 1 || count > 50 ||

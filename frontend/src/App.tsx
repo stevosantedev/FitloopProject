@@ -20,6 +20,7 @@ type DailyLog = {
 };
 type Exercise = { id: string; name: string; muscleGroup: string; equipment?: string | null; instructions?: string[]; movementPattern?: string | null; muscles?: Array<{ role: "PRIMARY" | "SECONDARY"; muscle: { name: string; slug: string } }> };
 type MuscleStat = { id: string; slug: string; name: string; bodyRegion: string; view: string; effectiveSets: number; primarySets: number; secondarySets: number; lastTrainedAt: string | null; recoveryLabel: string };
+type ExerciseDraft = { sets: string; reps: string; weight: string };
 type Routine = { id: string; name: string; exercises: Array<{ exercise: Exercise }> };
 type WorkoutSession = {
   id: string;
@@ -83,6 +84,8 @@ export default function App() {
   const [selectedRoutine, setSelectedRoutine] = useState("");
   // One live session can contain several exercises and their set sequences.
   const [selectedExerciseIds, setSelectedExerciseIds] = useState<string[]>([]);
+  // Per-exercise drafts allow different set counts, rep targets and loads in one session.
+  const [exerciseDrafts, setExerciseDrafts] = useState<Record<string, ExerciseDraft>>({});
   const [setType, setSetType] = useState("working");
   const [restSeconds, setRestSeconds] = useState("90");
   const [restRemaining, setRestRemaining] = useState<number | null>(null);
@@ -285,20 +288,22 @@ export default function App() {
   async function recordWorkout(event: React.FormEvent) {
     event.preventDefault();
     try {
-      const count = Math.max(1, Math.min(50, Number(sets)));
-      const repetitions = Math.max(1, Math.min(500, Number(reps)));
-      const parsedWeight = weight.trim() === "" ? undefined : Number(weight);
-      // Build one set sequence per selected exercise. Set numbering restarts
-      // for each movement, matching the way session history groups set rows.
-      const workoutSets = selectedExerciseIds.flatMap(exerciseId =>
-        Array.from({ length: count }, (_, index) => ({
+      // Each movement has its own draft, so compound sessions can record
+      // different rep targets, set counts and loads for every exercise.
+      const workoutSets = selectedExerciseIds.flatMap(exerciseId => {
+        const draft = exerciseDrafts[exerciseId] ?? { sets, reps, weight };
+        const count = Math.max(1, Math.min(50, Number(draft.sets)));
+        const repetitions = Math.max(1, Math.min(500, Number(draft.reps)));
+        const parsedWeight = draft.weight.trim() === "" ? undefined : Number(draft.weight);
+        // Set numbering restarts per exercise, matching the session history grouping.
+        return Array.from({ length: count }, (_, index) => ({
           exerciseId, setNumber: index + 1, reps: repetitions,
           weightKg: parsedWeight, completed: true, setType,
           restSeconds: Number(restSeconds),
           ...(rir.trim() ? { rir: Number(rir) } : {}),
           ...(rpe.trim() ? { rpe: Number(rpe) } : {})
-        }))
-      );
+        }));
+      });
       await request("/api/workouts/sessions", {
         method: "POST",
         body: JSON.stringify({ routineId: selectedRoutine || undefined, sets: workoutSets })
@@ -306,6 +311,7 @@ export default function App() {
       setNotice("Workout saved. It has also been shared to your friends-only feed.");
       setWeight("");
       setSelectedExerciseIds([]);
+      setExerciseDrafts({});
       await Promise.all([loadWorkouts(), loadCommunity()]);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Could not save that workout.");

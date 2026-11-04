@@ -34,8 +34,10 @@ export function calculatePersonalRecords(sets) {
     }
     if (Number.isFinite(set.reps) && set.reps > 0) {
       current.mostReps = candidate(set.reps, current.mostReps);
-      const volume = set.reps * (Number.isFinite(set.weightKg) && set.weightKg > 0 ? set.weightKg : 0);
-      current.highestSetVolume = candidate(volume, current.highestSetVolume);
+      if (Number.isFinite(set.weightKg) && set.weightKg > 0) {
+        const volume = set.reps * set.weightKg;
+        current.highestSetVolume = candidate(volume, current.highestSetVolume);
+      }
     }
 
     records.set(exercise.id, current);

@@ -110,7 +110,8 @@ test("DELETE routines scopes deletion to the authenticated account", async () =>
 
   await withWorkoutApi(prisma, async baseUrl => {
     const response = await fetch(baseUrl + "/api/workouts/routines/routine-a", { method: "DELETE" });
-    assert.equal(response.status, 204);
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { deleted: true });
   });
   assert.deepEqual(deleteArgs.where, { id: "routine-a", userId: "user-a" });
 });

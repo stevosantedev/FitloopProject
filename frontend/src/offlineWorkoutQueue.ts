@@ -95,3 +95,20 @@ export async function removeQueuedWorkout(id: string): Promise<void> {
     database.close();
   }
 }
+
+export async function clearQueuedWorkouts(userId: string): Promise<void> {
+  const entries = await getQueuedWorkouts(userId);
+  const database = await openQueueDatabase();
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const transaction = database.transaction(STORE_NAME, "readwrite");
+      const store = transaction.objectStore(STORE_NAME);
+      entries.forEach(entry => store.delete(entry.id));
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error ?? new Error("Could not clear this account's offline workouts."));
+      transaction.onabort = () => reject(transaction.error ?? new Error("Offline queue cleanup was interrupted."));
+    });
+  } finally {
+    database.close();
+  }
+}

@@ -9,6 +9,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../prisma.js";
+import { calculateMuscleVolume } from "../utils/muscleVolume.js";
 
 const router = Router();
 
@@ -100,20 +101,8 @@ router.get("/muscle-stats", async (req, res, next) => {
       where: { completed: true, session: { userId: req.userId, startedAt: { gte: since } } },
       include: { exercise: { include: { muscles: { include: { muscle: true } } } }, session: { select: { startedAt: true } } }
     });
-    const totals = new Map();
-    for (const set of sets) {
-      for (const link of set.exercise.muscles) {
-        const current = totals.get(link.muscle.slug) ?? {
-          muscle: link.muscle, effectiveSets: 0, primarySets: 0, secondarySets: 0, lastTrainedAt: null
-        };
-        const primary = link.role === "PRIMARY";
-        current.effectiveSets += primary ? 1 : 0.5;
-        if (primary) current.primarySets += 1;
-        else current.secondarySets += 1;
-        if (!current.lastTrainedAt || set.session.startedAt > current.lastTrainedAt) current.lastTrainedAt = set.session.startedAt;
-        totals.set(link.muscle.slug, current);
-      }
-    }
+    // Keep the weighting calculation in a pure helper so it can be tested without a database.
+    const totals = calculateMuscleVolume(sets);
     const muscles = await prisma.muscle.findMany({ orderBy: [{ bodyRegion: "asc" }, { sortOrder: "asc" }, { name: "asc" }] });
     const stats = muscles.map(muscle => {
       const total = totals.get(muscle.slug);

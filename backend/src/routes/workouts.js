@@ -29,8 +29,8 @@ const routineInput = z.object({
   description: z.string().max(300).optional(),
   exercises: z.array(z.object({
     exerciseId: z.string().min(1),
-    sortOrder: z.number().int().min(0).max(100).default(0)
-  })).max(30)
+    sortOrder: z.number().int().min(0).max(100).optional()
+  })).min(1).max(30)
 }).superRefine((input, context) => {
   // The join table has a unique routine/exercise key, so reject duplicate
   // movements here rather than allowing a database constraint to become a 500.
@@ -39,7 +39,7 @@ const routineInput = z.object({
     context.addIssue({ code: z.ZodIssueCode.custom, path: ["exercises"], message: "A routine cannot contain the same exercise more than once." });
   }
 
-  const positions = input.exercises.map(item => item.sortOrder);
+  const positions = input.exercises.map((item, index) => item.sortOrder ?? index);
   if (new Set(positions).size !== positions.length) {
     context.addIssue({ code: z.ZodIssueCode.custom, path: ["exercises"], message: "Each routine exercise must have a unique position." });
   }
@@ -170,7 +170,7 @@ router.post("/routines", async (req, res, next) => {
         userId: req.userId,
         name: input.name,
         description: input.description,
-        exercises: { create: input.exercises }
+        exercises: { create: input.exercises.map((item, index) => ({ ...item, sortOrder: item.sortOrder ?? index })) }
       },
       include: { exercises: { include: { exercise: true }, orderBy: { sortOrder: "asc" } } }
     });

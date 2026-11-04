@@ -287,21 +287,23 @@ export default function App() {
       const count = Math.max(1, Math.min(50, Number(sets)));
       const repetitions = Math.max(1, Math.min(500, Number(reps)));
       const parsedWeight = weight.trim() === "" ? undefined : Number(weight);
+      // Build one set sequence per selected exercise. Set numbering restarts
+      // for each movement, matching the way session history groups set rows.
+      const workoutSets = selectedExerciseIds.flatMap(exerciseId =>
+        Array.from({ length: count }, (_, index) => ({
+          exerciseId, setNumber: index + 1, reps: repetitions,
+          weightKg: parsedWeight, completed: true, setType,
+          restSeconds: Number(restSeconds),
+          ...(rir.trim() ? { rir: Number(rir) } : {})
+        }))
+      );
       await request("/api/workouts/sessions", {
         method: "POST",
-        body: JSON.stringify({
-          routineId: selectedRoutine || undefined,
-          sets: Array.from({ length: count }, (_, index) => ({
-            exerciseId: selectedExercise,
-            setNumber: index + 1,
-            reps: repetitions,
-            weightKg: parsedWeight,
-            completed: true
-          }))
-        })
+        body: JSON.stringify({ routineId: selectedRoutine || undefined, sets: workoutSets })
       });
       setNotice("Workout saved. It has also been shared to your friends-only feed.");
       setWeight("");
+      setSelectedExerciseIds([]);
       await Promise.all([loadWorkouts(), loadCommunity()]);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Could not save that workout.");

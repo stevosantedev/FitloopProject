@@ -198,3 +198,11 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 @media (max-width: 700px) {
   .exercise-draft-fields { grid-template-columns: 1fr; }
 }
+
+/* The guided timer is a focused panel with controls that remain usable on narrow screens. */
+.guided-timer { display: grid; gap: 8px; margin: 12px 0; padding: 16px; border: 1px solid #587343; border-radius: 12px; background: #1a2b22; }
+.guided-timer > div:first-child { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.guided-timer-current { margin: 4px 0; color: #d7f6b6; font-weight: 700; }
+.guided-timer .rest-countdown { margin: 0; font-size: 1.15rem; }
+.guided-timer-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.guided-timer-actions button { width: auto; margin: 0; }

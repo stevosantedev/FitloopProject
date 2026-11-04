@@ -42,6 +42,11 @@ On Windows, activate the environment with `.venv\\Scripts\\activate`. The coach 
 
 The GitHub Actions workflow runs schema validation, client generation, backend checks, the frontend build and Python tests on pushes and pull requests.
 
+
+### Browser tests
+
+The Playwright suite starts the Vite app and mocks API responses so it can test the real browser interface without a local database. Install the Chromium browser once with `npx playwright install chromium`, then run `npm run test:e2e`. The suite covers sign-in, guided set progression, rest-timer controls and workout-save validation. The CI workflow installs Chromium and runs the same suite on every branch update.
+
 ## A few useful reminders
 
 Keep `.env` out of Git. Do not use real health or mood data in fixtures. When changing the Prisma schema, create a reviewed migration with `npm run db:migrate:dev`, inspect the generated SQL, and commit both the schema and migration. Use `npm run db:migrate:deploy` for deployment environments; it applies committed migrations without generating new ones. `npm run db:push` remains available for disposable local databases only. The initial migration is a baseline for a new empty database. If a database already contains the schema created with `db:push`, back it up and follow Prisma's baseline/adoption procedure before running deploy; do not apply the initial create-table script to an already-populated database.

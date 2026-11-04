@@ -37,7 +37,7 @@ Read [the implementation standards](docs/implementation-standards.md) before ext
 2. Create a local PostgreSQL database and update `DATABASE_URL`.
 3. Install JavaScript dependencies with `npm install`.
 4. Generate the Prisma client with `npm run db:generate`.
-5. Apply the Prisma schema to your local database with `npm run db:push`.
+5. Apply the checked-in database migrations with `npm run db:migrate:deploy`.
 6. Add the starter exercises with `npm run db:seed`.
 7. Start the frontend and API with `npm run dev`.
 8. In another terminal, install `coach/requirements.txt` in a Python virtual environment, then run `uvicorn main:app --app-dir coach --reload --port 8000`.
@@ -50,15 +50,18 @@ The frontend runs on port 5173, the API on port 4000 and the coach on port 8000.
 - `npm run build`: check backend JavaScript syntax and create the frontend production build.
 - `npm test`: run the backend Node.js test command.
 - `npm run db:generate`: generate the Prisma client.
-- `npm run db:push`: apply the current Prisma schema to a local database (development only; establish a reviewed migration baseline before production).
+- `npm run db:migrate:dev`: create a reviewed migration after changing the Prisma schema.
+- `npm run db:migrate:deploy`: apply checked-in migrations to a database.
+- `npm run db:migrate:status`: show migration status.
+- `npm run db:push`: update a disposable local database without creating a migration (development only).
 - `npm run db:seed`: add the starter exercise library.
 - `pytest coach/test_coach.py`: run the Python coaching tests.
 
 ## Current status and known gaps
 
-The first application flow is in place, including daily check-ins, routine creation, workout logging, friends, a feed and coach feedback. The exercise data model now supports structured instructions, aliases, movement patterns, equipment alternatives, media attribution and explicit primary/secondary muscle relationships. The first-party seed now contains 58 exercise definitions and 31 canonical muscle records, with primary and secondary muscle mappings. The app includes exercise technique cards, a selectable front/back muscle explorer, and 30-day weighted-set summaries. This is a substantial first pass, not yet a complete reference library or detailed anatomical illustration. The project still needs deeper backend tests, stronger production authentication, notifications, offline sync and a proper usability evaluation.
+The first application flow is in place, including daily check-ins, routine creation, workout logging, friends, a feed and coach feedback. The exercise data model now supports structured instructions, aliases, movement patterns, equipment alternatives, media attribution and explicit primary/secondary muscle relationships. The first-party seed now contains 81 exercise definitions and 31 canonical muscle records, with primary and secondary muscle mappings. The app includes exercise technique cards, a selectable front/back muscle explorer with individual muscle-region highlighting, and 30-day weighted-set summaries. This is a growing first-party reference library, not an exhaustive catalogue or clinical anatomy resource. The project still needs deeper backend tests, stronger production authentication, notifications, offline sync and a proper usability evaluation.
 
-The workout logger supports multi-exercise sessions with editable rows for each set, including individual reps, load and completion state. Each exercise also has its own set type, rest duration and RIR/RPE settings. The API validates unique set numbering and per-exercise limits. A manual rest countdown is available; an automatically guided timer flow remains future work. The progress charts are simple summaries of logged data, not medical or performance assessments.
+The workout logger supports multi-exercise sessions with editable rows for each set, including individual reps, load and completion state. Each exercise also has its own set type, rest duration and RIR/RPE settings. The API validates unique set numbering and per-exercise limits. A guided rest sequence can advance through completed sets, with pause, skip and stop controls. The progress charts are simple summaries of logged data, not medical or performance assessments.
 
 ## Privacy and safety
 

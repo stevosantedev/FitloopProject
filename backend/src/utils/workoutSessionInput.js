@@ -24,6 +24,16 @@ export const sessionInput = z.object({
 }).superRefine((input, context) => {
   // Set numbers are unique within an exercise, not across the whole session.
   // This preserves a stable row identity while allowing every movement to start at set 1.
+  // A session needs at least one performed set. Other rows may remain
+  // incomplete to preserve missed or abandoned work without inventing volume.
+  if (!input.sets.some(set => set.completed)) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["sets"],
+      message: "Complete at least one set before saving a workout session."
+    });
+  }
+
   const seen = new Set();
   const counts = new Map();
   input.sets.forEach((set, index) => {

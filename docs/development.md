@@ -9,7 +9,7 @@ FitLoop is easiest to run locally with Node.js 20+, npm 10+, Python 3.11+ and Po
 3. Create a local PostgreSQL database and put its connection string in `DATABASE_URL`.
 4. Install JavaScript packages with `npm install`.
 5. Generate the Prisma client with `npm run db:generate`.
-6. Apply the Prisma schema to the local database with `npm run db:push`.
+6. Apply the checked-in migration history with `npm run db:migrate:deploy`.
 7. Add the starter exercise definitions with `npm run db:seed`.
 8. Start the React frontend and Express API with `npm run dev`.
 
@@ -34,6 +34,9 @@ On Windows, activate the environment with `.venv\\Scripts\\activate`. The coach 
 - `npm test` runs the backend Node.js test command.
 - `pytest coach/test_coach.py` runs the Python rule tests.
 - `npm run db:validate` checks that Prisma can read the database model.
+- `npm run db:migrate:dev` creates and applies a development migration after a schema change.
+- `npm run db:migrate:deploy` applies checked-in migrations to a deployment database.
+- `npm run db:migrate:status` reports which migrations have been applied.
 - `GET /health` checks the API.
 - `GET http://localhost:8000/health` checks the coach.
 
@@ -41,4 +44,4 @@ The GitHub Actions workflow runs schema validation, client generation, backend c
 
 ## A few useful reminders
 
-Keep `.env` out of Git. Do not use real health or mood data in fixtures. When changing the Prisma schema, run `npm run db:push` against your local database and regenerate the client before relying on the new fields. The repository does not yet have a complete baseline migration history; `db:push` is for local MVP development. Before production deployment, establish and review a full migration baseline rather than treating schema push as a production migration strategy.
+Keep `.env` out of Git. Do not use real health or mood data in fixtures. When changing the Prisma schema, create a reviewed migration with `npm run db:migrate:dev`, inspect the generated SQL, and commit both the schema and migration. Use `npm run db:migrate:deploy` for deployment environments; it applies committed migrations without generating new ones. `npm run db:push` remains available for disposable local databases only. The initial migration is a baseline for a new empty database. If a database already contains the schema created with `db:push`, back it up and follow Prisma's baseline/adoption procedure before running deploy; do not apply the initial create-table script to an already-populated database.

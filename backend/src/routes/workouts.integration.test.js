@@ -37,7 +37,7 @@ function makePrisma(overrides = {}) {
   return {
     exercise: { findMany: async () => [], ...overrides.exercise },
     workoutRoutine: { findMany: async () => [], findFirst: async () => null, update: async args => ({ id: args.where.id, ...args.data }), deleteMany: async () => ({ count: 0 }), ...overrides.workoutRoutine },
-    workoutSession: { findMany: async () => [], create: async args => ({ id: "session-a", ...args.data }), ...overrides.workoutSession },
+    workoutSession: { findMany: async () => [], findFirst: async () => null, create: async args => ({ id: "session-a", ...args.data }), ...overrides.workoutSession },
     workoutSet: { findMany: async () => [], ...overrides.workoutSet },
     muscle: { findMany: async () => [], ...overrides.muscle }
   };
@@ -368,4 +368,41 @@ test("POST routines rejects repeated explicit positions", async () => {
   });
 
   assert.equal(exerciseLookups, 0);
+});
+
+
+test("POST sessions returns the original session when an offline request is retried", async () => {
+  let savedSession = null;
+  let writes = 0;
+  const requestId = "b8a9d47d-f7d0-4b5f-9f58-43e6b0f7b2e2";
+  const prisma = makePrisma({
+    exercise: { findMany: async () => [{ id: "bench" }] },
+    workoutSession: {
+      findFirst: async () => savedSession,
+      create: async args => {
+        writes += 1;
+        savedSession = { id: "session-once", ...args.data };
+        return savedSession;
+      }
+    }
+  });
+
+  await withWorkoutApi(prisma, async baseUrl => {
+    const submit = () => fetch(baseUrl + "/api/workouts/sessions", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        clientRequestId: requestId,
+        sets: [{ exerciseId: "bench", setNumber: 1, reps: 8 }]
+      })
+    });
+    const first = await submit();
+    const retry = await submit();
+    assert.equal(first.status, 201);
+    assert.equal(retry.status, 200);
+    assert.equal((await retry.json()).session.id, "session-once");
+  });
+
+  assert.equal(writes, 1);
+  assert.equal(savedSession.clientRequestId, requestId);
 });

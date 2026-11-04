@@ -86,6 +86,7 @@ export default function App() {
   const [registering, setRegistering] = useState(false);
   const [routineName, setRoutineName] = useState("");
   const [routineExerciseIds, setRoutineExerciseIds] = useState<string[]>([]);
+  const [editingRoutineId, setEditingRoutineId] = useState("");
   const [selectedRoutine, setSelectedRoutine] = useState("");
   // One live session can contain several exercises and their set sequences.
   const [selectedExerciseIds, setSelectedExerciseIds] = useState<string[]>([]);
@@ -270,13 +271,13 @@ export default function App() {
     }
   }
 
-  // Convert the selected exercise IDs into ordered routine entries. The array
-  // position becomes sortOrder, preserving the sequence chosen in the builder.
+  // Save the ordered movement list as either a new template or an update.
+  // The API rechecks ownership and exercise access before replacing any links.
   async function createRoutine(event: React.FormEvent) {
     event.preventDefault();
     try {
-      await request("/api/workouts/routines", {
-        method: "POST",
+      await request(editingRoutineId ? "/api/workouts/routines/" + editingRoutineId : "/api/workouts/routines", {
+        method: editingRoutineId ? "PUT" : "POST",
         body: JSON.stringify({
           name: routineName,
           exercises: routineExerciseIds.map((exerciseId, sortOrder) => ({ exerciseId, sortOrder }))
@@ -284,10 +285,37 @@ export default function App() {
       });
       setRoutineName("");
       setRoutineExerciseIds([]);
-      setNotice("Your routine has been saved.");
+      setEditingRoutineId("");
+      setNotice(editingRoutineId ? "Your routine has been updated." : "Your routine has been saved.");
       await loadWorkouts();
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Could not save that routine.");
+    }
+  }
+
+  // Load an existing template into the same editor used to create one.
+  function editRoutine(routine: Routine) {
+    setEditingRoutineId(routine.id);
+    setRoutineName(routine.name);
+    setRoutineExerciseIds(routine.exercises.map(item => item.exercise.id));
+    setNotice("Editing " + routine.name + ". Save changes when you're ready.");
+  }
+
+  // Removing a template never removes completed sessions that used it.
+  async function deleteRoutine(routine: Routine) {
+    if (!window.confirm("Delete the routine “" + routine.name + "”? Your workout history will be kept.")) return;
+    try {
+      await request("/api/workouts/routines/" + routine.id, { method: "DELETE" });
+      if (selectedRoutine === routine.id) setSelectedRoutine("");
+      if (editingRoutineId === routine.id) {
+        setEditingRoutineId("");
+        setRoutineName("");
+        setRoutineExerciseIds([]);
+      }
+      setNotice("Routine deleted. Your workout history is unchanged.");
+      await loadWorkouts();
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Could not delete that routine.");
     }
   }
 
@@ -663,14 +691,14 @@ export default function App() {
       <div className="welcome compact"><p className="eyebrow">MOVE AT YOUR OWN PACE</p><h1>Your workouts.</h1><p className="muted">Build a routine, log a session and keep a record of what you did.</p></div>
       <div className="content-grid">
         <form className="panel" onSubmit={createRoutine}>
-          <p className="eyebrow">ROUTINE BUILDER</p><h2>Create a routine</h2>
+          <p className="eyebrow">ROUTINE BUILDER</p><h2>{editingRoutineId ? "Edit routine" : "Create a routine"}</h2>
           <label>Routine name<input required maxLength={80} value={routineName} onChange={event => setRoutineName(event.target.value)} placeholder="e.g. Full body" /></label>
           <p className="field-heading">Choose exercises</p>
           <div className="exercise-picker">{exercises.map(exercise => <label className="check-row" key={exercise.id}>
             <input type="checkbox" checked={routineExerciseIds.includes(exercise.id)} onChange={event => setRoutineExerciseIds(current => event.target.checked ? [...current, exercise.id] : current.filter(id => id !== exercise.id))} />
             <span>{exercise.name}<small>{exercise.muscleGroup} · {exercise.equipment ?? "Equipment varies"}</small></span>
           </label>)}</div>
-          <button disabled={!routineName.trim() || routineExerciseIds.length === 0}>Save routine</button>
+          <div className="routine-editor-actions"><button disabled={!routineName.trim() || routineExerciseIds.length === 0}>{editingRoutineId ? "Save changes" : "Save routine"}</button>{editingRoutineId && <button type="button" className="secondary" onClick={() => { setEditingRoutineId(""); setRoutineName(""); setRoutineExerciseIds([]); }}>Cancel edit</button>}</div>
         </form>
         <form className="panel" onSubmit={recordWorkout}>
           <p className="eyebrow">WORKOUT BUILDER</p><h2>Build a workout</h2>
@@ -786,7 +814,7 @@ export default function App() {
       <section className="panel section-gap">
         <p className="eyebrow">SAVED ROUTINES</p><h2>Your routines</h2>
         {routines.length === 0 ? <p className="muted">No routines yet. Choose a few exercises above to make your first one.</p> :
-          <div className="routine-grid">{routines.map(routine => <article className="routine-card" key={routine.id}><strong>{routine.name}</strong><p className="muted">{routine.exercises.map(item => item.exercise.name).join(" · ")}</p></article>)}</div>}
+          <div className="routine-grid">{routines.map(routine => <article className="routine-card" key={routine.id}><strong>{routine.name}</strong><p className="muted">{routine.exercises.map(item => item.exercise.name).join(" · ")}</p><div className="routine-card-actions"><button type="button" className="secondary" onClick={() => editRoutine(routine)}>Edit</button><button type="button" className="danger-button" onClick={() => deleteRoutine(routine)}>Delete</button></div></article>)}</div>}
       </section>
       <section className="panel section-gap">
         <p className="eyebrow">EXERCISE LIBRARY</p><h2>Explore movements</h2>

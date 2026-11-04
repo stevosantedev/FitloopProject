@@ -91,9 +91,9 @@ export default function App() {
 
   // New exercise cards start with three editable rows. Each row remains a
   // separate record so uneven reps, loads and skipped sets survive in history.
-  function createDefaultExerciseDraft(): ExerciseDraft {
+  function createDefaultExerciseDraft(exerciseId: string): ExerciseDraft {
     return {
-      setEntries: Array.from({ length: 3 }, () => ({ id: crypto.randomUUID(), reps: "10", weight: "", completed: false })),
+      setEntries: Array.from({ length: 3 }, (_, index) => ({ id: exerciseId + "-set-" + (index + 1), reps: "10", weight: "", completed: false })),
       setType: "working", restSeconds: "90", rir: "", rpe: ""
     };
   }
@@ -292,7 +292,7 @@ export default function App() {
     event.preventDefault();
     try {
       const workoutSets = selectedExerciseIds.flatMap(exerciseId => {
-        const draft = exerciseDrafts[exerciseId] ?? createDefaultExerciseDraft();
+        const draft = exerciseDrafts[exerciseId] ?? createDefaultExerciseDraft(exerciseId);
         const rest = Number(draft.restSeconds);
 
         // Validate each row independently because sets can use different rep
@@ -609,7 +609,7 @@ export default function App() {
             key={selectedExerciseIds.join("|")}
             items={selectedExerciseIds.flatMap(exerciseId => {
               const exercise = exercises.find(item => item.id === exerciseId);
-              const draft = exerciseDrafts[exerciseId] ?? createDefaultExerciseDraft();
+              const draft = exerciseDrafts[exerciseId] ?? createDefaultExerciseDraft(exerciseId);
               return draft.setEntries.map((entry, index) => ({
                 exerciseId,
                 setId: entry.id,
@@ -622,7 +622,7 @@ export default function App() {
               }));
             })}
             onSetComplete={(exerciseId, setId) => setExerciseDrafts(current => {
-              const draft = current[exerciseId] ?? createDefaultExerciseDraft();
+              const draft = current[exerciseId] ?? createDefaultExerciseDraft(exerciseId);
               return {
                 ...current,
                 [exerciseId]: {
@@ -635,7 +635,7 @@ export default function App() {
           <div className="exercise-session-list">
             {selectedExerciseIds.map(exerciseId => {
               const exercise = exercises.find(item => item.id === exerciseId);
-              const draft = exerciseDrafts[exerciseId] ?? createDefaultExerciseDraft();
+              const draft = exerciseDrafts[exerciseId] ?? createDefaultExerciseDraft(exerciseId);
               const updateDraft = (field: keyof Omit<ExerciseDraft, "setEntries">, value: string) => {
                 setExerciseDrafts(current => ({
                   ...current,

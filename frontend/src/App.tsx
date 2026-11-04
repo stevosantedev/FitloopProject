@@ -571,11 +571,12 @@ export default function App() {
 
     let syncing = false;
     const syncQueuedWorkouts = async () => {
-      if (syncing || !navigator.onLine) return;
+      if (syncing) return;
       syncing = true;
       try {
         const queued = await getQueuedWorkouts(user.id);
         setPendingWorkoutCount(queued.length);
+        if (!navigator.onLine) return;
         for (const entry of queued) {
           try {
             await request("/api/workouts/sessions", {

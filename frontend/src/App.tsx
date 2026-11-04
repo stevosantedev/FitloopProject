@@ -20,7 +20,7 @@ type DailyLog = {
 };
 type Exercise = { id: string; name: string; muscleGroup: string; equipment?: string | null; instructions?: string[]; movementPattern?: string | null; muscles?: Array<{ role: "PRIMARY" | "SECONDARY"; muscle: { name: string; slug: string } }> };
 type MuscleStat = { id: string; slug: string; name: string; bodyRegion: string; view: string; effectiveSets: number; primarySets: number; secondarySets: number; lastTrainedAt: string | null; recoveryLabel: string };
-type ExerciseDraft = { sets: string; reps: string; weight: string };
+type ExerciseDraft = { sets: string; reps: string; weight: string; setType: string; restSeconds: string; rir: string; rpe: string };
 type Routine = { id: string; name: string; exercises: Array<{ exercise: Exercise }> };
 type WorkoutSession = {
   id: string;
@@ -86,11 +86,7 @@ export default function App() {
   const [selectedExerciseIds, setSelectedExerciseIds] = useState<string[]>([]);
   // Per-exercise drafts allow different set counts, rep targets and loads in one session.
   const [exerciseDrafts, setExerciseDrafts] = useState<Record<string, ExerciseDraft>>({});
-  const [setType, setSetType] = useState("working");
-  const [restSeconds, setRestSeconds] = useState("90");
   const [restRemaining, setRestRemaining] = useState<number | null>(null);
-  const [rpe, setRpe] = useState("");
-  const [rir, setRir] = useState("");
   const [reps, setReps] = useState("10");
   const [sets, setSets] = useState("3");
   const [weight, setWeight] = useState("");
@@ -283,25 +279,39 @@ export default function App() {
     }
   }
 
-  // The current MVP form records one exercise with repeated sets. A later guided
-  // session builder can submit several exercise IDs through the same session API.
+  // Build a separate sequence of set records for each selected exercise.
+  // The server still validates every numeric bound before writing the session.
   async function recordWorkout(event: React.FormEvent) {
     event.preventDefault();
     try {
-      // Each movement has its own draft, so compound sessions can record
-      // different rep targets, set counts and loads for every exercise.
       const workoutSets = selectedExerciseIds.flatMap(exerciseId => {
-        const draft = exerciseDrafts[exerciseId] ?? { sets, reps, weight };
-        const count = Math.max(1, Math.min(50, Number(draft.sets)));
-        const repetitions = Math.max(1, Math.min(500, Number(draft.reps)));
+        const draft = exerciseDrafts[exerciseId] ?? {
+          sets, reps, weight, setType: "working", restSeconds: "90", rir: "", rpe: ""
+        };
+        const count = Number(draft.sets);
+        const repetitions = Number(draft.reps);
         const parsedWeight = draft.weight.trim() === "" ? undefined : Number(draft.weight);
-        // Set numbering restarts per exercise, matching the session history grouping.
+        const rest = Number(draft.restSeconds);
+        const effortValues = [draft.rir, draft.rpe].filter(value => value.trim() !== "").map(Number);
+
+        // Catch invalid or out-of-range values before constructing an incomplete payload.
+        if (!Number.isInteger(count) || count < 1 || count > 50 ||
+            !Number.isInteger(repetitions) || repetitions < 1 || repetitions > 500 ||
+            (parsedWeight !== undefined && (!Number.isFinite(parsedWeight) || parsedWeight < 0 || parsedWeight > 1000)) ||
+            !Number.isInteger(rest) || rest < 0 || rest > 900 ||
+            (draft.rir.trim() !== "" && (!Number.isInteger(Number(draft.rir)) || Number(draft.rir) < 0 || Number(draft.rir) > 10)) ||
+            (draft.rpe.trim() !== "" && (!Number.isFinite(Number(draft.rpe)) || Number(draft.rpe) < 1 || Number(draft.rpe) > 10))) {
+          throw new Error("Check the set count, reps, weight, rest and effort values for each exercise.");
+        }
+
+        // Set numbering restarts for each exercise, while technique and rest metadata
+        // are copied onto every set so history retains the settings used for that movement.
         return Array.from({ length: count }, (_, index) => ({
           exerciseId, setNumber: index + 1, reps: repetitions,
-          weightKg: parsedWeight, completed: true, setType,
-          restSeconds: Number(restSeconds),
-          ...(rir.trim() ? { rir: Number(rir) } : {}),
-          ...(rpe.trim() ? { rpe: Number(rpe) } : {})
+          weightKg: parsedWeight, completed: true, setType: draft.setType,
+          restSeconds: rest,
+          ...(draft.rir.trim() ? { rir: Number(draft.rir) } : {}),
+          ...(draft.rpe.trim() ? { rpe: Number(draft.rpe) } : {})
         }));
       });
       await request("/api/workouts/sessions", {
@@ -600,23 +610,31 @@ export default function App() {
           <div className="exercise-session-list">
             {selectedExerciseIds.map(exerciseId => {
               const exercise = exercises.find(item => item.id === exerciseId);
-              const draft = exerciseDrafts[exerciseId] ?? { sets, reps, weight };
+              const draft = exerciseDrafts[exerciseId] ?? {
+                sets, reps, weight, setType: "working", restSeconds: "90", rir: "", rpe: ""
+              };
+              const updateDraft = (field: keyof ExerciseDraft, value: string) => {
+                setExerciseDrafts(current => ({
+                  ...current,
+                  [exerciseId]: { ...(current[exerciseId] ?? draft), [field]: value }
+                }));
+              };
               if (!exercise) return null;
               return <article className="exercise-session-card" key={exerciseId}>
                 <strong>{exercise.name}</strong>
                 <div className="exercise-draft-fields">
-                  <label>Sets<input required type="number" min="1" max="50" value={draft.sets} onChange={event => setExerciseDrafts(current => ({ ...current, [exerciseId]: { ...draft, sets: event.target.value } }))} /></label>
-                  <label>Reps per set<input required type="number" min="1" max="500" value={draft.reps} onChange={event => setExerciseDrafts(current => ({ ...current, [exerciseId]: { ...draft, reps: event.target.value } }))} /></label>
-                  <label>Weight (kg)<input type="number" min="0" max="1000" step="0.5" value={draft.weight} onChange={event => setExerciseDrafts(current => ({ ...current, [exerciseId]: { ...draft, weight: event.target.value } }))} placeholder="Bodyweight" /></label>
+                  <label>Sets<input required type="number" min="1" max="50" value={draft.sets} onChange={event => updateDraft("sets", event.target.value)} /></label>
+                  <label>Reps per set<input required type="number" min="1" max="500" value={draft.reps} onChange={event => updateDraft("reps", event.target.value)} /></label>
+                  <label>Weight (kg)<input type="number" min="0" max="1000" step="0.5" value={draft.weight} onChange={event => updateDraft("weight", event.target.value)} placeholder="Bodyweight" /></label>
+                  <label>Set type<select value={draft.setType} onChange={event => updateDraft("setType", event.target.value)}><option value="working">Working set</option><option value="warmup">Warm-up</option><option value="drop">Drop set</option><option value="failure">To failure</option><option value="rest_pause">Rest-pause</option><option value="amrap">AMRAP</option></select></label>
+                  <label>Rest (seconds)<input type="number" min="0" max="900" value={draft.restSeconds} onChange={event => updateDraft("restSeconds", event.target.value)} /></label>
+                  <label>Reps in reserve<input type="number" min="0" max="10" value={draft.rir} onChange={event => updateDraft("rir", event.target.value)} placeholder="Optional" /></label>
+                  <label>Effort (RPE)<input type="number" min="1" max="10" step="0.5" value={draft.rpe} onChange={event => updateDraft("rpe", event.target.value)} placeholder="Optional" /></label>
                 </div>
+                <button type="button" className="secondary-action" onClick={() => setRestRemaining(Number(draft.restSeconds))}>Start this exercise's rest timer</button>
               </article>;
             })}
           </div>
-          <label>Set type<select value={setType} onChange={event => setSetType(event.target.value)}><option value="working">Working set</option><option value="warmup">Warm-up</option><option value="drop">Drop set</option><option value="failure">To failure</option><option value="rest_pause">Rest-pause</option><option value="amrap">AMRAP</option></select></label>
-          <label>Rest after each set (seconds)<input type="number" min="0" max="900" value={restSeconds} onChange={event => setRestSeconds(event.target.value)} /></label>
-          <label>Reps in reserve (optional)<input type="number" min="0" max="10" value={rir} onChange={event => setRir(event.target.value)} placeholder="0–10" /></label>
-          <label>Rate of perceived exertion (optional)<input type="number" min="1" max="10" step="0.5" value={rpe} onChange={event => setRpe(event.target.value)} placeholder="1–10" /></label>
-          <button type="button" className="secondary-action" onClick={() => setRestRemaining(Number(restSeconds))}>Start rest timer</button>
           {restRemaining !== null && <p className="rest-countdown" role="timer" aria-live="polite">{Math.floor(restRemaining / 60)}:{String(restRemaining % 60).padStart(2, "0")} remaining <button type="button" className="small-button" onClick={() => setRestRemaining(null)}>Stop</button></p>}
           <button disabled={selectedExerciseIds.length === 0}>Save complete session</button>
         </form>

@@ -8,6 +8,7 @@
  */
 import { useEffect, useState } from "react";
 import MuscleMap from "./components/MuscleMap";
+import GuidedRestTimer from "./components/GuidedRestTimer";
 
 type User = { id: string; username: string };
 type DailyLog = {
@@ -87,7 +88,6 @@ export default function App() {
   const [selectedExerciseIds, setSelectedExerciseIds] = useState<string[]>([]);
   // Per-exercise drafts allow different set counts, rep targets and loads in one session.
   const [exerciseDrafts, setExerciseDrafts] = useState<Record<string, ExerciseDraft>>({});
-  const [restRemaining, setRestRemaining] = useState<number | null>(null);
 
   // New exercise cards start with three editable rows. Each row remains a
   // separate record so uneven reps, loads and skipped sets survive in history.
@@ -438,15 +438,6 @@ export default function App() {
     setPosts([]);
   }
 
-  // A one-second timeout chain avoids a permanent interval when the timer is stopped.
-  useEffect(() => {
-    if (restRemaining === null || restRemaining <= 0) return;
-    const timeout = window.setTimeout(() => {
-      setRestRemaining(current => current === null || current <= 1 ? null : current - 1);
-    }, 1000);
-    return () => window.clearTimeout(timeout);
-  }, [restRemaining]);
-
   useEffect(() => {
     // Each feature loads only when the account is signed in, keeping private requests out of the public screen.
     if (token) void loadDashboard();
@@ -614,6 +605,15 @@ export default function App() {
             {visibleExercises.length === 0 && <p className="muted">No exercises match those filters.</p>}
           </div>
           <p className="field-heading">{selectedExerciseIds.length} exercises selected</p>
+          <GuidedRestTimer items={selectedExerciseIds.flatMap(exerciseId => {
+            const exercise = exercises.find(item => item.id === exerciseId);
+            const draft = exerciseDrafts[exerciseId] ?? createDefaultExerciseDraft();
+            return draft.setEntries.flatMap((entry, index) => entry.completed ? [{
+              label: exercise?.name ?? "Exercise",
+              setNumber: index + 1,
+              restSeconds: Number(draft.restSeconds)
+            }] : []);
+          })} />
           <div className="exercise-session-list">
             {selectedExerciseIds.map(exerciseId => {
               const exercise = exercises.find(item => item.id === exerciseId);
@@ -664,11 +664,9 @@ export default function App() {
                   <label>Reps in reserve<input type="number" min="0" max="10" value={draft.rir} onChange={event => updateDraft("rir", event.target.value)} placeholder="Optional" /></label>
                   <label>Effort (RPE)<input type="number" min="1" max="10" step="0.5" value={draft.rpe} onChange={event => updateDraft("rpe", event.target.value)} placeholder="Optional" /></label>
                 </div>
-                <button type="button" className="secondary-action" onClick={() => setRestRemaining(Number(draft.restSeconds))}>Start this exercise's rest timer</button>
               </article>;
             })}
           </div>
-          {restRemaining !== null && <p className="rest-countdown" role="timer" aria-live="polite">{Math.floor(restRemaining / 60)}:{String(restRemaining % 60).padStart(2, "0")} remaining <button type="button" className="small-button" onClick={() => setRestRemaining(null)}>Stop</button></p>}
           <button disabled={selectedExerciseIds.length === 0}>Save complete session</button>
         </form>
       </div>

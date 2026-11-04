@@ -31,4 +31,4 @@ The API does not trust a user ID supplied by the browser to decide whose records
 
 ## Current limits
 
-The workout logger supports multi-exercise session submission, set categories, rest settings and a manual countdown. It does not yet provide individual set editing during a live session or a fully guided per-exercise timer. Muscle-volume and time-since-training summaries are heuristics, not physiological assessments. Production session hardening, offline sync, notifications and broader automated tests remain future work.
+The workout logger supports multi-exercise session submission with per-exercise set counts, rep targets, loads, set categories, rest durations and RIR/RPE values. A manual countdown can be started from each exercise card. Individual set editing during a live session and a fully guided timer sequence are not yet implemented. Muscle-volume and time-since-training summaries are heuristics, not physiological assessments. Production session hardening, offline sync, notifications and broader automated tests remain future work.

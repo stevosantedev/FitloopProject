@@ -495,3 +495,21 @@ footer { padding: 22px 0 0; border-top: 1px solid #202c25; }
 .routine-editor-actions, .routine-card-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .routine-card-actions button, .routine-editor-actions button { width: auto; margin: 0; }
 .routine-card-actions .danger-button { padding-inline: 13px; }
+
+
+/* Personal bests keep each movement's three logged records readable as compact app cards. */
+.personal-record-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
+.personal-record-card { min-width: 0; padding: 16px; border: 1px solid #2b3b30; border-radius: 13px; background: #121b15; }
+.personal-record-card > strong { color: #edf5ed; font-size: .95rem; }
+.personal-record-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 14px; }
+.personal-record-metrics > div { display: grid; align-content: start; gap: 5px; min-width: 0; }
+.personal-record-metrics span { color: #849387; font-size: .57rem; font-weight: 800; letter-spacing: .08em; }
+.personal-record-metrics b { color: #c5f28e; font-size: 1rem; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.personal-record-metrics small { color: #8d9c90; font-size: .65rem; }
+@media (max-width: 560px) {
+  .personal-record-grid { grid-template-columns: 1fr; }
+  .personal-record-card { padding: 13px; }
+  .personal-record-metrics { gap: 7px; }
+  .personal-record-metrics b { font-size: .9rem; }
+  .personal-record-metrics span { font-size: .52rem; }
+}

@@ -416,3 +416,5 @@ footer { padding: 22px 0 0; border-top: 1px solid #202c25; }
   .guided-launcher { align-items: stretch; flex-direction: column; }
   .guided-launcher > button { width: 100%; }
 }
+
+.active-set-meta { margin: 10px 0 0; color: #a9b9ac; font-size: .82rem; }

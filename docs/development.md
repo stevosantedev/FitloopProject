@@ -9,7 +9,7 @@ FitLoop is easiest to run locally with Node.js 20+, npm 10+, Python 3.11+ and Po
 3. Create a local PostgreSQL database and put its connection string in `DATABASE_URL`.
 4. Install JavaScript packages with `npm install`.
 5. Generate the Prisma client with `npm run db:generate`.
-6. Apply the schema with `npm run db:migrate`.
+6. Apply the Prisma schema to the local database with `npm run db:push`.
 7. Add the starter exercise definitions with `npm run db:seed`.
 8. Start the React frontend and Express API with `npm run dev`.
 
@@ -41,4 +41,4 @@ The GitHub Actions workflow runs schema validation, client generation, backend c
 
 ## A few useful reminders
 
-Keep `.env` out of Git. Do not use real health or mood data in fixtures. When changing the Prisma schema, regenerate the client and apply a migration locally before relying on the new fields.
+Keep `.env` out of Git. Do not use real health or mood data in fixtures. When changing the Prisma schema, run `npm run db:push` against your local database and regenerate the client before relying on the new fields. The repository does not yet have a complete baseline migration history; `db:push` is for local MVP development. Before production deployment, establish and review a full migration baseline rather than treating schema push as a production migration strategy.

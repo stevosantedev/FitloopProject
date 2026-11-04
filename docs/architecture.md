@@ -23,11 +23,12 @@ The API does not trust a user ID supplied by the browser to decide whose records
 ## Feature boundaries
 
 - Daily check-ins are stored once per user per calendar date.
-- Workout routines are reusable templates; sessions represent what was completed.
+- Workout routines are reusable templates; sessions represent what was completed and can contain several exercises.
+- Exercise definitions link to canonical muscle records, with primary and secondary roles. Training summaries weight those roles for a transparent volume estimate.
 - A completed workout creates a feed post. The feed API returns posts from the signed-in user and accepted friends.
 - Coach preferences change the wording and focus, not the underlying safety boundaries.
 - Coach decisions are stored against the original message so the project can review whether suggestions were accepted or declined.
 
 ## Current limits
 
-The current logger records one exercise at a time, rather than providing a full multi-exercise live session with a rest timer. The charts are deliberately simple summaries. Account deletion, secure production sessions, offline sync, notifications and a broader automated test suite remain future work.
+The workout logger supports multi-exercise session submission, set categories, rest settings and a manual countdown. It does not yet provide individual set editing during a live session or a fully guided per-exercise timer. Muscle-volume and time-since-training summaries are heuristics, not physiological assessments. Production session hardening, offline sync, notifications and broader automated tests remain future work.

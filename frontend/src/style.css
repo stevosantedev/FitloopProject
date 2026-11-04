@@ -206,3 +206,10 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 .guided-timer .rest-countdown { margin: 0; font-size: 1.15rem; }
 .guided-timer-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .guided-timer-actions button { width: auto; margin: 0; }
+
+/* Individual muscle paths make the reference diagram more specific than a single highlighted body region. */
+.body-silhouette { fill: #405448; stroke: #8ba092; stroke-width: 2; }
+.muscle-shape { fill: #7e9885; stroke: #263a2e; stroke-width: 1.2; opacity: .92; transition: fill .15s ease, opacity .15s ease; }
+.muscle-shape.active { fill: #c5f28e; stroke: #f0ffd9; stroke-width: 1.8; opacity: 1; }
+.anatomy-centre-lines { fill: none; stroke: #23382c; stroke-width: 1; stroke-dasharray: 3 4; opacity: .75; pointer-events: none; }
+.body-diagram svg { overflow: visible; }

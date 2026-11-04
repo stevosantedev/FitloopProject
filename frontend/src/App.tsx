@@ -563,13 +563,30 @@ export default function App() {
           <button disabled={!routineName.trim() || routineExerciseIds.length === 0}>Save routine</button>
         </form>
         <form className="panel" onSubmit={recordWorkout}>
-          <p className="eyebrow">SESSION LOGGER</p><h2>Log a workout</h2>
-          <label>Routine (optional)<select value={selectedRoutine} onChange={event => setSelectedRoutine(event.target.value)}><option value="">One-off workout</option>{routines.map(routine => <option key={routine.id} value={routine.id}>{routine.name}</option>)}</select></label>
-          <label>Exercise<select required value={selectedExercise} onChange={event => setSelectedExercise(event.target.value)}>{exercises.map(exercise => <option key={exercise.id} value={exercise.id}>{exercise.name} · {exercise.muscleGroup}</option>)}</select></label>
-          <label>Sets<input required type="number" min="1" max="50" value={sets} onChange={event => setSets(event.target.value)} /></label>
+          <p className="eyebrow">GUIDED SESSION</p><h2>Build a workout</h2>
+          <p className="muted">Choose several movements and record them together as one session.</p>
+          <label>Routine (optional)<select value={selectedRoutine} onChange={event => {
+            const routine = routines.find(item => item.id === event.target.value);
+            setSelectedRoutine(event.target.value);
+            if (routine) setSelectedExerciseIds(routine.exercises.map(item => item.exercise.id));
+          }}><option value="">One-off workout</option>{routines.map(routine => <option key={routine.id} value={routine.id}>{routine.name}</option>)}</select></label>
+          <label>Search exercises<input value={exerciseSearch} onChange={event => setExerciseSearch(event.target.value)} placeholder="Search name, muscle or movement" /></label>
+          <label>Filter by muscle<select value={exerciseMuscleFilter} onChange={event => setExerciseMuscleFilter(event.target.value)}><option value="all">All muscles</option>{muscleStats.map(muscle => <option key={muscle.id} value={muscle.slug}>{muscle.name}</option>)}</select></label>
+          <div className="exercise-picker" aria-label="Select exercises for this session">
+            {visibleExercises.map(exercise => <label className="check-row" key={exercise.id}>
+              <input type="checkbox" checked={selectedExerciseIds.includes(exercise.id)} onChange={event => setSelectedExerciseIds(current => event.target.checked ? [...current, exercise.id] : current.filter(id => id !== exercise.id))} />
+              <span>{exercise.name}<small>{exercise.muscleGroup} · {exercise.equipment ?? "Equipment varies"}{exercise.movementPattern ? " · " + exercise.movementPattern : ""}</small></span>
+            </label>)}
+            {visibleExercises.length === 0 && <p className="muted">No exercises match those filters.</p>}
+          </div>
+          <p className="field-heading">{selectedExerciseIds.length} exercises selected</p>
+          <label>Sets per exercise<input required type="number" min="1" max="50" value={sets} onChange={event => setSets(event.target.value)} /></label>
           <label>Reps per set<input required type="number" min="1" max="500" value={reps} onChange={event => setReps(event.target.value)} /></label>
           <label>Weight in kg (optional)<input type="number" min="0" max="1000" step="0.5" value={weight} onChange={event => setWeight(event.target.value)} placeholder="Leave blank for bodyweight" /></label>
-          <button disabled={!selectedExercise}>Save workout</button>
+          <label>Set type<select value={setType} onChange={event => setSetType(event.target.value)}><option value="working">Working set</option><option value="warmup">Warm-up</option><option value="drop">Drop set</option><option value="failure">To failure</option><option value="rest_pause">Rest-pause</option><option value="amrap">AMRAP</option></select></label>
+          <label>Rest after each set (seconds)<input type="number" min="0" max="900" value={restSeconds} onChange={event => setRestSeconds(event.target.value)} /></label>
+          <label>Reps in reserve (optional)<input type="number" min="0" max="10" value={rir} onChange={event => setRir(event.target.value)} placeholder="0–10" /></label>
+          <button disabled={selectedExerciseIds.length === 0}>Save complete session</button>
         </form>
       </div>
       <section className="panel section-gap">

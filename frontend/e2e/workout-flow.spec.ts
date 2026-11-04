@@ -100,3 +100,19 @@ test("the guided rest timer can pause, resume and skip its countdown", async ({ 
   await page.getByRole("button", { name: "Skip rest" }).click();
   await expect(page.getByText("Next set: Goblet squat · Set 2")).toBeVisible();
 });
+
+test("the final performed set receives its configured rest period", async ({ page }) => {
+  await mockApplicationApi(page);
+  await signInAndOpenWorkouts(page);
+
+  await page.getByLabel("Rest (seconds)").fill("1");
+  await page.getByRole("button", { name: "Start guided workout" }).click();
+  await page.getByRole("button", { name: "Set complete — start rest" }).click();
+  await page.getByRole("button", { name: "Skip rest" }).click();
+  await page.getByRole("button", { name: "Set complete — start rest" }).click();
+  await page.getByRole("button", { name: "Skip rest" }).click();
+
+  await page.getByRole("button", { name: "Set complete — start rest" }).click();
+  await expect(page.getByText("Rest after Goblet squat · Set 3")).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: "All guided sets are complete." })).toBeVisible({ timeout: 3_000 });
+});

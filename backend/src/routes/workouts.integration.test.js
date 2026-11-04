@@ -36,7 +36,7 @@ async function withWorkoutApi(prismaClient, run) {
 function makePrisma(overrides = {}) {
   return {
     exercise: { findMany: async () => [], ...overrides.exercise },
-    workoutRoutine: { findMany: async () => [], findFirst: async () => null, ...overrides.workoutRoutine },
+    workoutRoutine: { findMany: async () => [], findFirst: async () => null, update: async args => ({ id: args.where.id, ...args.data }), deleteMany: async () => ({ count: 0 }), ...overrides.workoutRoutine },
     workoutSession: { findMany: async () => [], create: async args => ({ id: "session-a", ...args.data }), ...overrides.workoutSession },
     workoutSet: { findMany: async () => [], ...overrides.workoutSet },
     muscle: { findMany: async () => [], ...overrides.muscle }
@@ -56,6 +56,71 @@ test("GET routines scopes the database query to the authenticated account", asyn
   });
 
   assert.equal(query.where.userId, "user-a");
+});
+
+test("PUT routines updates only an owned routine and replaces its ordered exercises", async () => {
+  let updateArgs;
+  let lookupArgs;
+  const prisma = makePrisma({
+    workoutRoutine: {
+      findFirst: async args => { lookupArgs = args; return { id: "routine-a" }; },
+      update: async args => { updateArgs = args; return { id: "routine-a", name: args.data.name }; }
+    },
+    exercise: { findMany: async args => args.where.id.in.map(id => ({ id })) }
+  });
+
+  await withWorkoutApi(prisma, async baseUrl => {
+    const response = await fetch(baseUrl + "/api/workouts/routines/routine-a", {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ name: "Upper body", exercises: [{ exerciseId: "bench" }, { exerciseId: "row" }] })
+    });
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { routine: { id: "routine-a", name: "Upper body" } });
+  });
+
+  assert.deepEqual(lookupArgs.where, { id: "routine-a", userId: "user-a" });
+  assert.deepEqual(updateArgs.data.exercises.create.map(item => item.sortOrder), [0, 1]);
+  assert.deepEqual(updateArgs.data.exercises.deleteMany, {});
+});
+
+test("PUT routines returns not found for a routine owned by another account", async () => {
+  let exerciseLookups = 0;
+  const prisma = makePrisma({
+    workoutRoutine: { findFirst: async () => null },
+    exercise: { findMany: async () => { exerciseLookups += 1; return []; } }
+  });
+
+  await withWorkoutApi(prisma, async baseUrl => {
+    const response = await fetch(baseUrl + "/api/workouts/routines/other-routine", {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ name: "Changed", exercises: [{ exerciseId: "bench" }] })
+    });
+    assert.equal(response.status, 404);
+  });
+  assert.equal(exerciseLookups, 0);
+});
+
+test("DELETE routines scopes deletion to the authenticated account", async () => {
+  let deleteArgs;
+  const prisma = makePrisma({
+    workoutRoutine: { deleteMany: async args => { deleteArgs = args; return { count: 1 }; } }
+  });
+
+  await withWorkoutApi(prisma, async baseUrl => {
+    const response = await fetch(baseUrl + "/api/workouts/routines/routine-a", { method: "DELETE" });
+    assert.equal(response.status, 204);
+  });
+  assert.deepEqual(deleteArgs.where, { id: "routine-a", userId: "user-a" });
+});
+
+test("DELETE routines returns not found when no owned routine matches", async () => {
+  const prisma = makePrisma({ workoutRoutine: { deleteMany: async () => ({ count: 0 }) } });
+  await withWorkoutApi(prisma, async baseUrl => {
+    const response = await fetch(baseUrl + "/api/workouts/routines/missing", { method: "DELETE" });
+    assert.equal(response.status, 404);
+  });
 });
 
 test("POST sessions creates a session and feed post for the authenticated account", async () => {

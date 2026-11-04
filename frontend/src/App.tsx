@@ -47,6 +47,7 @@ type FeedPost = {
 };
 type CoachMessage = { id: string; message: string; explanation: string; decision?: string };
 type CoachPreference = { style: "gentle" | "direct"; focus: "energy" | "consistency" | "recovery" };
+type PersonalRecord = { exerciseId: string; exerciseName: string; heaviestLoad: { value: number; date: string | null; sessionId: string | null } | null; mostReps: { value: number; date: string | null; sessionId: string | null } | null; highestSetVolume: { value: number; date: string | null; sessionId: string | null } | null };
 
 // Keep the API origin configurable for deployments while making local development
 // work without an extra environment variable.
@@ -73,6 +74,7 @@ export default function App() {
   const [anatomyView, setAnatomyView] = useState<"front" | "back">("front");
   const [routines, setRoutines] = useState<Routine[]>([]);
   const [sessions, setSessions] = useState<WorkoutSession[]>([]);
+  const [personalRecords, setPersonalRecords] = useState<PersonalRecord[]>([]);
   const [selectedSessionId, setSelectedSessionId] = useState("");
   const [connections, setConnections] = useState<FriendConnection[]>([]);
   const [posts, setPosts] = useState<FeedPost[]>([]);
@@ -169,16 +171,18 @@ export default function App() {
   async function loadWorkouts() {
     try {
       // Load the library, saved routines and completed sessions together for a responsive workout view.
-      const [exerciseData, routineData, sessionData, muscleData] = await Promise.all([
+      const [exerciseData, routineData, sessionData, muscleData, recordData] = await Promise.all([
         request("/api/workouts/exercises"),
         request("/api/workouts/routines"),
         request("/api/workouts/sessions"),
-        request("/api/workouts/muscle-stats?days=30")
+        request("/api/workouts/muscle-stats?days=30"),
+        request("/api/workouts/personal-records")
       ]);
       setExercises(exerciseData.exercises);
       setRoutines(routineData.routines);
       setSessions(sessionData.sessions);
       setMuscleStats(muscleData.muscles);
+      setPersonalRecords(recordData.records);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Could not load workouts.");
     }
@@ -845,7 +849,21 @@ export default function App() {
       </section>
       
 <section className="panel section-gap">
-  <p className="eyebrow">PROGRESSION</p><h2>Movement progress</h2>
+  <section className="panel section-gap">
+  <p className="eyebrow">PERSONAL BESTS</p><h2>Personal records</h2>
+  <p className="muted">Your best completed set for each movement, based on the records you have logged.</p>
+  {personalRecords.length === 0 ? <p className="muted">Complete a workout to start recording personal bests.</p> :
+    <div className="personal-record-grid">{personalRecords.map(record => <article className="personal-record-card" key={record.exerciseId}>
+      <strong>{record.exerciseName}</strong>
+      <div className="personal-record-metrics">
+        <div><span>HEAVIEST LOAD</span><b>{record.heaviestLoad ? record.heaviestLoad.value + " kg" : "—"}</b><small>{record.heaviestLoad?.date ? new Date(record.heaviestLoad.date).toLocaleDateString() : "No external load logged"}</small></div>
+        <div><span>MOST REPS</span><b>{record.mostReps ? record.mostReps.value + " reps" : "—"}</b><small>{record.mostReps?.date ? new Date(record.mostReps.date).toLocaleDateString() : "No completed sets"}</small></div>
+        <div><span>BEST SET VOLUME</span><b>{record.highestSetVolume ? Math.round(record.highestSetVolume.value).toLocaleString() + " kg" : "—"}</b><small>{record.highestSetVolume?.date ? new Date(record.highestSetVolume.date).toLocaleDateString() : "No external load logged"}</small></div>
+      </div>
+    </article>)}</div>}
+  <p className="chart-note">Records use completed sets only. Loads and set volume reflect what was entered; bodyweight is not converted into an estimated load.</p>
+</section>
+<p className="eyebrow">PROGRESSION</p><h2>Movement progress</h2>
   <p className="muted">Compare your latest completed sets with your previous session for each movement.</p>
   {exerciseProgress.length === 0 ? <p className="muted">Log a completed workout to start building your movement history.</p> :
     <div className="progression-list">{exerciseProgress.map(item => <article className="progression-row" key={item.exerciseId}>

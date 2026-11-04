@@ -27,8 +27,9 @@ type Routine = { id: string; name: string; exercises: Array<{ exercise: Exercise
 type WorkoutSession = {
   id: string;
   startedAt: string;
+  notes?: string | null;
   routine?: { name: string } | null;
-  sets: Array<{ id: string; reps: number; weightKg?: number | null; completed: boolean; exercise: Exercise }>;
+  sets: Array<{ id: string; reps: number; weightKg?: number | null; completed: boolean; setType?: string; restSeconds?: number; rir?: number | null; rpe?: number | null; exercise: Exercise }>;
 };
 type FriendConnection = {
   id: string;
@@ -72,6 +73,7 @@ export default function App() {
   const [anatomyView, setAnatomyView] = useState<"front" | "back">("front");
   const [routines, setRoutines] = useState<Routine[]>([]);
   const [sessions, setSessions] = useState<WorkoutSession[]>([]);
+  const [selectedSessionId, setSelectedSessionId] = useState("");
   const [connections, setConnections] = useState<FriendConnection[]>([]);
   const [posts, setPosts] = useState<FeedPost[]>([]);
   const [activeTab, setActiveTab] = useState<"home" | "workouts" | "community">("home");
@@ -529,6 +531,17 @@ export default function App() {
     return matchesText && matchesMuscle && matchesEquipment;
   });
   const selectedMuscleDetail = muscleStats.find(muscle => muscle.slug === selectedMuscle);
+  const selectedSession = sessions.find(session => session.id === selectedSessionId) ?? null;
+  // Group the selected session by movement while preserving the recorded set order.
+  const selectedSessionGroups = selectedSession ? selectedSession.sets.reduce<Array<{ exercise: Exercise; sets: WorkoutSession["sets"] }>>((groups, set) => {
+    let group = groups.find(item => item.exercise.id === set.exercise.id);
+    if (!group) {
+      group = { exercise: set.exercise, sets: [] };
+      groups.push(group);
+    }
+    group.sets.push(set);
+    return groups;
+  }, []) : [];
 
   return <main className="app-shell">
     <aside className="app-sidebar" aria-label="Application navigation">
@@ -813,7 +826,41 @@ export default function App() {
 <section className="panel section-gap">
         <p className="eyebrow">WORKOUT HISTORY</p><h2>Recent sessions</h2>
         {sessions.length === 0 ? <p className="muted">Completed workouts will show up here.</p> :
-          <ul className="log-list">{sessions.map(session => <li key={session.id}><strong>{session.routine?.name ?? "One-off workout"}</strong><span>{new Date(session.startedAt).toLocaleDateString()} · {session.sets.length} sets · {session.sets.map(item => item.exercise.name).filter((name, index, all) => all.indexOf(name) === index).join(", ")}</span></li>)}</ul>}
+          <div className="history-session-list">{sessions.map(session => {
+            const completedCount = session.sets.filter(set => set.completed).length;
+            const movementCount = new Set(session.sets.map(set => set.exercise.id)).size;
+            return <button
+              className={"history-session-card" + (selectedSessionId === session.id ? " selected" : "")}
+              key={session.id}
+              onClick={() => setSelectedSessionId(current => current === session.id ? "" : session.id)}
+              aria-expanded={selectedSessionId === session.id}
+            >
+              <span className="history-session-main"><strong>{session.routine?.name ?? "One-off workout"}</strong><small>{new Date(session.startedAt).toLocaleString()}</small></span>
+              <span className="history-session-stats"><strong>{completedCount}/{session.sets.length}</strong><small>sets completed</small><strong>{movementCount}</strong><small>movements</small></span>
+              <span className="history-session-arrow" aria-hidden="true">{selectedSessionId === session.id ? "−" : "+"}</span>
+            </button>;
+          })}</div>}
+        {selectedSession && <section className="history-detail" aria-label="Selected workout details">
+          <div className="history-detail-heading">
+            <div><p className="eyebrow">SESSION DETAILS</p><h3>{selectedSession.routine?.name ?? "One-off workout"}</h3><p className="muted">{new Date(selectedSession.startedAt).toLocaleString()}</p></div>
+            <button className="text-button" onClick={() => setSelectedSessionId("")}>Close details</button>
+          </div>
+          <div className="history-detail-summary">
+            <span><strong>{selectedSession.sets.filter(set => set.completed).length}</strong> completed sets</span>
+            <span><strong>{selectedSessionGroups.length}</strong> movements</span>
+            <span><strong>{Math.round(selectedSession.sets.filter(set => set.completed).reduce((sum, set) => sum + set.reps * (set.weightKg ?? 0), 0)).toLocaleString()}</strong> kg logged volume</span>
+          </div>
+          {selectedSessionGroups.map(group => <article className="history-movement" key={group.exercise.id}>
+            <div className="history-movement-heading"><strong>{group.exercise.name}</strong><span>{group.exercise.muscleGroup}</span></div>
+            <div className="history-set-table" role="table" aria-label={group.exercise.name + " sets"}>
+              <div className="history-set-row history-set-header" role="row"><span>SET</span><span>REPS</span><span>LOAD</span><span>STATUS</span></div>
+              {group.sets.map((set, index) => <div className="history-set-row" role="row" key={set.id}>
+                <span>{index + 1}</span><span>{set.reps}</span><span>{set.weightKg == null ? "Bodyweight / n/a" : set.weightKg + " kg"}</span><span className={set.completed ? "set-status-complete" : "set-status-skipped"}>{set.completed ? "Completed" : "Not completed"}</span>
+              </div>)}
+            </div>
+          </article>)}
+          {selectedSession.notes && <p className="history-session-notes"><strong>Session notes</strong>{selectedSession.notes}</p>}
+        </section>}
       </section>
     </section>}
 

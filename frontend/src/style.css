@@ -171,6 +171,22 @@ button:disabled { opacity: .45; cursor: not-allowed; }
   .body-diagram svg { max-height: 300px; }
 }
 
+/* Individual set rows keep different loads, rep targets and completion states readable. */
+.set-entry-list { display: grid; gap: 8px; margin: 12px 0; }
+.set-entry-row { display: grid; grid-template-columns: 54px minmax(75px, 1fr) minmax(95px, 1fr) minmax(105px, auto) auto; gap: 8px; align-items: end; padding: 10px; border: 1px solid #304238; border-radius: 10px; background: #172720; }
+.set-entry-row label { min-width: 0; margin: 0; font-size: .78rem; }
+.set-entry-row input:not([type="checkbox"]) { min-width: 0; padding: 9px; }
+.set-entry-number { align-self: center; color: #b7ed77; font-size: .82rem; font-weight: 700; }
+.set-entry-row .completed-set-control { display: flex; align-items: center; gap: 7px; white-space: nowrap; }
+.set-entry-row .completed-set-control input { width: 18px; height: 18px; margin: 0; accent-color: #b7ed77; }
+.add-set-button { width: auto !important; margin: 0 0 12px !important; }
+@media (max-width: 700px) {
+  .set-entry-row { grid-template-columns: 1fr 1fr; align-items: center; }
+  .set-entry-number { grid-column: 1 / -1; }
+  .set-entry-row .completed-set-control { grid-column: 1; }
+  .set-entry-row > button { grid-column: 2; }
+}
+
 /* Each movement in a compound session has independent targets and loading. */
 .exercise-session-list { display: grid; gap: 10px; margin: 12px 0; }
 .exercise-session-card { padding: 13px; border: 1px solid #435a49; border-radius: 12px; background: #1a2b22; }

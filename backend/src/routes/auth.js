@@ -21,7 +21,7 @@ const login = z.object({
 
 function createToken(userId) {
   // The token carries an ID only; profile details remain in the database.
-  return jwt.sign({}, config.JWT_SECRET, { subject: userId, expiresIn: "2h" });
+  return jwt.sign({}, config.JWT_SECRET, { subject: userId, expiresIn: "2h", issuer: "fitloop-api", audience: "fitloop-web", algorithm: "HS256" });
 }
 
 router.post("/register", async (req, res, next) => {

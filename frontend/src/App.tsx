@@ -66,6 +66,7 @@ export default function App() {
   // Local filters keep catalogue searching responsive without repeated API calls.
   const [exerciseSearch, setExerciseSearch] = useState("");
   const [exerciseMuscleFilter, setExerciseMuscleFilter] = useState("all");
+  const [exerciseEquipmentFilter, setExerciseEquipmentFilter] = useState("all");
   const [muscleStats, setMuscleStats] = useState<MuscleStat[]>([]);
   const [selectedMuscle, setSelectedMuscle] = useState("");
   const [anatomyView, setAnatomyView] = useState<"front" | "back">("front");
@@ -500,7 +501,8 @@ export default function App() {
     const term = exerciseSearch.trim().toLowerCase();
     const matchesText = !term || [exercise.name, exercise.muscleGroup, exercise.equipment ?? "", exercise.movementPattern ?? ""].some(value => value.toLowerCase().includes(term));
     const matchesMuscle = exerciseMuscleFilter === "all" || exercise.muscles?.some(link => link.muscle.slug === exerciseMuscleFilter);
-    return matchesText && matchesMuscle;
+    const matchesEquipment = exerciseEquipmentFilter === "all" || (exercise.equipment ?? "Other") === exerciseEquipmentFilter;
+    return matchesText && matchesMuscle && matchesEquipment;
   });
   const selectedMuscleDetail = muscleStats.find(muscle => muscle.slug === selectedMuscle);
 
@@ -634,15 +636,25 @@ export default function App() {
             setSelectedExerciseIds(routine ? routine.exercises.map(item => item.exercise.id) : []);
           }}><option value="">One-off workout</option>{routines.map(routine => <option key={routine.id} value={routine.id}>{routine.name}</option>)}</select></label>
           <label>Search exercises<input value={exerciseSearch} onChange={event => setExerciseSearch(event.target.value)} placeholder="Search name, muscle or movement" /></label>
-          <label>Filter by muscle<select value={exerciseMuscleFilter} onChange={event => setExerciseMuscleFilter(event.target.value)}><option value="all">All muscles</option>{muscleStats.map(muscle => <option key={muscle.id} value={muscle.slug}>{muscle.name}</option>)}</select></label>
-          <div className="exercise-picker" aria-label="Select exercises for this session">
-            {visibleExercises.map(exercise => <label className="check-row" key={exercise.id}>
+          <div className="exercise-filter-row">
+            <label>Muscle group<select value={exerciseMuscleFilter} onChange={event => setExerciseMuscleFilter(event.target.value)}><option value="all">All muscles</option>{muscleStats.map(muscle => <option key={muscle.id} value={muscle.slug}>{muscle.name}</option>)}</select></label>
+            <label>Equipment<select value={exerciseEquipmentFilter} onChange={event => setExerciseEquipmentFilter(event.target.value)}><option value="all">Any equipment</option>{Array.from(new Set(exercises.map(exercise => exercise.equipment ?? "Other"))).sort().map(equipment => <option key={equipment} value={equipment}>{equipment}</option>)}</select></label>
+          </div>
+          <div className="exercise-picker exercise-choice-grid" aria-label="Select exercises for this session">
+            {visibleExercises.map(exercise => <label className={"check-row exercise-choice" + (selectedExerciseIds.includes(exercise.id) ? " selected" : "")} key={exercise.id}>
               <input type="checkbox" checked={selectedExerciseIds.includes(exercise.id)} onChange={event => setSelectedExerciseIds(current => event.target.checked ? [...current, exercise.id] : current.filter(id => id !== exercise.id))} />
-              <span>{exercise.name}<small>{exercise.muscleGroup} · {exercise.equipment ?? "Equipment varies"}{exercise.movementPattern ? " · " + exercise.movementPattern : ""}</small></span>
+              <span className="exercise-choice-copy"><strong>{exercise.name}</strong><small>{exercise.muscleGroup} · {exercise.equipment ?? "Equipment varies"}</small>{exercise.movementPattern && <small>{exercise.movementPattern}</small>}</span>
+              <span className="exercise-choice-indicator" aria-hidden="true">{selectedExerciseIds.includes(exercise.id) ? "✓" : "+"}</span>
             </label>)}
             {visibleExercises.length === 0 && <p className="muted">No exercises match those filters.</p>}
           </div>
-          <p className="field-heading">{selectedExerciseIds.length} exercises selected</p>
+          <div className="selection-tray" aria-live="polite">
+            <span><strong>{selectedExerciseIds.length}</strong> movements in this session</span>
+            {selectedExerciseIds.length > 0 && <div className="selection-chips">{selectedExerciseIds.map(id => {
+              const selected = exercises.find(exercise => exercise.id === id);
+              return selected ? <button type="button" key={id} onClick={() => setSelectedExerciseIds(current => current.filter(item => item !== id))} aria-label={"Remove " + selected.name}>{selected.name}<span> ×</span></button> : null;
+            })}</div>}
+          </div>
           <GuidedRestTimer
             key={selectedExerciseIds.join("|")}
             items={selectedExerciseIds.flatMap(exerciseId => {

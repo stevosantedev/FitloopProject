@@ -43,6 +43,41 @@ function makePrisma(overrides = {}) {
   };
 }
 
+test("GET exercises returns technique and coaching fields with muscle links", async () => {
+  let query;
+  const prisma = makePrisma({
+    exercise: {
+      findMany: async args => {
+        query = args;
+        return [{
+          id: "squat",
+          name: "Goblet squat",
+          description: "A dumbbell squat variation.",
+          instructions: ["Hold the dumbbell at chest height."],
+          coachingCues: ["Keep the whole foot grounded."],
+          equipmentAlternatives: ["Kettlebell"],
+          muscles: [{ role: "PRIMARY", muscle: { name: "Quadriceps", slug: "quadriceps" } }]
+        }];
+      }
+    }
+  });
+
+  await withWorkoutApi(prisma, async baseUrl => {
+    const response = await fetch(baseUrl + "/api/workouts/exercises");
+    assert.equal(response.status, 200);
+    const data = await response.json();
+    assert.equal(data.exercises[0].description, "A dumbbell squat variation.");
+    assert.deepEqual(data.exercises[0].instructions, ["Hold the dumbbell at chest height."]);
+    assert.equal(data.exercises[0].muscles[0].muscle.slug, "quadriceps");
+  });
+
+  assert.deepEqual(query.include, {
+    muscles: { include: { muscle: true }, orderBy: { role: "asc" } }
+  });
+  assert.equal(query.where.AND[0].OR[0].isCustom, false);
+  assert.deepEqual(query.orderBy, [{ muscleGroup: "asc" }, { name: "asc" }]);
+});
+
 test("GET personal records scopes completed sets to the authenticated account", async () => {
   let query;
   const prisma = makePrisma({

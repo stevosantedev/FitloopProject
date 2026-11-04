@@ -175,3 +175,28 @@ test("active workout mode shows live progress and a completion summary", async (
   await expect(page.getByRole("status").filter({ hasText: "SESSION FINISHED" })).toBeVisible();
   await expect(page.getByText("3 sets completed in guided mode")).toBeVisible();
 });
+
+
+test("movement progress compares the latest completed load with the previous session", async ({ page }) => {
+  await mockApplicationApi(page);
+  await page.route("http://localhost:4000/api/workouts/sessions", async route => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ sessions: [
+        { id: "session-new", startedAt: "2026-11-03T18:00:00.000Z", routine: null, sets: [
+          { id: "set-new", reps: 8, weightKg: 24, completed: true, exercise }
+        ] },
+        { id: "session-old", startedAt: "2026-10-30T18:00:00.000Z", routine: null, sets: [
+          { id: "set-old", reps: 8, weightKg: 22, completed: true, exercise }
+        ] }
+      ] })
+    });
+  });
+  await signInAndOpenWorkouts(page);
+  const progress = page.locator(".progression-row").filter({ hasText: "Goblet squat" });
+  await expect(progress).toBeVisible();
+  await expect(progress.getByText("24 kg")).toBeVisible();
+  await expect(progress.getByText("+2 kg from your previous session")).toBeVisible();
+  await expect(progress.getByText("1", { exact: true })).toBeVisible();
+});

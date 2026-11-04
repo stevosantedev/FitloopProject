@@ -74,6 +74,8 @@ test("guided sets mark only performed rows complete before saving", async ({ pag
   await expect(page.getByText("Next set: Goblet squat · Set 2")).toBeVisible();
   await page.getByRole("button", { name: "Set complete — start rest" }).click();
 
+  // The active workout intentionally covers the editor; end the guided stage before saving its preserved set records.
+  await page.getByRole("button", { name: "End session" }).click();
   await page.getByRole("button", { name: "Save complete session" }).click();
   await expect(page.getByRole("status").filter({ hasText: "Workout saved" })).toBeVisible();
   expect(savedSession.sets).toHaveLength(3);

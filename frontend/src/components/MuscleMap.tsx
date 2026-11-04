@@ -26,6 +26,7 @@ const frontRegions = [
   ["lateral-deltoid", "shoulders"],
   ["biceps-brachii", "arms"],
   ["brachialis", "arms"],
+  ["forearm-flexors", "arms"],
   ["rectus-abdominis", "core"],
   ["obliques", "core"],
   ["quadriceps", "legs"],
@@ -34,6 +35,8 @@ const frontRegions = [
   ["soleus", "lower-legs"],
   ["tibialis-anterior", "lower-legs"],
   ["iliopsoas", "hips"],
+  ["gluteus-medius", "hips"],
+  ["gluteus-minimus", "hips"],
   ["serratus-anterior", "chest"],
   ["rotator-cuff", "shoulders"],
   ["transverse-abdominis", "core"]

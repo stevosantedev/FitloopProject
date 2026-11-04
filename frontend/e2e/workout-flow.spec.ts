@@ -116,3 +116,21 @@ test("the final performed set receives its configured rest period", async ({ pag
   await expect(page.getByText("Rest after Goblet squat · Set 3")).toBeVisible();
   await expect(page.getByRole("status").filter({ hasText: "All guided sets are complete." })).toBeVisible({ timeout: 3_000 });
 });
+
+test("the app uses persistent navigation on desktop and a bottom tab bar on mobile", async ({ page }) => {
+  await mockApplicationApi(page);
+  await page.goto("/");
+  await page.getByLabel("Email").fill("tester@example.com");
+  await page.getByLabel("Password").fill("test-password");
+  await page.getByRole("button", { name: "Sign in" }).click();
+
+  await expect(page.locator(".app-sidebar")).toBeVisible();
+  await page.getByRole("button", { name: "Workouts" }).click();
+  await expect(page.getByRole("heading", { name: "Build a workout" })).toBeVisible();
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.locator(".mobile-nav")).toBeVisible();
+  await page.locator(".mobile-nav").getByRole("button", { name: "Community" }).click();
+  await expect(page.getByRole("heading", { name: "Your community." })).toBeVisible();
+  await expect(page.locator(".app-sidebar")).toBeHidden();
+});

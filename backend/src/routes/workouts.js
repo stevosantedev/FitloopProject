@@ -273,8 +273,21 @@ router.get("/sessions", async (req, res, next) => {
 // The session and its feed post are created together so the feed cannot advertise
 // a workout whose history record failed to save.
 router.post("/sessions", async (req, res, next) => {
+  let clientRequestId;
   try {
     const input = sessionInput.parse(req.body);
+    clientRequestId = input.clientRequestId;
+
+    // A queued browser request may be retried after a lost connection or page
+    // reload. Return the original session instead of creating duplicate volume
+    // or a second friends-feed post for the same client-generated request key.
+    if (clientRequestId) {
+      const existing = await prismaClient.workoutSession.findFirst({
+        where: { userId: req.userId, clientRequestId },
+        include: { routine: true, sets: { include: { exercise: true } } }
+      });
+      if (existing) return res.status(200).json({ session: existing });
+    }
 
     // A routine must belong to the signed-in user; knowing another routine ID grants no access.
     if (input.routineId) {
@@ -308,6 +321,7 @@ router.post("/sessions", async (req, res, next) => {
         userId: req.userId,
         routineId: input.routineId,
         notes: input.notes,
+        clientRequestId,
         endedAt: new Date(),
         sets: { create: input.sets },
         // Every completed session creates a friends-feed entry; feed visibility is still checked per connection.
@@ -317,6 +331,19 @@ router.post("/sessions", async (req, res, next) => {
     });
     return res.status(201).json({ session });
   } catch (error) {
+    // Two tabs can attempt the same queued request simultaneously. The unique
+    // index is the final guard; the loser reads back the winning session.
+    if (error?.code === "P2002" && clientRequestId) {
+      try {
+        const existing = await prismaClient.workoutSession.findFirst({
+          where: { userId: req.userId, clientRequestId },
+          include: { routine: true, sets: { include: { exercise: true } } }
+        });
+        if (existing) return res.status(200).json({ session: existing });
+      } catch (lookupError) {
+        return next(lookupError);
+      }
+    }
     return next(error);
   }
 });

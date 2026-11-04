@@ -21,7 +21,7 @@ type DailyLog = {
 };
 type Exercise = { id: string; name: string; muscleGroup: string; equipment?: string | null; instructions?: string[]; movementPattern?: string | null; muscles?: Array<{ role: "PRIMARY" | "SECONDARY"; muscle: { name: string; slug: string } }> };
 type MuscleStat = { id: string; slug: string; name: string; bodyRegion: string; view: string; effectiveSets: number; primarySets: number; secondarySets: number; lastTrainedAt: string | null; recoveryLabel: string };
-type WorkoutSetDraft = { reps: string; weight: string; completed: boolean };
+type WorkoutSetDraft = { id: string; reps: string; weight: string; completed: boolean };
 type ExerciseDraft = { setEntries: WorkoutSetDraft[]; setType: string; restSeconds: string; rir: string; rpe: string };
 type Routine = { id: string; name: string; exercises: Array<{ exercise: Exercise }> };
 type WorkoutSession = {
@@ -93,7 +93,7 @@ export default function App() {
   // separate record so uneven reps, loads and skipped sets survive in history.
   function createDefaultExerciseDraft(): ExerciseDraft {
     return {
-      setEntries: Array.from({ length: 3 }, () => ({ reps: "10", weight: "", completed: true })),
+      setEntries: Array.from({ length: 3 }, () => ({ id: crypto.randomUUID(), reps: "10", weight: "", completed: false })),
       setType: "working", restSeconds: "90", rir: "", rpe: ""
     };
   }
@@ -605,15 +605,33 @@ export default function App() {
             {visibleExercises.length === 0 && <p className="muted">No exercises match those filters.</p>}
           </div>
           <p className="field-heading">{selectedExerciseIds.length} exercises selected</p>
-          <GuidedRestTimer key={selectedExerciseIds.join("|")} items={selectedExerciseIds.flatMap(exerciseId => {
-            const exercise = exercises.find(item => item.id === exerciseId);
-            const draft = exerciseDrafts[exerciseId] ?? createDefaultExerciseDraft();
-            return draft.setEntries.flatMap((entry, index) => entry.completed ? [{
-              label: exercise?.name ?? "Exercise",
-              setNumber: index + 1,
-              restSeconds: Number(draft.restSeconds)
-            }] : []);
-          })} />
+          <GuidedRestTimer
+            key={selectedExerciseIds.join("|")}
+            items={selectedExerciseIds.flatMap(exerciseId => {
+              const exercise = exercises.find(item => item.id === exerciseId);
+              const draft = exerciseDrafts[exerciseId] ?? createDefaultExerciseDraft();
+              return draft.setEntries.map((entry, index) => ({
+                exerciseId,
+                setId: entry.id,
+                label: exercise?.name ?? "Exercise",
+                setNumber: index + 1,
+                reps: entry.reps,
+                weight: entry.weight,
+                restSeconds: Number(draft.restSeconds),
+                completed: entry.completed
+              }));
+            })}
+            onSetComplete={(exerciseId, setId) => setExerciseDrafts(current => {
+              const draft = current[exerciseId] ?? createDefaultExerciseDraft();
+              return {
+                ...current,
+                [exerciseId]: {
+                  ...draft,
+                  setEntries: draft.setEntries.map(entry => entry.id === setId ? { ...entry, completed: true } : entry)
+                }
+              };
+            })}
+          />
           <div className="exercise-session-list">
             {selectedExerciseIds.map(exerciseId => {
               const exercise = exercises.find(item => item.id === exerciseId);
@@ -656,7 +674,7 @@ export default function App() {
                 <button type="button" className="small-button add-set-button" disabled={draft.setEntries.length >= 50} onClick={() => setExerciseDrafts(current => {
                   const currentDraft = current[exerciseId] ?? draft;
                   const previous = currentDraft.setEntries[currentDraft.setEntries.length - 1];
-                  return { ...current, [exerciseId]: { ...currentDraft, setEntries: [...currentDraft.setEntries, { reps: previous?.reps ?? "10", weight: previous?.weight ?? "", completed: true }] } };
+                  return { ...current, [exerciseId]: { ...currentDraft, setEntries: [...currentDraft.setEntries, { id: crypto.randomUUID(), reps: previous?.reps ?? "10", weight: previous?.weight ?? "", completed: false }] } };
                 })}>Add set</button>
                 <div className="exercise-draft-fields">
                   <label>Set type<select value={draft.setType} onChange={event => updateDraft("setType", event.target.value)}><option value="working">Working set</option><option value="warmup">Warm-up</option><option value="drop">Drop set</option><option value="failure">To failure</option><option value="rest_pause">Rest-pause</option><option value="amrap">AMRAP</option></select></label>

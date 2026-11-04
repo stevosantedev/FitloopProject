@@ -91,7 +91,8 @@ export default function App() {
   const [editingRoutineId, setEditingRoutineId] = useState("");
   const [selectedRoutine, setSelectedRoutine] = useState("");
   // One live session can contain several exercises and their set sequences.
-  const [selectedExerciseIds, setSelectedExerciseIds] = useState<string[]>([]);\n  const [exerciseDetailId, setExerciseDetailId] = useState("");
+  const [selectedExerciseIds, setSelectedExerciseIds] = useState<string[]>([]);
+  const [exerciseDetailId, setExerciseDetailId] = useState("");
   // Each exercise draft keeps independent set rows and exercise-level effort/rest settings.
   const [exerciseDrafts, setExerciseDrafts] = useState<Record<string, ExerciseDraft>>({});
 

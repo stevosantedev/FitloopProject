@@ -140,6 +140,7 @@ export default function GuidedRestTimer({ items, onSetComplete }: Props) {
           {phase === "set" ? (
             <div className="active-set-stage">
               <span className="active-phase-label">UP NEXT · SET {current.setNumber}</span>
+              <p className="active-set-meta">Next set: {current.label} · Set {current.setNumber}</p>
               <h3>{current.label}</h3>
               <div className="active-targets">
                 <div><strong>{current.reps}</strong><span>REPS</span></div>
@@ -154,6 +155,7 @@ export default function GuidedRestTimer({ items, onSetComplete }: Props) {
           ) : (
             <div className="active-rest-stage">
               <span className="active-phase-label">{paused ? "REST PAUSED" : "RECOVER BEFORE THE NEXT SET"}</span>
+              <p className="active-set-meta">Rest after {current.label} · Set {current.setNumber}</p>
               <h3>Take your rest.</h3>
               <p className="rest-countdown active-rest-clock" role="timer" aria-live="off">{clock(remaining ?? 0)}</p>
               <p className="active-rest-caption">Time remaining</p>

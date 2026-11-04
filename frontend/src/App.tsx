@@ -565,7 +565,8 @@ export default function App() {
   // second copy of the library that could become stale after a refresh.
   const visibleExercises = exercises.filter(exercise => {
     const term = exerciseSearch.trim().toLowerCase();
-    const matchesText = !term || [exercise.name, exercise.muscleGroup, exercise.equipment ?? "", exercise.movementPattern ?? ""].some(value => value.toLowerCase().includes(term));
+    const searchable = [exercise.name, exercise.muscleGroup, exercise.equipment ?? "", exercise.movementPattern ?? "", exercise.description ?? "", ...(exercise.aliases ?? []), ...(exercise.instructions ?? []), ...(exercise.coachingCues ?? []), ...(exercise.equipmentAlternatives ?? [])];
+    const matchesText = !term || searchable.some(value => value.toLowerCase().includes(term));
     const matchesMuscle = exerciseMuscleFilter === "all" || exercise.muscles?.some(link => link.muscle.slug === exerciseMuscleFilter);
     const matchesEquipment = exerciseEquipmentFilter === "all" || (exercise.equipment ?? "Other") === exerciseEquipmentFilter;
     return matchesText && matchesMuscle && matchesEquipment;

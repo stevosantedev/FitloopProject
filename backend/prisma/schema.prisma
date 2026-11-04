@@ -165,6 +165,10 @@ model WorkoutSet {
   reps       Int
   weightKg   Float?
   completed  Boolean        @default(true)
+  setType    String         @default("working")
+  restSeconds Int?
+  rir        Int?
+  rpe        Float?
   session    WorkoutSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   exercise   Exercise       @relation(fields: [exerciseId], references: [id], onDelete: Restrict)
 

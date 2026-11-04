@@ -10,6 +10,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../prisma.js";
 import { calculateMuscleVolume } from "../utils/muscleVolume.js";
+import { calculatePersonalRecords } from "../utils/personalRecords.js";
 import { sessionInput } from "../utils/workoutSessionInput.js";
 
 /**
@@ -230,6 +231,23 @@ router.delete("/routines/:id", async (req, res, next) => {
     });
     if (result.count === 0) return res.status(404).json({ error: "Workout routine not found." });
     return res.json({ deleted: true });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+// Personal records are calculated from all completed sets owned by this account.
+// The API does not infer a load for bodyweight movements or include abandoned sets.
+router.get("/personal-records", async (req, res, next) => {
+  try {
+    const sets = await prismaClient.workoutSet.findMany({
+      where: { completed: true, session: { userId: req.userId } },
+      include: {
+        exercise: { select: { id: true, name: true } },
+        session: { select: { id: true, startedAt: true } }
+      }
+    });
+    return res.json({ records: calculatePersonalRecords(sets) });
   } catch (error) {
     return next(error);
   }

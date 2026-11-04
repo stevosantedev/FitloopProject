@@ -1,9 +1,19 @@
+/**
+ * Workout API routes.
+ *
+ * This module owns the shared exercise catalogue plus the signed-in user's
+ * routine and completed-session endpoints. Authentication is applied by the
+ * parent router, so every private query must use req.userId rather than an ID
+ * supplied in the request body.
+ */
 import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../prisma.js";
 
 const router = Router();
 
+// Validate routine templates before touching the database. The exercise IDs are
+// checked against the catalogue in the handler because Zod cannot verify records.
 const routineInput = z.object({
   name: z.string().min(1).max(80),
   description: z.string().max(300).optional(),
@@ -13,6 +23,8 @@ const routineInput = z.object({
   })).max(30)
 });
 
+// A session contains the sets the user actually performed. Bounds protect the
+// API from unreasonable values while still allowing long sessions and high-rep work.
 const sessionInput = z.object({
   routineId: z.string().optional(),
   notes: z.string().max(500).optional(),
@@ -38,6 +50,8 @@ router.get("/exercises", async (_req, res, next) => {
   }
 });
 
+// List only this account's reusable templates. Including the join rows and their
+// exercise records avoids a second request for every routine card in the UI.
 router.get("/routines", async (req, res, next) => {
   try {
     const routines = await prisma.workoutRoutine.findMany({
@@ -51,9 +65,14 @@ router.get("/routines", async (req, res, next) => {
   }
 });
 
+// Create a reusable template and preserve the order chosen in the workout builder.
+// The nested create keeps the routine and its exercise links in one database write.
 router.post("/routines", async (req, res, next) => {
   try {
     const input = routineInput.parse(req.body);
+    // Check distinct IDs so selecting the same exercise twice does not make the
+    // existence check fail. The original input array is still used below because
+    // repeated exercises and their sort positions are meaningful in a routine.
     const exerciseIds = [...new Set(input.exercises.map(item => item.exerciseId))];
 
     // Confirm every exercise exists before linking it, so a user cannot create broken routine entries.
@@ -77,6 +96,8 @@ router.post("/routines", async (req, res, next) => {
   }
 });
 
+// Return recent history newest-first. The limit keeps a dashboard request bounded;
+// a dedicated pagination endpoint can replace this when the history grows.
 router.get("/sessions", async (req, res, next) => {
   try {
     const sessions = await prisma.workoutSession.findMany({
@@ -91,6 +112,9 @@ router.get("/sessions", async (req, res, next) => {
   }
 });
 
+// Save a completed workout session, including every set performed during it.
+// The session and its feed post are created together so the feed cannot advertise
+// a workout whose history record failed to save.
 router.post("/sessions", async (req, res, next) => {
   try {
     const input = sessionInput.parse(req.body);
@@ -104,12 +128,16 @@ router.post("/sessions", async (req, res, next) => {
       if (!routine) return res.status(404).json({ error: "Workout routine not found." });
     }
 
+    // Validate every referenced exercise before writing any sets. A single bad
+    // ID rejects the whole session, avoiding a partially recorded workout.
     const exerciseIds = [...new Set(input.sets.map(item => item.exerciseId))];
     const available = await prisma.exercise.findMany({ where: { id: { in: exerciseIds } }, select: { id: true } });
     if (available.length !== exerciseIds.length) {
       return res.status(400).json({ error: "One or more selected exercises do not exist." });
     }
 
+    // The nested post create is part of the same Prisma operation. This keeps the
+    // session and its social announcement consistent if either write fails.
     const session = await prisma.workoutSession.create({
       data: {
         userId: req.userId,

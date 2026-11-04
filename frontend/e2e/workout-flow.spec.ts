@@ -200,3 +200,43 @@ test("movement progress compares the latest completed load with the previous ses
   await expect(progress.getByText("+2 kg from your previous session")).toBeVisible();
   await expect(progress.getByText("1", { exact: true })).toBeVisible();
 });
+
+
+test("workout history opens a session with its individual set results", async ({ page }) => {
+  await mockApplicationApi(page);
+  await page.route("http://localhost:4000/api/workouts/sessions", async route => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ sessions: [{
+        id: "history-session",
+        startedAt: "2026-11-02T17:30:00.000Z",
+        routine: { name: "Upper body" },
+        notes: "Kept the final set light.",
+        sets: [
+          { id: "history-set-1", reps: 10, weightKg: 20, completed: true, exercise },
+          { id: "history-set-2", reps: 8, weightKg: 22, completed: true, exercise },
+          { id: "history-set-3", reps: 8, weightKg: 24, completed: false, exercise }
+        ]
+      }] })
+    });
+  });
+  await signInAndOpenWorkouts(page);
+
+  const session = page.getByRole("button", { name: /Upper body/ });
+  await expect(session).toBeVisible();
+  await expect(session).toContainText("2/3");
+  await session.click();
+
+  const details = page.getByRole("region", { name: "Selected workout details" });
+  await expect(details).toBeVisible();
+  await expect(details.getByRole("heading", { name: "Upper body" })).toBeVisible();
+  await expect(details.getByText("20 kg")).toBeVisible();
+  await expect(details.getByText("22 kg")).toBeVisible();
+  await expect(details.getByText("24 kg")).toBeVisible();
+  await expect(details.getByText("Not completed")).toBeVisible();
+  await expect(details.getByText("Kept the final set light.")).toBeVisible();
+
+  await details.getByRole("button", { name: "Close details" }).click();
+  await expect(details).toHaveCount(0);
+});

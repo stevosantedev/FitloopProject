@@ -10,6 +10,7 @@ import { z } from "zod";
 export const sessionInput = z.object({
   routineId: z.string().optional(),
   notes: z.string().max(500).optional(),
+  clientRequestId: z.string().uuid().optional(),
   sets: z.array(z.object({
     exerciseId: z.string().min(1),
     setNumber: z.number().int().min(1).max(50),

@@ -53,7 +53,7 @@ export default function MuscleAnatomyIllustration({ view, selectedSlug }: Props)
 
   const muscles = view === "front" ? front : back;
   return (
-    <svg viewBox="0 0 260 440" role="img" aria-label={view === "front" ? "Front muscle reference illustration" : "Back muscle reference illustration"}>
+    <svg viewBox="0 0 260 440" aria-hidden="true" focusable="false">
       <g className="body-silhouette" strokeLinejoin="round">
         <circle cx="130" cy="34" r="22" />
         <path d="M113 58 L147 58 L153 78 L176 88 L190 155 L174 177 L163 137 L158 211 L102 211 L97 137 L86 177 L70 155 L84 88 L107 78 Z" />

@@ -54,6 +54,8 @@ type FeedPost = {
   comments: Array<{ id: string; text: string; user: { username: string } }>;
 };
 type CoachMessage = { id: string; message: string; explanation: string; decision?: string };
+type CoachConversation = { id: string; title: string; updatedAt: string; messages?: Array<{ id: string; role: string; content: string }>; _count?: { messages: number } };
+type CoachChatMessage = { id: string; role: "user" | "assistant"; content: string; createdAt: string };
 type CoachPreference = { style: "gentle" | "direct"; focus: "energy" | "consistency" | "recovery" };
 type PersonalRecord = { exerciseId: string; exerciseName: string; heaviestLoad: { value: number; date: string | null; sessionId: string | null } | null; mostReps: { value: number; date: string | null; sessionId: string | null } | null; highestSetVolume: { value: number; date: string | null; sessionId: string | null } | null };
 
@@ -70,6 +72,13 @@ export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [logs, setLogs] = useState<DailyLog[]>([]);
   const [coachMessages, setCoachMessages] = useState<CoachMessage[]>([]);
+  const [coachConversations, setCoachConversations] = useState<CoachConversation[]>([]);
+  const [activeCoachConversationId, setActiveCoachConversationId] = useState("");
+  const [coachChatMessages, setCoachChatMessages] = useState<CoachChatMessage[]>([]);
+  const [coachDraft, setCoachDraft] = useState("");
+  const [coachChatLoading, setCoachChatLoading] = useState(false);
+  const [coachChatSending, setCoachChatSending] = useState(false);
+  const [coachChatError, setCoachChatError] = useState("");
   // Keep the selected coaching tone and focus available while the user edits their preferences.
   const [coachPreference, setCoachPreference] = useState<CoachPreference>({ style: "gentle", focus: "energy" });
   const [exercises, setExercises] = useState<Exercise[]>([]);
@@ -89,7 +98,7 @@ export default function App() {
   const [selectedSessionId, setSelectedSessionId] = useState("");
   const [connections, setConnections] = useState<FriendConnection[]>([]);
   const [posts, setPosts] = useState<FeedPost[]>([]);
-  const [activeTab, setActiveTab] = useState<"home" | "workouts" | "community">("home");
+  const [activeTab, setActiveTab] = useState<"home" | "workouts" | "community" | "coach">("home");
   const [notice, setNotice] = useState("");
   // Keep first-load and refresh failures separate from legitimate empty account data.
   const [dashboardLoading, setDashboardLoading] = useState(false);
@@ -274,6 +283,82 @@ export default function App() {
       setNotice(message);
     } finally {
       setCommunityLoading(false);
+    }
+  }
+
+  // Conversation history is private and loaded only after the coach destination is opened.
+  async function loadCoachConversations() {
+    setCoachChatLoading(true);
+    setCoachChatError("");
+    try {
+      const data = await request("/api/coach/conversations");
+      setCoachConversations(data.conversations);
+      if (!activeCoachConversationId && data.conversations[0]) setActiveCoachConversationId(data.conversations[0].id);
+    } catch (error) {
+      setCoachChatError(error instanceof Error ? error.message : "Could not load coach conversations.");
+    } finally { setCoachChatLoading(false); }
+  }
+
+  async function loadCoachChat(conversationId: string) {
+    setCoachChatLoading(true);
+    setCoachChatError("");
+    try {
+      const data = await request("/api/coach/conversations/" + conversationId + "/messages");
+      setCoachChatMessages(data.messages);
+    } catch (error) {
+      setCoachChatError(error instanceof Error ? error.message : "Could not load this conversation.");
+    } finally { setCoachChatLoading(false); }
+  }
+
+  async function createCoachConversation() {
+    try {
+      const data = await request("/api/coach/conversations", { method: "POST", body: JSON.stringify({}) });
+      setCoachConversations(current => [data.conversation, ...current]);
+      setActiveCoachConversationId(data.conversation.id);
+      setCoachChatMessages([]);
+      setCoachChatError("");
+    } catch (error) {
+      setCoachChatError(error instanceof Error ? error.message : "Could not start a conversation.");
+    }
+  }
+
+  async function sendCoachMessage(event: React.FormEvent) {
+    event.preventDefault();
+    const message = coachDraft.trim();
+    if (!message || coachChatSending) return;
+    setCoachChatSending(true);
+    setCoachChatError("");
+    try {
+      let conversationId = activeCoachConversationId;
+      if (!conversationId) {
+        const created = await request("/api/coach/conversations", { method: "POST", body: JSON.stringify({}) });
+        conversationId = created.conversation.id;
+        setActiveCoachConversationId(conversationId);
+      }
+      const data = await request("/api/coach/conversations/" + conversationId + "/messages", {
+        method: "POST", body: JSON.stringify({ message })
+      });
+      setCoachChatMessages(current => [...current, ...data.messages]);
+      setCoachDraft("");
+      await loadCoachConversations();
+    } catch (error) {
+      setCoachChatError(error instanceof Error ? error.message : "The coach could not send a reply.");
+    } finally { setCoachChatSending(false); }
+  }
+
+  async function deleteCoachConversation(conversationId: string) {
+    if (!window.confirm("Delete this coach conversation? Its messages will also be deleted.")) return;
+    try {
+      await request("/api/coach/conversations/" + conversationId, { method: "DELETE" });
+      const remaining = coachConversations.filter(item => item.id !== conversationId);
+      setCoachConversations(remaining);
+      if (activeCoachConversationId === conversationId) {
+        setActiveCoachConversationId(remaining[0]?.id ?? "");
+        setCoachChatMessages([]);
+      }
+      setNotice("Coach conversation deleted.");
+    } catch (error) {
+      setCoachChatError(error instanceof Error ? error.message : "Could not delete this conversation.");
     }
   }
 
@@ -605,7 +690,12 @@ export default function App() {
     // Switching tabs loads the latest records instead of showing stale cached social or workout information.
     if (token && activeTab === "workouts") void loadWorkouts();
     if (token && activeTab === "community") void loadCommunity();
+    if (token && activeTab === "coach") void loadCoachConversations();
   }, [token, activeTab]);
+
+  useEffect(() => {
+    if (token && activeTab === "coach" && activeCoachConversationId) void loadCoachChat(activeCoachConversationId);
+  }, [token, activeTab, activeCoachConversationId]);
 
   useEffect(() => {
     // A queued session belongs to one account. It is never sent with a different
@@ -782,6 +872,7 @@ export default function App() {
         <button className={activeTab === "home" ? "active" : ""} onClick={() => setActiveTab("home")}><span className="nav-symbol">⌂</span><span>Overview</span></button>
         <button className={activeTab === "workouts" ? "active" : ""} onClick={() => setActiveTab("workouts")}><span className="nav-symbol">↗</span><span>Workouts</span></button>
         <button className={activeTab === "community" ? "active" : ""} onClick={() => setActiveTab("community")}><span className="nav-symbol">◎</span><span>Community</span></button>
+        <button className={activeTab === "coach" ? "active" : ""} onClick={() => setActiveTab("coach")}><span className="nav-symbol">✳</span><span>Coach</span></button>
       </nav>
       <div className="sidebar-bottom">
         <div className="sidebar-profile"><span className="profile-avatar">{(user?.username ?? "F").slice(0, 1).toUpperCase()}</span><span><strong>{user?.username ?? "Your account"}</strong><small>Personal workspace</small></span></div>
@@ -790,13 +881,14 @@ export default function App() {
     </aside>
     <div className="app-main">
       <header className="topbar">
-        <div><p className="topbar-kicker">FITLOOP / WORKSPACE</p><strong>{activeTab === "home" ? "Overview" : activeTab === "workouts" ? "Workouts" : "Community"}</strong></div>
+        <div><p className="topbar-kicker">FITLOOP / WORKSPACE</p><strong>{activeTab === "home" ? "Overview" : activeTab === "workouts" ? "Workouts" : activeTab === "community" ? "Community" : "Coach"}</strong></div>
         <div className="account">{pendingWorkoutCount > 0 && <span className="offline-queue-status" role="status">{pendingWorkoutCount} workout{pendingWorkoutCount === 1 ? "" : "s"} waiting to sync</span>}<span className="account-status"><i /> Your space</span><button className="topbar-action" onClick={() => setActiveTab("workouts")}>Start a workout <span>↗</span></button></div>
       </header>
       <nav className="mobile-nav" aria-label="Main sections">
         <button className={activeTab === "home" ? "active" : ""} onClick={() => setActiveTab("home")}><span>⌂</span>Home</button>
         <button className={activeTab === "workouts" ? "active" : ""} onClick={() => setActiveTab("workouts")}><span>↗</span>Workouts</button>
         <button className={activeTab === "community" ? "active" : ""} onClick={() => setActiveTab("community")}><span>◎</span>Community</button>
+        <button className={activeTab === "coach" ? "active" : ""} onClick={() => setActiveTab("coach")}><span>✳</span>Coach</button>
       </nav>
 
     {activeTab === "home" && <>
@@ -1150,6 +1242,34 @@ export default function App() {
           {selectedSession.notes && <p className="history-session-notes"><strong>Session notes</strong>{selectedSession.notes}</p>}
         </section>}
       </section>
+    </section>}
+
+    {activeTab === "coach" && <section className="page-section">
+      <div className="welcome compact"><p className="eyebrow">YOUR TRAINING COMPANION</p><h1>Meet your coach.</h1><p className="muted">Ask about your logged training, exercise technique or how to shape your next routine.</p></div>
+      <div className="coach-chat-layout">
+        <aside className="panel coach-conversation-list">
+          <div className="section-heading-row"><h2>Conversations</h2><button type="button" className="small-button" onClick={() => void createCoachConversation()}>New chat +</button></div>
+          {coachConversations.length === 0 && !coachChatLoading ? <p className="muted">Your conversations will appear here.</p> : coachConversations.map(conversation => <div className={"coach-conversation-row " + (activeCoachConversationId === conversation.id ? "active" : "")} key={conversation.id}>
+            <button type="button" className="coach-conversation-select" onClick={() => setActiveCoachConversationId(conversation.id)}><strong>{conversation.title}</strong><small>{conversation._count?.messages ?? 0} messages</small></button>
+            <button type="button" className="small-button" aria-label={"Delete " + conversation.title} onClick={() => void deleteCoachConversation(conversation.id)}>×</button>
+          </div>)}
+        </aside>
+        <section className="panel coach-chat-panel">
+          <div className="section-heading-row"><div><p className="eyebrow">FITLOOP COACH</p><h2>{coachConversations.find(item => item.id === activeCoachConversationId)?.title ?? "Start a conversation"}</h2></div></div>
+          {coachChatLoading && <p className="load-state" role="status">Loading your conversation…</p>}
+          {coachChatError && <div className="load-error" role="alert"><span>{coachChatError}</span><button type="button" className="secondary" onClick={() => activeCoachConversationId ? void loadCoachChat(activeCoachConversationId) : void loadCoachConversations()}>Try again</button></div>}
+          <div className="coach-chat-messages" aria-live="polite">
+            {coachChatMessages.length === 0 && <div className="coach-chat-empty"><strong>What would you like help with?</strong><p className="muted">Try asking about your recent progress, a training plan or an exercise in your library.</p></div>}
+            {coachChatMessages.map(message => <article className={"coach-chat-bubble " + message.role} key={message.id}><span>{message.role === "assistant" ? "FitLoop Coach" : "You"}</span><p>{message.content}</p></article>)}
+          </div>
+          <form className="coach-chat-form" onSubmit={sendCoachMessage}>
+            <label className="sr-only" htmlFor="coach-message">Message your coach</label>
+            <textarea id="coach-message" value={coachDraft} onChange={event => setCoachDraft(event.target.value)} placeholder="Ask your coach something…" maxLength={2000} rows={3} />
+            <button disabled={!coachDraft.trim() || coachChatSending}>{coachChatSending ? "Thinking…" : "Send message"}</button>
+          </form>
+          <p className="coach-disclosure">Early guided version: replies currently use transparent, rule-based coaching rather than a generative AI model. It is not medical advice. Model-provider integration will follow privacy, consent and safety review.</p>
+        </section>
+      </div>
     </section>}
 
     {activeTab === "community" && <section className="page-section">

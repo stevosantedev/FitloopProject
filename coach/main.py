@@ -36,10 +36,94 @@ def wording(message: str, style: str) -> str:
     return message
 
 
+
+class RecentExercise(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+    reps: int = Field(ge=1, le=500)
+    weightKg: Optional[float] = Field(default=None, ge=0, le=1000)
+
+
+class RecentSession(BaseModel):
+    date: date
+    routine: Optional[str] = Field(default=None, max_length=100)
+    exercises: list[RecentExercise] = Field(default_factory=list, max_length=30)
+
+
+class ConversationContext(BaseModel):
+    recentSessions: list[RecentSession] = Field(default_factory=list, max_length=5)
+
+
+class ConversationRequest(BaseModel):
+    message: str = Field(min_length=1, max_length=2000)
+    style: Literal["gentle", "direct"] = "gentle"
+    focus: Literal["energy", "consistency", "recovery"] = "energy"
+    context: ConversationContext = Field(default_factory=ConversationContext)
+
+
 @app.get("/health")
 def health():
     # Deployment checks can verify the service without sending any user measurements.
     return {"status": "ok", "service": "fitloop-coach"}
+
+
+
+@app.post("/coach/conversation")
+def conversation(payload: ConversationRequest):
+    """Provide a transparent rule-guided conversation starter until a reviewed model provider is enabled."""
+    message = payload.message.strip()
+    lowered = message.casefold()
+
+    # This early safety route avoids pretending to diagnose pain or medical symptoms.
+    urgent_terms = ("chest pain", "faint", "fainted", "cannot breathe", "can't breathe", "severe dizziness")
+    injury_terms = ("injury", "injured", "pain", "hurt", "swollen", "strain", "tear")
+    if any(term in lowered for term in urgent_terms):
+        reply = (
+            "Please stop exercising. Chest pain, fainting or serious breathing difficulty can need urgent medical attention. "
+            "Seek emergency help now if symptoms are severe, sudden or ongoing. I cannot assess symptoms or diagnose a cause."
+        )
+    elif any(term in lowered for term in injury_terms):
+        reply = (
+            "I can't diagnose an injury or tell you whether it is safe to train through pain. Stop or modify the movement that causes pain, "
+            "and consider advice from a qualified healthcare professional, especially if symptoms are severe, worsening or persistent. "
+            "If you want, tell me which movement is uncomfortable and I can help identify non-medical training alternatives to discuss."
+        )
+    elif any(term in lowered for term in ("progress", "stronger", "getting stronger", "improve", "lifting more")):
+        sessions = payload.context.recentSessions
+        if not sessions:
+            reply = (
+                "I don't have any recent completed workouts to compare yet. Log a few sessions and I can help you review the exercises, "
+                "loads and repetitions you've recorded. What strength or training goal are you working towards?"
+            )
+        else:
+            exercise_names = []
+            for session in sessions:
+                for exercise in session.exercises:
+                    if exercise.name not in exercise_names:
+                        exercise_names.append(exercise.name)
+            reply = (
+                f"I can see {len(sessions)} recent completed workout(s) in your FitLoop history, covering "
+                f"{len(exercise_names)} distinct movement(s). Your recent movements include "
+                f"{', '.join(exercise_names[:6]) if exercise_names else 'no completed exercise sets'}. "
+                "This is a snapshot, not enough on its own to prove a trend. Which lift or performance goal would you like to review?"
+            )
+    elif any(term in lowered for term in ("workout", "routine", "plan", "programme", "program")):
+        reply = (
+            "I can help you think through a training plan, but I won't change or save a routine without your confirmation. "
+            "To make a useful starting point, tell me your main goal, how many days each week you can train, "
+            "what equipment you have and your training experience."
+        )
+    elif any(term in lowered for term in ("hello", "hi", "hey")):
+        reply = (
+            "Hi — I'm FitLoop's early guided coach. I can help you reflect on logged training, understand exercise guidance "
+            "and think through a routine. What would you like to work on?"
+        )
+    else:
+        reply = (
+            "I can help with training plans, exercise guidance and reviewing the workouts you've logged. "
+            "Tell me your goal and a little about your current training so I can make the next step more relevant."
+        )
+
+    return {"message": wording(reply, payload.style), "responseMode": "guided_rules"}
 
 
 @app.post("/coach/check-in")

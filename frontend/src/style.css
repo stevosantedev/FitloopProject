@@ -647,3 +647,6 @@ footer { padding: 22px 0 0; border-top: 1px solid #202c25; }
   .coach-chat-bubble { max-width: 94%; }
   .coach-conversation-list, .coach-chat-panel { padding: 14px; }
 }
+
+/* Keep form labels available to assistive technology without taking visual space. */
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }

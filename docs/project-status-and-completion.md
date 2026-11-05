@@ -15,7 +15,7 @@ The application has an app-oriented responsive shell and installable web-app fou
 - **Accounts:** registration, sign-in, authenticated API routes, account-scoped data and account deletion.
 - **Daily habits:** daily check-ins, logs, trends and analytics.
 - **Training:** exercise catalogue, search and filters, exercise guides, routines, guided sessions, set metadata, workout history and progression.
-- **Exercise reference:** 101 seeded movements, 31 canonical muscles, individually authored guide content and original front/back muscle navigation artwork. Seed validation now requires at least three technique steps, a substantive description, an alias, three coaching cues and equipment alternatives for every movement, and checks that every canonical muscle is linked to at least one exercise.
+- **Exercise reference:** 101 seeded movements, 31 canonical muscles, individually authored guide content and original front/back muscle navigation artwork. Seed validation requires at least three non-empty technique steps, a substantive description, non-empty unique aliases, at least three non-empty unique coaching cues and non-empty unique equipment alternatives for every movement; it also checks muscle-link integrity and canonical muscle coverage. These checks establish data completeness and consistency, not exercise-science accuracy.
 - **Training insights:** personal records, muscle-volume estimates and recent top-load trends. These are based on logged data and clearly avoid presenting heuristic estimates as medical or physiological measurements.
 - **Social:** friend requests, accepted connections, friends-only feed, reactions and comments.
 - **Coaching:** user preferences, coaching history and a separate Python service with rule tests.

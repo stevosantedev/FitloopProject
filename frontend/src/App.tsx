@@ -591,10 +591,22 @@ export default function App() {
             await removeQueuedWorkout(entry.id);
             setPendingWorkoutCount((count) => Math.max(0, count - 1));
           } catch (error) {
-            // Stop at the first failure so queued sessions retain their original order.
-            setNotice(error instanceof Error
-              ? `A saved workout is waiting to sync: ${error.message}`
-              : "A saved workout is waiting for a connection.");
+            // A validation response will not improve on a network retry. Remove only
+            // permanently invalid payloads so one bad item cannot block later sessions.
+            if (error instanceof ApiRequestError && [400, 404, 422].includes(error.status)) {
+              await removeQueuedWorkout(entry.id);
+              setPendingWorkoutCount((count) => Math.max(0, count - 1));
+              setNotice("One saved workout could not be synced because its details are no longer valid. Record it again to save it.");
+              continue;
+            }
+
+            // Authentication failures remain queued for the same account to retry
+            // after sign-in; transient server/network failures also stay in order.
+            setNotice(error instanceof ApiRequestError && error.status === 401
+              ? "A saved workout is waiting for you to sign in again before it can sync."
+              : error instanceof Error
+                ? `A saved workout is waiting to sync: ${error.message}`
+                : "A saved workout is waiting for a connection.");
             break;
           }
         }

@@ -21,10 +21,11 @@ The existing Python rule-based coach remains a useful baseline and fallback. A l
 ### Delivery slices
 
 1. **Coach experience and conversation foundation**
-   - Dedicated coach destination with conversation history, clear message states, retry behaviour and a useful empty state.
-   - Persist conversations and messages with strict account ownership.
-   - Support user correction, feedback and deletion of conversations.
-   - Keep the existing check-in suggestion flow available while the conversational flow is developed.
+   - [x] Add account-owned conversation and message persistence, list/read/delete API routes, bounded conversation titles, chronological message retrieval and owner checks.
+   - [ ] Build the dedicated coach destination with conversation history, clear message states, retry behaviour and a useful empty state.
+   - [ ] Add the message submission/reply pipeline, user correction and feedback controls.
+   - [x] Keep the existing check-in suggestion flow available while the conversational flow is developed.
+   - The persistence layer is the first implementation slice; it is not yet a complete conversational coach or a language-model integration.
 
 2. **Grounded FitLoop context**
    - Define a minimal, typed context package assembled by the API for the authenticated user.

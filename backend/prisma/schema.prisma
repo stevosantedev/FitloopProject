@@ -25,6 +25,7 @@ model User {
   plannedSessions PlannedSession[]
   coachEvents    CoachEvent[]
   coachPreference CoachPreference?
+  coachConversations CoachConversation[]
   posts          FeedPost[]
   sentRequests   FriendConnection[]  @relation("FriendRequester")
   receivedRequests FriendConnection[] @relation("FriendAddressee")
@@ -264,4 +265,30 @@ model FeedComment {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   post      FeedPost @relation(fields: [postId], references: [id], onDelete: Cascade)
   @@index([postId, createdAt])
+}
+
+
+// A conversation is private to its owner; deleting the account removes its history.
+model CoachConversation {
+  id        String         @id @default(cuid())
+  userId    String
+  title     String         @default("New conversation")
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages  CoachMessage[]
+
+  @@index([userId, updatedAt])
+}
+
+// Messages are stored separately so a conversation can be paginated and evaluated.
+model CoachMessage {
+  id             String           @id @default(cuid())
+  conversationId String
+  role           String
+  content        String           @db.VarChar(4000)
+  createdAt      DateTime         @default(now())
+  conversation  CoachConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
 }

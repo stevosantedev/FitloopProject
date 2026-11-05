@@ -91,6 +91,13 @@ export default function App() {
   const [posts, setPosts] = useState<FeedPost[]>([]);
   const [activeTab, setActiveTab] = useState<"home" | "workouts" | "community">("home");
   const [notice, setNotice] = useState("");
+  // Keep first-load and refresh failures separate from legitimate empty account data.
+  const [dashboardLoading, setDashboardLoading] = useState(false);
+  const [workoutsLoading, setWorkoutsLoading] = useState(false);
+  const [communityLoading, setCommunityLoading] = useState(false);
+  const [dashboardError, setDashboardError] = useState("");
+  const [workoutsError, setWorkoutsError] = useState("");
+  const [communityError, setCommunityError] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [deletePassword, setDeletePassword] = useState("");
@@ -161,6 +168,8 @@ export default function App() {
   // Load the overview data after authentication. These requests are kept together
   // because the dashboard needs the profile, coach settings, check-ins and history.
   async function loadDashboard() {
+    setDashboardLoading(true);
+    setDashboardError("");
     try {
       // Restore the profile and coaching preferences when a saved session is reopened in the browser.
       const profile = await request("/api/me");
@@ -184,14 +193,20 @@ export default function App() {
         }
         setNotice("You are offline. You can record a workout and it will sync when connected.");
       } else {
-        setNotice(error instanceof Error ? error.message : "Could not load your dashboard.");
+        const message = error instanceof Error ? error.message : "Could not load your dashboard.";
+        setDashboardError(message);
+        setNotice(message);
       }
+    } finally {
+      setDashboardLoading(false);
     }
   }
 
   // Refresh all workout data in parallel. The exercise list is also used by the
   // routine builder, so initialise its selection when the user has none yet.
   async function loadWorkouts() {
+    setWorkoutsLoading(true);
+    setWorkoutsError("");
     try {
       // Load the library, saved routines and completed sessions together for a responsive workout view.
       const [exerciseData, routineData, sessionData, muscleData, recordData] = await Promise.all([
@@ -223,14 +238,20 @@ export default function App() {
           setNotice("Connect once to make the exercise library available offline.");
         }
       } else {
-        setNotice(error instanceof Error ? error.message : "Could not load workouts.");
+        const message = error instanceof Error ? error.message : "Could not load workouts.";
+        setWorkoutsError(message);
+        setNotice(message);
       }
+    } finally {
+      setWorkoutsLoading(false);
     }
   }
 
   // The API decides which friends and posts are visible; the browser never builds
   // a feed by fetching arbitrary users' activity.
   async function loadCommunity() {
+    setCommunityLoading(true);
+    setCommunityError("");
     try {
       // Friends and feed data use the same access-controlled API as the rest of the account.
       const [friendData, feedData] = await Promise.all([
@@ -240,7 +261,11 @@ export default function App() {
       setConnections(friendData.connections);
       setPosts(feedData.posts);
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Could not load your community.");
+      const message = error instanceof Error ? error.message : "Could not load your community.";
+      setCommunityError(message);
+      setNotice(message);
+    } finally {
+      setCommunityLoading(false);
     }
   }
 
@@ -767,6 +792,8 @@ export default function App() {
       </nav>
 
     {activeTab === "home" && <>
+      {dashboardLoading && <p className="load-state" role="status">Loading your overview…</p>}
+      {dashboardError && <div className="load-error" role="alert"><span>{dashboardError}</span><button type="button" className="secondary" onClick={() => void loadDashboard()}>Try again</button></div>}
       <section className="welcome">
         <p className="eyebrow">YOUR TRAINING SPACE</p>
         <h1>Your training, at a glance.</h1>
@@ -779,7 +806,7 @@ export default function App() {
       </section>
       <section className="panel section-gap recent-training">
         <div className="section-heading-row"><div><p className="eyebrow">KEEP YOUR MOMENTUM</p><h2>Recent training</h2></div><button className="subtle-action" onClick={() => setActiveTab("workouts")}>Open training <span>↗</span></button></div>
-        {sessions.length === 0 ? <div className="empty-training"><p className="muted">Your completed sessions will appear here. Start with a routine or build a one-off workout.</p><button onClick={() => setActiveTab("workouts")}>Build your first workout</button></div> :
+        {sessions.length === 0 && !dashboardLoading && !dashboardError ? <div className="empty-training"><p className="muted">Your completed sessions will appear here. Start with a routine or build a one-off workout.</p><button onClick={() => setActiveTab("workouts")}>Build your first workout</button></div> :
           <div className="recent-session-list">{sessions.slice(0, 3).map(session => {
             const names = session.sets.map(set => set.exercise.name).filter((name, index, all) => all.indexOf(name) === index);
             const completed = session.sets.filter(set => set.completed).length;
@@ -801,7 +828,7 @@ export default function App() {
         </form>
         <section className="panel">
           <p className="eyebrow">RECENT ACTIVITY</p><h2>Your last seven days</h2>
-          {logs.length === 0 ? <p className="muted">Your check-ins will appear here once you log a day.</p> :
+          {logs.length === 0 && dashboardLoading ? <p className="muted" role="status">Loading your check-ins…</p> : logs.length === 0 && dashboardError ? <p className="muted">Check-ins are unavailable until the overview can be refreshed.</p> : logs.length === 0 ? <p className="muted">Your check-ins will appear here once you log a day.</p> :
             <ul className="log-list">{logs.map(log => <li key={log.id}>
               <strong>{new Date(log.date).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" })}</strong>
               <span>{log.steps?.toLocaleString() ?? "No steps"} steps · {log.sleepMinutes ? (log.sleepMinutes / 60).toFixed(1) : "—"}h sleep · Mood {log.mood ?? "—"}/5</span>
@@ -850,6 +877,8 @@ export default function App() {
     </>}
 
     {activeTab === "workouts" && <section className="page-section">
+      {workoutsLoading && <p className="load-state" role="status">Loading your training data…</p>}
+      {workoutsError && <div className="load-error" role="alert"><span>{workoutsError}</span><button type="button" className="secondary" onClick={() => void loadWorkouts()}>Try again</button></div>}
       <div className="welcome compact"><p className="eyebrow">MOVE AT YOUR OWN PACE</p><h1>Your workouts.</h1><p className="muted">Build a routine, log a session and keep a record of what you did.</p></div>
       <div className="content-grid">
         <form className="panel" onSubmit={createRoutine}>
@@ -890,7 +919,9 @@ export default function App() {
               </label>
               <button type="button" className="exercise-detail-trigger" onClick={() => setExerciseDetailId(current => current === exercise.id ? "" : exercise.id)} aria-expanded={exerciseDetailId === exercise.id}>Details</button>
             </article>)}
-            {visibleExercises.length === 0 && <p className="muted exercise-empty-state">No movements match your search and filters. Try a different term or clear the filters.</p>}
+            {visibleExercises.length === 0 && workoutsLoading && <p className="muted exercise-empty-state" role="status">Loading the exercise library…</p>}
+            {visibleExercises.length === 0 && !workoutsLoading && !workoutsError && <p className="muted exercise-empty-state">No movements match your search and filters. Try a different term or clear the filters.</p>}
+            {visibleExercises.length === 0 && workoutsError && !workoutsLoading && <p className="muted exercise-empty-state">The exercise library could not be loaded. Use Try again above to retry.</p>}
           </div>
           {(() => {
             const detail = exercises.find(item => item.id === exerciseDetailId);
@@ -998,7 +1029,7 @@ export default function App() {
       </div>
       <section className="panel section-gap">
         <p className="eyebrow">SAVED ROUTINES</p><h2>Your routines</h2>
-        {routines.length === 0 ? <p className="muted">No routines yet. Choose a few exercises above to make your first one.</p> :
+        {routines.length === 0 && workoutsLoading ? <p className="muted" role="status">Loading saved routines…</p> : routines.length === 0 && workoutsError ? <p className="muted">Saved routines are unavailable until training data can be refreshed.</p> : routines.length === 0 ? <p className="muted">No routines yet. Choose a few exercises above to make your first one.</p> :
           <div className="routine-grid">{routines.map(routine => <article className="routine-card" key={routine.id}><strong>{routine.name}</strong><p className="muted">{routine.exercises.map(item => item.exercise.name).join(" · ")}</p><div className="routine-card-actions"><button type="button" className="secondary" onClick={() => editRoutine(routine)}>Edit</button><button type="button" className="danger-button" onClick={() => deleteRoutine(routine)}>Delete</button></div></article>)}</div>}
       </section>
       <section className="panel section-gap">
@@ -1114,6 +1145,8 @@ export default function App() {
     </section>}
 
     {activeTab === "community" && <section className="page-section">
+      {communityLoading && <p className="load-state" role="status">Loading your community…</p>}
+      {communityError && <div className="load-error" role="alert"><span>{communityError}</span><button type="button" className="secondary" onClick={() => void loadCommunity()}>Try again</button></div>}
       <div className="welcome compact"><p className="eyebrow">BETTER TOGETHER</p><h1>Your community.</h1><p className="muted">Share completed workouts with people you've connected with.</p></div>
       <div className="content-grid">
         <form className="panel" onSubmit={sendFriendRequest}>
@@ -1123,7 +1156,7 @@ export default function App() {
         </form>
         <section className="panel">
           <p className="eyebrow">YOUR CONNECTIONS</p><h2>Friends and requests</h2>
-          {connections.length === 0 ? <p className="muted">Your accepted friends and incoming requests will appear here.</p> :
+          {connections.length === 0 && communityLoading ? <p className="muted" role="status">Loading friends and requests…</p> : connections.length === 0 && communityError ? <p className="muted">Connections are unavailable until the community can be refreshed.</p> : connections.length === 0 ? <p className="muted">Your accepted friends and incoming requests will appear here.</p> :
             <ul className="log-list">{connections.map(connection => {
               const incoming = connection.addressee.id === user?.id;
               const person = incoming ? connection.requester : connection.addressee;
@@ -1135,7 +1168,7 @@ export default function App() {
       </div>
       <section className="panel section-gap">
         <p className="eyebrow">FRIENDS-ONLY FEED</p><h2>Recent activity</h2>
-        {posts.length === 0 ? <p className="muted">No shared workouts yet. Once you and your friends log a session, it can appear here.</p> :
+        {posts.length === 0 && communityLoading ? <p className="muted" role="status">Loading recent activity…</p> : posts.length === 0 && communityError ? <p className="muted">The feed is unavailable until the community can be refreshed.</p> : posts.length === 0 ? <p className="muted">No shared workouts yet. Once you and your friends log a session, it can appear here.</p> :
           <div className="feed-list">{posts.map(post => <article className="feed-card" key={post.id}>
             <div className="feed-heading"><strong>@{post.user.username}</strong><span>{new Date(post.createdAt).toLocaleString()}</span></div>
             <p>{post.session?.routine?.name ?? "Completed a workout"}</p>

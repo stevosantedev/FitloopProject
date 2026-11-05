@@ -4,6 +4,7 @@ import { prisma } from "../prisma.js";
 
 const router = Router();
 const commentInput = z.object({ text: z.string().trim().min(1).max(500) });
+const postInput = z.object({ text: z.string().trim().min(1).max(500) });
 const reactionInput = z.object({ value: z.enum(["like", "strong", "clap"]).default("like") });
 
 // Resolve accepted connections in both directions because a friendship is stored as one request row.
@@ -71,6 +72,37 @@ router.post("/friends/:id/accept", async (req, res, next) => {
     });
     if (result.count === 0) return res.status(404).json({ error: "Pending request not found." });
     return res.json({ accepted: true });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+
+router.post("/posts", async (req, res, next) => {
+  try {
+    const input = postInput.parse(req.body);
+    const post = await prisma.feedPost.create({
+      data: { userId: req.userId, type: "update", text: input.text },
+      include: {
+        user: { select: { id: true, username: true } },
+        reactions: { select: { value: true, userId: true } },
+        comments: { include: { user: { select: { username: true } } }, orderBy: { createdAt: "asc" }, take: 20 }
+      }
+    });
+    return res.status(201).json({ post });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+router.delete("/posts/:id", async (req, res, next) => {
+  try {
+    // Only the author can remove a post; deleting it cascades its reactions and comments.
+    const result = await prisma.feedPost.deleteMany({
+      where: { id: req.params.id, userId: req.userId }
+    });
+    if (result.count === 0) return res.status(404).json({ error: "Post not found." });
+    return res.json({ deleted: true });
   } catch (error) {
     return next(error);
   }

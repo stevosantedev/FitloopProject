@@ -32,8 +32,6 @@ Review the movements in these groups first, then work through the remaining cata
 - Trap-bar deadlift (`trap-bar-deadlift`)
 - Bench dip (`bench-dip`)
 
-#
-
 ## First-pass source review — priority 1
 
 This is a content-audit queue based on reading the current seed definitions and guide text. It is **not** a biomechanical verdict, a safety certification or an expert sign-off. The questions below identify what a qualified reviewer should explicitly verify before approving each entry.
@@ -103,7 +101,7 @@ For every movement, record a decision for each item:
 |---|---|
 | Definition/guide slug coverage (101/101) | Automated structural check passed |
 | Missing or orphaned guide entries | None found in source-level audit |
-| Non-empty and unique guide fields | Enforced by seed validation; CI pending for latest change |
+| Non-empty and unique guide fields | Enforced by seed validation; latest branch-head CI passed (run 42112699386) |
 | Technique accuracy for all 101 movements | Not yet expert-reviewed |
 | Primary/secondary muscle mapping | Not yet independently verified |
 | Movement-pattern taxonomy | Not yet independently verified |

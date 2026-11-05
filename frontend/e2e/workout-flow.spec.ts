@@ -521,3 +521,26 @@ test("workout saving explains when browser offline storage is unavailable", asyn
   await expect(page.getByRole("status").filter({ hasText: "Offline storage is not available in this browser." })).toBeVisible();
   expect(savedSession).toBeUndefined();
 });
+
+test("sign-in remains usable with keyboard-only navigation and visible focus", async ({ page }) => {
+  await mockApplicationApi(page);
+  await page.goto("/");
+
+  const email = page.getByLabel("Email");
+  const password = page.getByLabel("Password");
+  const signIn = page.getByRole("button", { name: "Sign in" });
+
+  await page.keyboard.press("Tab");
+  await expect(email).toBeFocused();
+  await expect.poll(() => email.evaluate(element => getComputedStyle(element).outlineStyle)).toBe("solid");
+
+  await page.keyboard.press("Tab");
+  await expect(password).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(signIn).toBeFocused();
+
+  await page.keyboard.press("Shift+Tab");
+  await expect(password).toBeFocused();
+  await page.keyboard.press("Shift+Tab");
+  await expect(email).toBeFocused();
+});

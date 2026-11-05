@@ -231,7 +231,9 @@ export default function App() {
         if (cachedCatalogue) {
           try {
             setExercises(JSON.parse(cachedCatalogue) as Exercise[]);
-            setNotice("You are offline. Your saved exercise library is available; new workouts will sync later.");
+            const message = "You are offline. Your saved exercise library is available; routines and training history will refresh when you reconnect.";
+            setWorkoutsError(message);
+            setNotice(message);
           } catch {
             if (user?.id) localStorage.removeItem(`fitloop-exercise-catalogue:${user.id}`);
             const message = "The offline exercise library could not be read. Reconnect to reload it.";
@@ -926,7 +928,7 @@ export default function App() {
               <button type="button" className="exercise-detail-trigger" onClick={() => setExerciseDetailId(current => current === exercise.id ? "" : exercise.id)} aria-expanded={exerciseDetailId === exercise.id}>Details</button>
             </article>)}
             {visibleExercises.length === 0 && workoutsLoading && <p className="muted exercise-empty-state" role="status">Loading the exercise library…</p>}
-            {visibleExercises.length === 0 && !workoutsLoading && !workoutsError && <p className="muted exercise-empty-state">No movements match your search and filters. Try a different term or clear the filters.</p>}
+            {visibleExercises.length === 0 && !workoutsLoading && (!workoutsError || exercises.length > 0) && <p className="muted exercise-empty-state">No movements match your search and filters. Try a different term or clear the filters.</p>}
             {visibleExercises.length === 0 && workoutsError && !workoutsLoading && <p className="muted exercise-empty-state">The exercise library could not be loaded. Use Try again above to retry.</p>}
           </div>
           {(() => {

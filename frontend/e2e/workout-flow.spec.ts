@@ -38,7 +38,7 @@ const exercise = {
   muscles: [{ role: "PRIMARY", muscle: { name: "Quadriceps", slug: "quadriceps" } }]
 };
 
-async function mockApplicationApi(page: Page, onSessionSave?: (body: any) => void, sessionSaveStatus: number | (() => number) = 200) {
+async function mockApplicationApi(page: Page, onSessionSave?: (body: any) => void, sessionSaveStatus: number | (() => number) = 200, muscleStats: any[] = []) {
   const routines: any[] = [];
   await page.route("http://localhost:4000/**", async route => {
     const request = route.request();
@@ -98,7 +98,7 @@ async function mockApplicationApi(page: Page, onSessionSave?: (body: any) => voi
         highestSetVolume: { value: 320, date: "2026-11-03T18:00:00.000Z", sessionId: "session-pr" }
       }] };
     } else if (url.pathname === "/api/workouts/muscle-stats") {
-      body = { muscles: [] };
+      body = { muscles: muscleStats };
     } else if (url.pathname === "/api/social/friends") {
       body = { connections: [] };
     } else if (url.pathname === "/api/social/feed") {
@@ -278,6 +278,29 @@ test("exercise guide opens technique, coaching and muscle information", async ({
   await page.getByPlaceholder("Search exercises, technique or equipment").fill("whole foot grounded");
   await expect(page.locator(".exercise-choice")).toContainText("Goblet squat");
   await page.getByPlaceholder("Search exercises, technique or equipment").fill("");
+});
+
+test("muscle map controls expose muscle names and training totals to assistive technology", async ({ page }) => {
+  await mockApplicationApi(page, undefined, 200, [{
+    id: "muscle-1",
+    slug: "pectoralis-major",
+    name: "Pectoralis major",
+    view: "front",
+    effectiveSets: 4,
+    primarySets: 4,
+    secondarySets: 0,
+    lastTrainedAt: null,
+    recoveryLabel: "Not trained in this period"
+  }]);
+  await signInAndOpenWorkouts(page);
+
+  const selection = page.getByRole("group", { name: "front muscle selection" });
+  const muscleButton = selection.getByRole("button", { name: "Pectoralis major, 4 effective sets" });
+  await expect(muscleButton).toHaveAttribute("aria-pressed", "false");
+  await muscleButton.click();
+  await expect(muscleButton).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("complementary")).toContainText("Pectoralis major");
+  await expect(page.getByRole("complementary")).toContainText("4 weighted sets");
 });
 
 test("exercise filters and the selected-movement tray stay in sync", async ({ page }) => {

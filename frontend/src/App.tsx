@@ -333,11 +333,11 @@ export default function App() {
       if (!conversationId) {
         const created = await request("/api/coach/conversations", { method: "POST", body: JSON.stringify({}) });
         conversationId = created.conversation.id;
-        setActiveCoachConversationId(conversationId);
       }
       const data = await request("/api/coach/conversations/" + conversationId + "/messages", {
         method: "POST", body: JSON.stringify({ message })
       });
+      setActiveCoachConversationId(conversationId);
       setCoachChatMessages(current => [...current, ...data.messages]);
       setCoachDraft("");
       await loadCoachConversations();

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
-import { prisma } from "../prismaClient.js";
+import { prisma } from "../prisma.js";
 
 export function createSocialRouter(prismaClient = prisma) {
 const router = Router();

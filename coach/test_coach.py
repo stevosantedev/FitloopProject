@@ -59,3 +59,37 @@ def test_recovery_focus_changes_sleep_wording():
     response = client.post("/coach/check-in", json={"focus": "recovery", "logs": logs})
     assert response.status_code == 200
     assert "recent sleep averages" in response.json()["messages"][0]["message"]
+
+
+def test_conversation_gives_a_transparent_guided_reply_and_uses_training_context():
+    response = client.post("/coach/conversation", json={
+        "message": "Can you review my progress?",
+        "context": {"recentSessions": [{
+            "date": "2026-11-01",
+            "routine": "Upper body",
+            "exercises": [{"name": "Bench press", "reps": 8, "weightKg": 60}],
+        }]},
+    })
+    assert response.status_code == 200
+    result = response.json()
+    assert result["responseMode"] == "guided_rules"
+    assert "1 recent completed workout" in result["message"]
+    assert "Bench press" in result["message"]
+
+
+def test_conversation_uses_conservative_safety_response_for_pain():
+    response = client.post("/coach/conversation", json={"message": "My shoulder hurts during pressing"})
+    assert response.status_code == 200
+    assert "can't diagnose" in response.json()["message"]
+    assert response.json()["responseMode"] == "guided_rules"
+
+
+def test_conversation_escalates_urgent_symptoms():
+    response = client.post("/coach/conversation", json={"message": "I have chest pain while training"})
+    assert response.status_code == 200
+    assert "emergency medical attention" in response.json()["message"]
+
+
+def test_conversation_rejects_oversized_messages():
+    response = client.post("/coach/conversation", json={"message": "x" * 2001})
+    assert response.status_code == 422

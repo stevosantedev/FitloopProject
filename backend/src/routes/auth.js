@@ -5,6 +5,7 @@ import { z } from "zod";
 import { prisma } from "../prisma.js";
 import { config } from "../config.js";
 import { requireAuth } from "../middleware/auth.js";
+import { deleteUserAccount } from "../utils/deleteUserAccount.js";
 
 const router = Router();
 
@@ -77,16 +78,7 @@ router.delete("/account", requireAuth, async (req, res, next) => {
       return res.status(401).json({ error: "The password is incorrect." });
     }
 
-    // Remove dependent training records before private custom exercises. WorkoutSet
-    // deliberately restricts exercise deletion so historical sessions cannot lose
-    // their movement reference; deleting sessions first makes account removal safe.
-    await prisma.$transaction(async (transaction) => {
-      await transaction.workoutSession.deleteMany({ where: { userId: req.userId } });
-      await transaction.workoutRoutine.deleteMany({ where: { userId: req.userId } });
-      await transaction.exercise.deleteMany({ where: { ownerId: req.userId, isCustom: true } });
-      // Remaining logs, social records, coach events and preferences cascade from the user.
-      await transaction.user.delete({ where: { id: req.userId } });
-    });
+    await deleteUserAccount(prisma, req.userId);
     return res.json({ deleted: true });
   } catch (error) {
     return next(error);

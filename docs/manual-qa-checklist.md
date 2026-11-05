@@ -1,0 +1,92 @@
+# Manual quality-assurance checklist
+
+Last updated: 5 November 2026
+
+This checklist records the checks that still require a person using a real browser, device or assistive technology. Automated CI is useful evidence, but it does not prove that the app is usable on every target device or with every screen reader.
+
+## Before testing
+
+- Use a non-production test account and synthetic data only.
+- Record the browser, browser version, operating system, device model, viewport size and test date.
+- Start with a clean account, then repeat key flows with an account that already has workouts, routines, friends and check-ins.
+- Keep browser developer tools available so network failures can be simulated without changing production data.
+- Do not use real participant data unless the required university ethics approval and data-handling arrangements are in place.
+
+## Screen and state review
+
+For each area below, check the initial load, a slow connection, a failed request, a successful retry, a genuinely empty account and an account containing records.
+
+### Overview
+
+- [ ] Loading feedback appears while profile, check-ins, coaching history and recent sessions are fetched.
+- [ ] A failed request is clearly identified and the retry action reloads the overview.
+- [ ] Offline reopening explains that cached profile information may be incomplete.
+- [ ] A genuinely empty account sees helpful first-use messages, not error messages.
+- [ ] An account with records sees the correct recent sessions, check-ins and weekly totals.
+- [ ] Check-in validation, successful save feedback and refresh behaviour are clear.
+
+### Workouts
+
+- [ ] Loading feedback appears while the exercise catalogue, routines, sessions, muscle summaries and personal records are fetched.
+- [ ] A failed request displays a useful error and retry action; it is not presented as an empty library or a new account.
+- [ ] Offline catalogue fallback is distinguishable from unavailable routines and training history.
+- [ ] Search and each filter remain usable; a genuine no-match result is distinguishable from a failed catalogue request.
+- [ ] Routine creation, editing, deletion and cancellation are understandable.
+- [ ] Guided workout start, set completion, rest, pause, skip, stop and final save are understandable.
+- [ ] Invalid reps, load, rest and effort values receive actionable feedback.
+- [ ] History, personal records, movement progress and muscle summaries distinguish no records from unavailable data.
+
+### Community
+
+- [ ] Loading feedback appears while friends and feed data are fetched.
+- [ ] A failed friends or feed request shows an error and retry action.
+- [ ] A genuinely empty friends list and an empty feed have useful first-use explanations.
+- [ ] Friend request, acceptance, reaction and comment success/error feedback is visible.
+- [ ] Private feed content is only shown to the expected account and accepted connections.
+
+## Keyboard and assistive-technology review
+
+- [ ] Complete sign-in, navigation, check-in, workout creation and community actions using only a keyboard.
+- [ ] Focus order follows the visual and task order; no control traps focus.
+- [ ] Focus indicators remain visible against every panel and modal background.
+- [ ] Buttons, links, form controls and icon-only controls have meaningful accessible names.
+- [ ] Loading updates are announced once and do not repeatedly interrupt the user.
+- [ ] Errors are announced and can be found without relying on colour or visual position.
+- [ ] Exercise selection, set completion, timer status and workout-save feedback are announced meaningfully.
+- [ ] Check the application with VoiceOver on iOS/macOS and/or NVDA with Firefox or Chrome on Windows, depending on the supported evaluation environment.
+- [ ] Verify zoom/text enlargement and reduced-motion settings do not hide content or actions.
+
+## Physical-device and responsive review
+
+- [ ] Test a real iPhone or iPad with Safari, including safe-area/notch behaviour and the fixed bottom navigation.
+- [ ] Test a real Android phone with Chrome, including gesture navigation and touch targets.
+- [ ] Check portrait and landscape orientation, scrolling, keyboard appearance and form submission.
+- [ ] Check the app shell at desktop, tablet and narrow mobile widths without horizontal overflow.
+- [ ] If installation is in scope, install the web app and verify launch, navigation and offline shell behaviour.
+
+## Record the result
+
+For each issue, record:
+
+| Field | Evidence |
+|---|---|
+| Test ID / screen | |
+| Device, OS and browser | |
+| Account state / test data | |
+| Steps to reproduce | |
+| Expected result | |
+| Actual result | |
+| Severity and impact | |
+| Screenshot / recording / console output | |
+| Fix or follow-up issue | |
+| Retest result and date | |
+
+## Sign-off
+
+- [ ] Screen-by-screen state review completed.
+- [ ] Keyboard and screen-reader review completed.
+- [ ] Physical-device review completed.
+- [ ] Findings triaged and critical/high-priority issues resolved or explicitly accepted.
+- [ ] Evidence stored with the university project test artefacts.
+
+Do not mark these checks complete based only on the Playwright suite. The tester must perform them and record the evidence.

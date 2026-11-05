@@ -500,3 +500,24 @@ test("an expired session keeps queued workouts until the owner signs in again", 
   await expect(page.locator(".offline-queue-status")).toHaveCount(0);
   expect(saveAttempts).toBe(2);
 });
+
+test("workout saving explains when browser offline storage is unavailable", async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(window.indexedDB, "open", {
+      configurable: true,
+      value: () => { throw new Error("Offline storage is not available in this browser."); }
+    });
+  });
+  let savedSession: any;
+  await mockApplicationApi(page, body => { savedSession = body; });
+  await signInAndOpenWorkouts(page);
+
+  await page.getByLabel("Rest (seconds)").fill("0");
+  await page.getByRole("button", { name: "Start guided workout" }).click();
+  await page.getByRole("button", { name: "Set complete — start rest" }).click();
+  await page.getByRole("button", { name: "End session" }).click();
+  await page.getByRole("button", { name: "Save complete session" }).click();
+
+  await expect(page.getByRole("status").filter({ hasText: "Offline storage is not available in this browser." })).toBeVisible();
+  expect(savedSession).toBeUndefined();
+});

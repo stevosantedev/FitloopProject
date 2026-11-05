@@ -41,14 +41,23 @@ The application has an app-oriented responsive shell and installable web-app fou
 - [ ] Do not ship media with unclear rights. If appropriate media cannot be cleared, retain the text-first guide rather than using unverified assets.
 - [ ] Check anatomy labels and diagram coverage with a credible anatomy reference; keep the illustration clearly labelled as an orientation aid, not clinical anatomy.
 
-### 3. Complete the product experience
+### 3. Expand the AI Coach and Community experience
+- [ ] Build a persistent AI Coach conversation experience on top of the existing Python coaching service, with authenticated conversation history, grounded FitLoop context, user-confirmed routine drafts and a deterministic fallback.
+- [ ] Define AI safety, privacy, provider, retention and evaluation rules before sending user context to an external model; use synthetic scenarios for evaluation until ethics and data-protection requirements are settled.
+- [ ] Expand the existing friends-only feed into a visual community experience with rich workout and user posts, profiles, relationship management, pagination and robust loading/error states.
+- [ ] Add profile/post audience controls, edit/delete, reporting and blocking before enabling broader discovery; keep private wellbeing logs, workout notes and exact location out of social responses.
+- [ ] Add image upload only after storage, access control, file validation, metadata stripping, deletion and media-rights decisions are implemented.
+- [ ] Deliver the in-app activity inbox after core coach and community interactions; consider push notifications only with explicit preferences and permission handling.
+- [ ] Follow `docs/product-expansion-roadmap.md` for the detailed delivery slices and acceptance criteria.
+
+### 4. Complete the wider product experience
 - [ ] Conduct a structured usability evaluation with representative users after ethics approval where required.
 - [ ] Fix issues found in onboarding, workout creation, guided workout use, exercise search, history and social flows.
 - [ ] Decide and implement the intended notification scope (for example, workout reminders or friend activity), including user controls and permission-denied states. Notifications are not currently a delivered feature.
 - [ ] Review accessibility against WCAG 2.2 AA for contrast, focus, labels, keyboard use, touch targets, motion and screen-reader announcements.
 - [ ] Add clear account, privacy, data export and deletion explanations appropriate to the final project scope.
 
-### 4. Production security and operations
+### 5. Production security and operations
 - [ ] Replace local-storage bearer-token handling with Secure, HttpOnly, SameSite cookie sessions and implement CSRF protection. Review CORS, HTTPS and proxy configuration together.
 - [ ] Add password reset and email verification if the intended deployment requires real public accounts; configure a trusted email provider and abuse controls.
 - [ ] Review rate limits across login, registration, social actions and other write endpoints; add appropriate monitoring and audit events without logging secrets or sensitive content.
@@ -56,7 +65,7 @@ The application has an app-oriented responsive shell and installable web-app fou
 - [ ] Deploy the frontend, API, database and coaching service to the chosen host; configure domains, TLS, CORS, service URLs and a repeatable release process.
 - [ ] Run dependency and security checks, review privacy disclosures and complete a threat-model pass before exposing the service publicly.
 
-### 5. University submission and evidence
+### 6. University submission and evidence
 - [ ] Confirm the final assessment brief and map every required objective to a FitLoop feature, test or evaluation result.
 - [ ] Complete the report: problem statement, research/literature, requirements, design/architecture, implementation, testing, evaluation, limitations, ethics/privacy and future work.
 - [ ] Include architecture and data-model diagrams, key interface screenshots and a clear explanation of the coaching logic and training calculations.
@@ -79,4 +88,4 @@ The project should not grow indefinitely by adding features without reference to
 
 ## Current release status
 
-The feature branch and pull request remain in draft and unmerged. The project is not yet a finished production service. The latest branch-head CI run (5 November 2026) passed both jobs, including the expanded browser suite. The immediate next step is to complete the human QA checklist, then continue the exercise-library quality/media review and usability evaluation.
+The feature branch and pull request remain in draft and unmerged. The project is not yet a finished production service. The latest branch-head CI run (5 November 2026) passed both jobs, including the expanded browser suite. The next major product phase is now planned in `docs/product-expansion-roadmap.md`: begin the AI Coach conversation experience and the richer Community feed in parallel, while exercise-library review, media-rights checks and human QA continue as parallel quality work. Do not hold these product workstreams until all 101 exercise guides have received expert review.

@@ -38,7 +38,7 @@ const exercise = {
   muscles: [{ role: "PRIMARY", muscle: { name: "Quadriceps", slug: "quadriceps" } }]
 };
 
-async function mockApplicationApi(page: Page, onSessionSave?: (body: any) => void, sessionSaveStatus = 200) {
+async function mockApplicationApi(page: Page, onSessionSave?: (body: any) => void, sessionSaveStatus: number | (() => number) = 200) {
   const routines: any[] = [];
   await page.route("http://localhost:4000/**", async route => {
     const request = route.request();
@@ -76,11 +76,12 @@ async function mockApplicationApi(page: Page, onSessionSave?: (body: any) => voi
     } else if (url.pathname === "/api/workouts/sessions") {
       if (method === "POST") {
         onSessionSave?.(request.postDataJSON());
-        if (sessionSaveStatus !== 200) {
+        const status = typeof sessionSaveStatus === "function" ? sessionSaveStatus() : sessionSaveStatus;
+        if (status !== 200) {
           await route.fulfill({
-            status: sessionSaveStatus,
+            status,
             contentType: "application/json",
-            body: JSON.stringify({ error: "The saved workout is no longer valid." })
+            body: JSON.stringify({ error: status === 401 ? "Please sign in again." : "The saved workout is no longer valid." })
           });
           return;
         }
@@ -465,4 +466,32 @@ test("a permanently invalid queued workout is removed without blocking the remai
   await context.setOffline(false);
   await expect(page.getByRole("status").filter({ hasText: "could not be synced because its details are no longer valid" })).toBeVisible();
   await expect(page.locator(".offline-queue-status")).toHaveCount(0);
+});
+
+test("an expired session keeps queued workouts until the owner signs in again", async ({ page, context }) => {
+  let saveAttempts = 0;
+  await mockApplicationApi(page, () => { saveAttempts += 1; }, () => saveAttempts === 1 ? 401 : 200);
+  await signInAndOpenWorkouts(page);
+
+  await page.getByLabel("Rest (seconds)").fill("0");
+  await page.getByRole("button", { name: "Start guided workout" }).click();
+  await page.getByRole("button", { name: "Set complete — start rest" }).click();
+  await page.getByRole("button", { name: "End session" }).click();
+
+  await context.setOffline(true);
+  await page.getByRole("button", { name: "Save complete session" }).click();
+  await expect(page.locator(".offline-queue-status")).toContainText("1 workout waiting to sync");
+
+  await context.setOffline(false);
+  await expect(page.getByRole("status").filter({ hasText: "waiting for you to sign in again" })).toBeVisible();
+  await expect(page.locator(".offline-queue-status")).toContainText("1 workout waiting to sync");
+  expect(saveAttempts).toBe(1);
+
+  await page.getByRole("button", { name: "Sign out" }).click();
+  await page.getByLabel("Email").fill("tester@example.com");
+  await page.getByLabel("Password").fill("test-password");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "offline workouts have synced" })).toBeVisible();
+  await expect(page.locator(".offline-queue-status")).toHaveCount(0);
+  expect(saveAttempts).toBe(2);
 });

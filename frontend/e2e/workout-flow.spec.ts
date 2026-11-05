@@ -378,3 +378,32 @@ test("workout history opens a session with its individual set results", async ({
   await details.getByRole("button", { name: "Close details" }).click();
   await expect(details).toHaveCount(0);
 });
+
+
+test("offline workout storage stays account-scoped and supports safe cleanup", async ({ page }) => {
+  await page.goto("/");
+  const result = await page.evaluate(async () => {
+    const queue = await import("/src/offlineWorkoutQueue.ts");
+    const first = await queue.queueWorkout("account-a", { sets: [{ exerciseId: "squat", reps: 8 }] });
+    const second = await queue.queueWorkout("account-b", { sets: [{ exerciseId: "press", reps: 6 }] });
+    const firstAccountEntries = await queue.getQueuedWorkouts("account-a");
+    const secondAccountEntries = await queue.getQueuedWorkouts("account-b");
+    await queue.removeQueuedWorkout(first.id);
+    await queue.clearQueuedWorkouts("account-a");
+    const afterCleanupA = await queue.getQueuedWorkouts("account-a");
+    const afterCleanupB = await queue.getQueuedWorkouts("account-b");
+    return {
+      firstAccountIds: firstAccountEntries.map(entry => entry.id),
+      secondAccountIds: secondAccountEntries.map(entry => entry.id),
+      afterCleanupA: afterCleanupA.length,
+      afterCleanupB: afterCleanupB.map(entry => entry.id),
+      retainedAccountBId: second.id
+    };
+  });
+
+  expect(result.firstAccountIds).toHaveLength(1);
+  expect(result.secondAccountIds).toHaveLength(1);
+  expect(result.firstAccountIds[0]).not.toBe(result.secondAccountIds[0]);
+  expect(result.afterCleanupA).toBe(0);
+  expect(result.afterCleanupB).toEqual([result.retainedAccountBId]);
+});

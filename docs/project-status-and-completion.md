@@ -35,7 +35,7 @@ The application has an app-oriented responsive shell and installable web-app fou
 - [ ] Complete a physical-device and screen-reader spot check on the target browsers/devices. Follow `docs/manual-qa-checklist.md`; these require a human using the actual devices and assistive technology. Automated viewport and keyboard tests are not a substitute.
 
 ### 2. Finish the exercise library experience
-- [ ] Review all 101 exercise guides for factual accuracy, consistent terminology, useful instructions and appropriate regressions. Automated seed checks now enforce minimum content completeness and muscle-link coverage, but do not establish biomechanical accuracy.
+- [ ] Review all 101 exercise guides for factual accuracy, consistent terminology, useful instructions and appropriate regressions. The review order, rubric and evidence/sign-off requirements are recorded in `docs/exercise-catalogue-review.md`. Automated seed checks enforce content completeness and muscle-link consistency, but do not establish biomechanical accuracy.
 - [ ] Verify primary/secondary muscle assignments and movement categories against a documented reference.
 - [ ] Source and match suitable exercise stills or demonstrations individually. Record the exact source, creator, licence, attribution and modification history for every asset before use.
 - [ ] Do not ship media with unclear rights. If appropriate media cannot be cleared, retain the text-first guide rather than using unverified assets.

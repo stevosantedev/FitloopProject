@@ -590,6 +590,7 @@ export default function App() {
         const queued = await getQueuedWorkouts(user.id);
         setPendingWorkoutCount(queued.length);
         if (!navigator.onLine) return;
+        let hadPermanentFailure = false;
         for (const entry of queued) {
           try {
             await request("/api/workouts/sessions", {
@@ -602,6 +603,7 @@ export default function App() {
             // A validation response will not improve on a network retry. Remove only
             // permanently invalid payloads so one bad item cannot block later sessions.
             if (error instanceof ApiRequestError && [400, 404, 422].includes(error.status)) {
+              hadPermanentFailure = true;
               await removeQueuedWorkout(entry.id);
               setPendingWorkoutCount((count) => Math.max(0, count - 1));
               setNotice("One saved workout could not be synced because its details are no longer valid. Record it again to save it.");
@@ -620,7 +622,7 @@ export default function App() {
         }
         const remaining = await getQueuedWorkouts(user.id);
         setPendingWorkoutCount(remaining.length);
-        if (remaining.length === 0 && queued.length > 0) {
+        if (remaining.length === 0 && queued.length > 0 && !hadPermanentFailure) {
           setNotice("Your saved offline workouts have synced.");
           await Promise.all([loadWorkouts(), loadCommunity()]);
         }

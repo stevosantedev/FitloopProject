@@ -51,7 +51,7 @@ const exercises = [
   { slug: "bench-press", name: "Bench press", muscleGroup: "Chest", equipment: "Barbell", category: "Strength", movementPattern: "Horizontal push", bodyRegion: "Upper body", difficulty: "Intermediate", instructions: ["Lie with eyes beneath the bar and feet planted.", "Lower the bar towards the mid-chest with wrists stacked over elbows.", "Press upwards without bouncing the bar."], primary: ["pectoralis-major"], secondary: ["triceps-brachii", "anterior-deltoid"] },
   { slug: "incline-dumbbell-press", name: "Incline dumbbell press", muscleGroup: "Chest", equipment: "Dumbbell", category: "Strength", movementPattern: "Incline push", bodyRegion: "Upper body", difficulty: "Beginner", instructions: ["Set the bench to a modest incline and hold dumbbells above the chest.", "Lower the weights beside the upper chest with control.", "Press up while keeping the shoulders stable."], primary: ["pectoralis-major"], secondary: ["anterior-deltoid", "triceps-brachii"] },
   { slug: "chest-fly", name: "Dumbbell chest fly", muscleGroup: "Chest", equipment: "Dumbbell", category: "Strength", movementPattern: "Horizontal adduction", bodyRegion: "Upper body", difficulty: "Intermediate", instructions: ["Lie on a flat bench with a slight bend in each elbow.", "Open the arms until a comfortable chest stretch is reached.", "Bring the weights together above the chest without changing the elbow angle."], primary: ["pectoralis-major"], secondary: ["anterior-deltoid"] },
-  { slug: "overhead-press", name: "Overhead press", muscleGroup: "Shoulders", equipment: "Barbell", category: "Strength", movementPattern: "Vertical push", bodyRegion: "Upper body", difficulty: "Intermediate", instructions: ["Hold the bar at upper-chest height with wrists stacked over elbows.", "Brace the trunk and press the bar overhead.", "Lower the bar under control to the starting position."], primary: ["anterior-deltoid", "lateral-deltoid"], secondary: ["triceps-brachii", "trapezius"] },
+  { slug: "overhead-press", name: "Overhead press", muscleGroup: "Shoulders", equipment: "Barbell", category: "Strength", movementPattern: "Vertical push", bodyRegion: "Upper body", difficulty: "Intermediate", instructions: ["Hold the bar at upper-chest height with wrists stacked over elbows.", "Brace the trunk and press the bar overhead.", "Lower the bar under control to the starting position."], primary: ["anterior-deltoid", "lateral-deltoid"], secondary: ["triceps-brachii", "trapezius", "lower-trapezius"] },
   { slug: "lateral-raise", name: "Lateral raise", muscleGroup: "Shoulders", equipment: "Dumbbell", category: "Strength", movementPattern: "Shoulder abduction", bodyRegion: "Upper body", difficulty: "Beginner", instructions: ["Stand tall with dumbbells by the sides.", "Raise the arms outwards with a soft elbow bend.", "Stop around shoulder height and lower slowly."], primary: ["lateral-deltoid"], secondary: ["trapezius"] },
   { slug: "rear-delt-fly", name: "Rear delt fly", muscleGroup: "Shoulders", equipment: "Dumbbell", category: "Strength", movementPattern: "Horizontal pull", bodyRegion: "Upper body", difficulty: "Beginner", instructions: ["Hinge at the hips and let the weights hang beneath the shoulders.", "Raise the arms out to the sides while keeping the torso still.", "Lower slowly without swinging."], primary: ["posterior-deltoid"], secondary: ["rhomboids", "trapezius"] },
   { slug: "pull-up", name: "Pull-up", muscleGroup: "Back", equipment: "Pull-up bar", category: "Strength", movementPattern: "Vertical pull", bodyRegion: "Upper body", difficulty: "Advanced", instructions: ["Hang from the bar with a comfortable overhand grip.", "Pull the elbows down until the chin clears the bar.", "Lower to a controlled hang."], primary: ["latissimus-dorsi"], secondary: ["biceps-brachii", "rhomboids", "trapezius"] },
@@ -160,7 +160,8 @@ const exerciseGuides = {
   "push-up": {
     description: "A bodyweight horizontal press performed from a rigid plank, using the chest, triceps and front shoulders to move the body.",
     aliases: ["press-up"],
-    coachingCues: ["Keep the ribs and hips moving together", "Lower under control", "Press the floor away"]
+    coachingCues: ["Keep the ribs and hips moving together", "Lower under control", "Press the floor away"],
+    equipmentAlternatives: ["Incline push-up using a bench", "Resistance band"]
   },
   "bench-press": {
     description: "A barbell horizontal press performed on a bench, commonly used to develop pressing strength through the chest, triceps and shoulders.",
@@ -536,8 +537,14 @@ function validateCatalogue() {
     if (!exerciseGuides[exercise.slug]) {
       throw new Error(`Exercise ${exercise.slug} is missing its guide entry.`);
     }
-    if (!exercise.description?.trim() || !exercise.aliases?.length || !exercise.coachingCues?.length) {
-      throw new Error(`Exercise ${exercise.slug} is missing required guide content.`);
+    if (!Array.isArray(exercise.instructions) || exercise.instructions.length < 3 ||
+        exercise.instructions.some((step) => !step.trim())) {
+      throw new Error(`Exercise ${exercise.slug} needs at least three non-empty technique steps.`);
+    }
+    if (!exercise.description?.trim() || exercise.description.trim().length < 60 ||
+        !exercise.aliases?.length || !exercise.coachingCues || exercise.coachingCues.length < 3 ||
+        !exercise.equipmentAlternatives?.length) {
+      throw new Error(`Exercise ${exercise.slug} is missing its description, alias, three coaching cues or equipment alternatives.`);
     }
   }
 
@@ -548,8 +555,19 @@ function validateCatalogue() {
     if (!exerciseSlugs.has(slug)) {
       throw new Error(`Exercise guide references unknown exercise ${slug}.`);
     }
-    if (!guide.description?.trim() || !guide.aliases?.length || !guide.coachingCues?.length) {
-      throw new Error(`Exercise guide ${slug} is missing its description, aliases or coaching cues.`);
+    if (!guide.description?.trim() || guide.description.trim().length < 60 ||
+        !guide.aliases?.length || !guide.coachingCues || guide.coachingCues.length < 3 ||
+        !guide.equipmentAlternatives?.length) {
+      throw new Error(`Exercise guide ${slug} needs a useful description, alias, three coaching cues and equipment alternatives.`);
+    }
+  }
+
+  // Every canonical muscle should be represented in at least one movement so
+  // the anatomy map never advertises a muscle the exercise catalogue cannot target.
+  const usedMuscleSlugs = new Set(exercises.flatMap((exercise) => [...exercise.primary, ...exercise.secondary]));
+  for (const [muscleSlug] of muscles) {
+    if (!usedMuscleSlugs.has(muscleSlug)) {
+      throw new Error(`Canonical muscle ${muscleSlug} is not linked to any exercise.`);
     }
   }
 }

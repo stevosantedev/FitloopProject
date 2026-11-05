@@ -78,7 +78,7 @@ def conversation(payload: ConversationRequest):
     injury_terms = ("injury", "injured", "pain", "hurt", "swollen", "strain", "tear")
     if any(term in lowered for term in urgent_terms):
         reply = (
-            "Please stop exercising. Chest pain, fainting or serious breathing difficulty can need urgent medical attention. "
+            "Please stop exercising. Chest pain, fainting or serious breathing difficulty may require emergency medical attention. "
             "Seek emergency help now if symptoms are severe, sudden or ongoing. I cannot assess symptoms or diagnose a cause."
         )
     elif any(term in lowered for term in injury_terms):

@@ -8,7 +8,7 @@ This document separates implemented functionality from the work still required t
 
 FitLoop is a connected, working MVP foundation. The main product path is present across the React application, Express API, PostgreSQL/Prisma data model and Python coaching service. The strongest completed area is the training workflow: exercise discovery, routine management, guided set recording, workout history, progression, personal records and muscle training summaries.
 
-The application has an app-oriented responsive shell and installable web-app foundation. It supports offline workout queueing and retry-safe synchronisation, including account isolation, reload recovery, sign-out/sign-in recovery, expired-session retry and invalid-payload handling. Account deletion is covered by both unit tests and a PostgreSQL-backed cascade test. The latest branch-head CI run (5 November 2026) passed both application and coaching-service jobs, including the browser suite.
+The application has an app-oriented responsive shell and installable web-app foundation, with explicit loading, error and retry feedback across the overview, workouts and community areas. It supports offline workout queueing and retry-safe synchronisation, including account isolation, reload recovery, sign-out/sign-in recovery, expired-session retry and invalid-payload handling. Account deletion is covered by both unit tests and a PostgreSQL-backed cascade test. The latest branch-head CI run (5 November 2026) passed both application and coaching-service jobs, including the browser suite.
 
 ## Implemented product areas
 
@@ -27,12 +27,12 @@ The application has an app-oriented responsive shell and installable web-app fou
 
 ### 1. Stabilise and verify the current implementation
 - [x] Latest branch-head CI passes both application and coaching-service jobs. The application job validates the Prisma schema and migrations, seeds the catalogue, runs backend tests, builds the frontend and completes the Playwright suite.
-- [x] Full browser suite passes on the current feature branch, including offline/reconnection flows.
-- [x] Browser coverage verifies account-scoped queueing and cleanup, persistence across reload and sign-out/sign-in, retry after an expired session, removal of permanently invalid queued payloads, and a clear error when IndexedDB is unavailable.
+- [x] Full browser suite passes on the current feature branch, including offline/reconnection flows and explicit loading/retry behaviour for the exercise library.
+- [x] Browser coverage verifies account-scoped queueing and cleanup, persistence across reload and sign-out/sign-in, retry after an expired session, removal of permanently invalid queued payloads, a clear error when IndexedDB is unavailable, and loading/error/retry states for workout data.
 - [x] Account deletion is tested at unit level and against PostgreSQL. The integration test verifies removal of daily logs, routines, sessions/sets, planned sessions, coaching records, preferences, social posts, friendships, reactions, comments and private custom exercises, while preserving shared exercises and other users.
-- [ ] Complete a human screen-by-screen review of empty, loading, error, validation and success states across the dashboard, workout and community areas. Existing browser tests cover the key workout empty/error/validation/success paths, but do not replace this full review.
+- [ ] Complete a human screen-by-screen review of empty, loading, error, validation and success states across the dashboard, workout and community areas. Automated loading/error/retry coverage has been added, but does not replace this full review. Follow `docs/manual-qa-checklist.md` and record evidence.
 - [x] Automated responsive checks cover desktop, tablet portrait and mobile navigation, including mobile touch-target sizing. Keyboard-only sign-in navigation and visible focus styling are also covered.
-- [ ] Complete a physical-device and screen-reader spot check on the target browsers/devices. These require a human using the actual devices and assistive technology; automated viewport and keyboard tests are not a substitute.
+- [ ] Complete a physical-device and screen-reader spot check on the target browsers/devices. Follow `docs/manual-qa-checklist.md`; these require a human using the actual devices and assistive technology. Automated viewport and keyboard tests are not a substitute.
 
 ### 2. Finish the exercise library experience
 - [ ] Review all 101 exercise guides for factual accuracy, consistent terminology, useful instructions and appropriate regressions.
@@ -79,4 +79,4 @@ The project should not grow indefinitely by adding features without reference to
 
 ## Current release status
 
-The feature branch and pull request remain in draft and unmerged. The project is not yet a finished production service. The immediate next step is to get the latest CI run green, close the remaining offline edge cases, then complete the exercise-library quality/media review and usability evaluation.
+The feature branch and pull request remain in draft and unmerged. The project is not yet a finished production service. The latest branch-head CI run (5 November 2026) passed both jobs, including the expanded browser suite. The immediate next step is to complete the human QA checklist, then continue the exercise-library quality/media review and usability evaluation.

@@ -431,6 +431,9 @@ test("offline workouts survive a reload and sign-out, then sync for the same acc
   await page.getByRole("button", { name: "Save complete session" }).click();
   await expect(page.locator(".offline-queue-status")).toContainText("1 workout waiting to sync");
   expect(syncCount).toBe(0);
+  await page.evaluate(async () => {
+    if ("serviceWorker" in navigator) await navigator.serviceWorker.ready;
+  });
 
   await page.reload();
   await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();

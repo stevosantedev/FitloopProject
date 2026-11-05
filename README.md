@@ -22,7 +22,7 @@ Read [the implementation standards](docs/implementation-standards.md) before ext
 - `frontend/`: React app and browser interface.
 - `backend/`: Express API, Prisma data access and account security.
 - `coach/`: Python service for explainable coaching suggestions.
-- `docs/`: architecture, setup and privacy notes.
+- `docs/`: architecture, setup, privacy, implementation standards and project completion plan.
 
 ## Requirements
 
@@ -59,7 +59,7 @@ The frontend runs on port 5173, the API on port 4000 and the coach on port 8000.
 
 ## Current status and known gaps
 
-The first application flow is in place, including daily check-ins, routine creation, workout logging, friends, a feed and coach feedback. The exercise data model now supports structured instructions, aliases, movement patterns, equipment alternatives, media attribution and explicit primary/secondary muscle relationships. The first-party seed now contains 101 exercise definitions and 31 canonical muscle records, with primary and secondary muscle mappings. The app includes exercise technique cards, a selectable front/back muscle explorer with original shape paths for all 31 canonical muscles, and 30-day weighted-set summaries. This is a growing first-party reference library, not an exhaustive catalogue or clinical anatomy resource. The project still needs broader end-to-end tests, stronger production authentication, notifications, offline sync and a proper usability evaluation.
+The first application flow is in place, including daily check-ins, routine creation, workout logging, friends, a feed and coach feedback. The exercise data model now supports structured instructions, aliases, movement patterns, equipment alternatives, media attribution and explicit primary/secondary muscle relationships. The first-party seed now contains 101 exercise definitions and 31 canonical muscle records, with primary and secondary muscle mappings. The app includes exercise technique cards, a selectable front/back muscle explorer with original shape paths for all 31 canonical muscles, and 30-day weighted-set summaries. This is a growing first-party reference library, not an exhaustive catalogue or clinical anatomy resource. The project now includes an installable app shell, mobile navigation, offline workout recording and retry-safe synchronisation. It is still an MVP rather than a production-ready service: secure cookie-based authentication, additional offline edge-case tests, cleared exercise media, accessibility/usability evaluation, deployment hardening and university submission evidence remain outstanding. See the [project status and completion plan](docs/project-status-and-completion.md) for the current checklist and completion gates.
 
 The workout logger supports multi-exercise sessions with editable rows for each set, including individual reps, load and completion state. Each exercise also has its own set type, rest duration and RIR/RPE settings. The API validates unique set numbering and per-exercise limits. A guided workout flow prompts each pending set, marks it complete on confirmation, then runs that exercise's rest period before advancing. Pause, skip and stop controls are available. The progress charts are simple summaries of logged data, not medical or performance assessments.
 

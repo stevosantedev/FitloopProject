@@ -812,7 +812,7 @@ export default function App() {
       </section>
       <section className="panel section-gap recent-training">
         <div className="section-heading-row"><div><p className="eyebrow">KEEP YOUR MOMENTUM</p><h2>Recent training</h2></div><button className="subtle-action" onClick={() => setActiveTab("workouts")}>Open training <span>↗</span></button></div>
-        {sessions.length === 0 && !dashboardLoading && !dashboardError ? <div className="empty-training"><p className="muted">Your completed sessions will appear here. Start with a routine or build a one-off workout.</p><button onClick={() => setActiveTab("workouts")}>Build your first workout</button></div> :
+        {sessions.length === 0 && dashboardLoading ? <p className="muted" role="status">Loading recent training…</p> : sessions.length === 0 && dashboardError ? <p className="muted">Recent training is unavailable until the overview can be refreshed.</p> : sessions.length === 0 ? <div className="empty-training"><p className="muted">Your completed sessions will appear here. Start with a routine or build a one-off workout.</p><button onClick={() => setActiveTab("workouts")}>Build your first workout</button></div> :
           <div className="recent-session-list">{sessions.slice(0, 3).map(session => {
             const names = session.sets.map(set => set.exercise.name).filter((name, index, all) => all.indexOf(name) === index);
             const completed = session.sets.filter(set => set.completed).length;
@@ -1061,7 +1061,7 @@ export default function App() {
       </section>
       <section className="panel section-gap">
         <p className="eyebrow">TRAINING BREAKDOWN</p><h2>Sets by muscle group</h2>
-        {muscleEntries.length === 0 ? <p className="muted">Log a workout to see how your completed sets are distributed.</p> :
+        {muscleEntries.length === 0 && workoutsLoading ? <p className="muted" role="status">Loading training breakdown…</p> : muscleEntries.length === 0 && workoutsError ? <p className="muted">Training breakdown is unavailable until training data can be refreshed.</p> : muscleEntries.length === 0 ? <p className="muted">Log a workout to see how your completed sets are distributed.</p> :
           <div className="volume-list">{muscleEntries.map(([group, count]) => <div className="volume-row" key={group}><span>{group}</span><div className="volume-track"><span style={{ width: (count / Math.max(...muscleEntries.map(item => item[1])) * 100) + "%" }} /></div><strong>{count}</strong></div>)}</div>}
         <p className="chart-note">This counts completed sets in the sessions currently loaded. It is not a measure of training quality.</p>
       </section>
@@ -1070,7 +1070,7 @@ export default function App() {
   <section className="panel section-gap">
   <p className="eyebrow">PERSONAL BESTS</p><h2>Personal records</h2>
   <p className="muted">Your best completed set for each movement, based on the records you have logged.</p>
-  {personalRecords.length === 0 ? <p className="muted">Complete a workout to start recording personal bests.</p> :
+  {personalRecords.length === 0 && workoutsLoading ? <p className="muted" role="status">Loading personal records…</p> : personalRecords.length === 0 && workoutsError ? <p className="muted">Personal records are unavailable until training data can be refreshed.</p> : personalRecords.length === 0 ? <p className="muted">Complete a workout to start recording personal bests.</p> :
     <div className="personal-record-grid">{personalRecords.map(record => <article className="personal-record-card" key={record.exerciseId}>
       <strong>{record.exerciseName}</strong>
       <div className="personal-record-metrics">
@@ -1083,7 +1083,7 @@ export default function App() {
 </section>
 <p className="eyebrow">PROGRESSION</p><h2>Movement progress</h2>
   <p className="muted">Compare your latest completed sets with your previous session for each movement.</p>
-  {exerciseProgress.length === 0 ? <p className="muted">Log a completed workout to start building your movement history.</p> :
+  {exerciseProgress.length === 0 && workoutsLoading ? <p className="muted" role="status">Loading movement progress…</p> : exerciseProgress.length === 0 && workoutsError ? <p className="muted">Movement progress is unavailable until training data can be refreshed.</p> : exerciseProgress.length === 0 ? <p className="muted">Log a completed workout to start building your movement history.</p> :
     <div className="progression-list">{exerciseProgress.map(item => <article className="progression-row" key={item.exerciseId}>
       <div className="progression-heading"><strong>{item.name}</strong><span>{new Date(item.date).toLocaleDateString()}</span></div>
       <div className="progression-metrics">
@@ -1111,7 +1111,7 @@ export default function App() {
 </section>
 <section className="panel section-gap">
         <p className="eyebrow">WORKOUT HISTORY</p><h2>Recent sessions</h2>
-        {sessions.length === 0 ? <p className="muted">Completed workouts will show up here.</p> :
+        {sessions.length === 0 && workoutsLoading ? <p className="muted" role="status">Loading workout history…</p> : sessions.length === 0 && workoutsError ? <p className="muted">Workout history is unavailable until training data can be refreshed.</p> : sessions.length === 0 ? <p className="muted">Completed workouts will show up here.</p> :
           <div className="history-session-list">{sessions.map(session => {
             const completedCount = session.sets.filter(set => set.completed).length;
             const movementCount = new Set(session.sets.map(set => set.exercise.id)).size;

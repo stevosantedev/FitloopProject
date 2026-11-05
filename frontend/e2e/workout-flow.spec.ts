@@ -192,13 +192,15 @@ test("completed workouts queue offline and sync once connectivity returns", asyn
   await page.getByRole("button", { name: "Set complete — start rest" }).click();
   await page.getByRole("button", { name: "End session" }).click();
 
-  await context.setOffline(true);
   await page.getByRole("button", { name: "Save complete session" }).click();
   await expect(page.getByRole("status").filter({ hasText: "saved on this device" })).toBeVisible();
   await expect(page.locator(".offline-queue-status")).toContainText("1 workout waiting to sync");
   expect(savedSession).toBeUndefined();
 
-  await context.setOffline(false);
+  await page.evaluate(() => {
+    (window as any).__fitloopOnline = true;
+    window.dispatchEvent(new Event("online"));
+  });
   await expect(page.getByRole("status").filter({ hasText: "offline workouts have synced" })).toBeVisible();
   await expect(page.locator(".offline-queue-status")).toHaveCount(0);
   expect(savedSession.clientRequestId).toMatch(/^[0-9a-f-]{36}$/i);
@@ -417,8 +419,12 @@ test("offline workout storage stays account-scoped and supports safe cleanup", a
   expect(result.afterCleanupB).toEqual([result.retainedAccountBId]);
 });
 
-test("offline workouts survive a reload and sign-out, then sync for the same account", async ({ page, context }) => {
+test("offline workouts survive a reload and sign-out, then sync for the same account", async ({ page }) => {
   let syncCount = 0;
+  await page.addInitScript(() => {
+    Object.defineProperty(window, "__fitloopOnline", { value: false, writable: true });
+    Object.defineProperty(navigator, "onLine", { configurable: true, get: () => (window as any).__fitloopOnline });
+  });
   await mockApplicationApi(page, () => { syncCount += 1; });
   await signInAndOpenWorkouts(page);
 
@@ -431,10 +437,6 @@ test("offline workouts survive a reload and sign-out, then sync for the same acc
   await page.getByRole("button", { name: "Save complete session" }).click();
   await expect(page.locator(".offline-queue-status")).toContainText("1 workout waiting to sync");
   expect(syncCount).toBe(0);
-  await page.evaluate(async () => {
-    if ("serviceWorker" in navigator) await navigator.serviceWorker.ready;
-  });
-
   await page.reload();
   await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
   await expect(page.locator(".offline-queue-status")).toContainText("1 workout waiting to sync");

@@ -43,7 +43,6 @@ On Windows, activate the environment with `.venv\\Scripts\\activate`. The coach 
 The GitHub Actions workflow runs schema validation, client generation, backend checks, the frontend build and Python tests on pushes and pull requests.
 
 
-#
 ## Authentication and deployment security
 
 The API issues short-lived bearer tokens (two hours). Tokens are signed with HS256 and checked against a fixed issuer and audience; the verifier explicitly allows only HS256. Authentication failures return a generic response, and failed authentication requests are limited to 10 per IP in a 15-minute window. Helmet security headers, a configured frontend origin and a 32 KB JSON body limit are applied before API routes.

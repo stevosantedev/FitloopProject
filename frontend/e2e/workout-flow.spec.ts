@@ -660,3 +660,17 @@ test("dedicated coach workspace creates a conversation and displays a guided rep
   await expect(page.locator(".coach-chat-bubble.assistant")).toContainText("I can see your recent FitLoop training.");
   await expect(page.getByText(/rule-based coaching rather than a generative AI model/)).toBeVisible();
 });
+
+test("community users can share a friends-only text update", async ({ page }) => {
+  await mockApplicationApi(page);
+  await page.goto("/");
+  await page.getByLabel("Email").fill("tester@example.com");
+  await page.getByLabel("Password").fill("test-password");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.locator(".sidebar-nav").getByRole("button", { name: "Community" }).click();
+  await expect(page.getByRole("heading", { name: "Your community." })).toBeVisible();
+  await page.getByLabel("Write a community update").fill("First week back in the gym. Feeling good about the progress.");
+  await page.getByRole("button", { name: "Share update" }).click();
+  await expect(page.locator(".feed-card")).toContainText("First week back in the gym. Feeling good about the progress.");
+  await expect(page.getByText(/Shared with accepted friends/)).toBeVisible();
+});

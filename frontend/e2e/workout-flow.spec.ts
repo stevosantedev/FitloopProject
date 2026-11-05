@@ -38,7 +38,7 @@ const exercise = {
   muscles: [{ role: "PRIMARY", muscle: { name: "Quadriceps", slug: "quadriceps" } }]
 };
 
-async function mockApplicationApi(page: Page, onSessionSave?: (body: any) => void) {
+async function mockApplicationApi(page: Page, onSessionSave?: (body: any) => void, sessionSaveStatus = 200) {
   const routines: any[] = [];
   await page.route("http://localhost:4000/**", async route => {
     const request = route.request();
@@ -76,6 +76,14 @@ async function mockApplicationApi(page: Page, onSessionSave?: (body: any) => voi
     } else if (url.pathname === "/api/workouts/sessions") {
       if (method === "POST") {
         onSessionSave?.(request.postDataJSON());
+        if (sessionSaveStatus !== 200) {
+          await route.fulfill({
+            status: sessionSaveStatus,
+            contentType: "application/json",
+            body: JSON.stringify({ error: "The saved workout is no longer valid." })
+          });
+          return;
+        }
         body = { session: { id: "session-1" } };
       } else {
         body = { sessions: [] };
@@ -406,4 +414,55 @@ test("offline workout storage stays account-scoped and supports safe cleanup", a
   expect(result.firstAccountIds[0]).not.toBe(result.secondAccountIds[0]);
   expect(result.afterCleanupA).toBe(0);
   expect(result.afterCleanupB).toEqual([result.retainedAccountBId]);
+});
+
+test("offline workouts survive a reload and sign-out, then sync for the same account", async ({ page, context }) => {
+  let syncCount = 0;
+  await mockApplicationApi(page, () => { syncCount += 1; });
+  await signInAndOpenWorkouts(page);
+
+  await page.getByLabel("Rest (seconds)").fill("0");
+  await page.getByRole("button", { name: "Start guided workout" }).click();
+  await page.getByRole("button", { name: "Set complete — start rest" }).click();
+  await page.getByRole("button", { name: "End session" }).click();
+
+  await context.setOffline(true);
+  await page.getByRole("button", { name: "Save complete session" }).click();
+  await expect(page.locator(".offline-queue-status")).toContainText("1 workout waiting to sync");
+  expect(syncCount).toBe(0);
+
+  await page.reload();
+  await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
+  await expect(page.locator(".offline-queue-status")).toContainText("1 workout waiting to sync");
+
+  await page.getByRole("button", { name: "Sign out" }).click();
+  await expect(page.getByLabel("Email")).toBeVisible();
+  await page.getByLabel("Email").fill("tester@example.com");
+  await page.getByLabel("Password").fill("test-password");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await expect(page.locator(".offline-queue-status")).toContainText("1 workout waiting to sync");
+  expect(syncCount).toBe(0);
+
+  await context.setOffline(false);
+  await expect(page.getByRole("status").filter({ hasText: "offline workouts have synced" })).toBeVisible();
+  await expect(page.locator(".offline-queue-status")).toHaveCount(0);
+  expect(syncCount).toBe(1);
+});
+
+test("a permanently invalid queued workout is removed without blocking the remaining queue", async ({ page, context }) => {
+  await mockApplicationApi(page, undefined, 400);
+  await signInAndOpenWorkouts(page);
+
+  await page.getByLabel("Rest (seconds)").fill("0");
+  await page.getByRole("button", { name: "Start guided workout" }).click();
+  await page.getByRole("button", { name: "Set complete — start rest" }).click();
+  await page.getByRole("button", { name: "End session" }).click();
+
+  await context.setOffline(true);
+  await page.getByRole("button", { name: "Save complete session" }).click();
+  await expect(page.locator(".offline-queue-status")).toContainText("1 workout waiting to sync");
+
+  await context.setOffline(false);
+  await expect(page.getByRole("status").filter({ hasText: "could not be synced because its details are no longer valid" })).toBeVisible();
+  await expect(page.locator(".offline-queue-status")).toHaveCount(0);
 });

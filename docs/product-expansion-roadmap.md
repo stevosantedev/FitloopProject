@@ -22,10 +22,11 @@ The existing Python rule-based coach remains a useful baseline and fallback. A l
 
 1. **Coach experience and conversation foundation**
    - [x] Add account-owned conversation and message persistence, list/read/delete API routes, bounded conversation titles, chronological message retrieval and owner checks.
-   - [ ] Build the dedicated coach destination with conversation history, clear message states, retry behaviour and a useful empty state.
-   - [ ] Add the message submission/reply pipeline, user correction and feedback controls.
-   - [x] Keep the existing check-in suggestion flow available while the conversational flow is developed.
-   - The persistence layer is the first implementation slice; it is not yet a complete conversational coach or a language-model integration.
+   - [x] Build the dedicated responsive Coach destination with conversation history, message composer, loading/error states, retry action and deletion.
+   - [x] Add a first message/reply pipeline using a clearly disclosed, deterministic rule-guided service; only a small summary of recent completed training is sent to it.
+   - [x] Keep the existing check-in suggestion flow available alongside conversations.
+   - [ ] Integrate a generative model through a provider-neutral server adapter only after model/provider choice, explicit user consent, data-protection review, safety evaluation and cost controls.
+   - The current conversation feature is a guided rules-based preview, not a generative AI coach. The interface discloses this distinction.
 
 2. **Grounded FitLoop context**
    - Define a minimal, typed context package assembled by the API for the authenticated user.

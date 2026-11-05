@@ -78,6 +78,16 @@ test("account deletion removes owned records and private exercises while preserv
     const post = await prisma.feedPost.create({
       data: { userId: owner.id, type: "update", text: "Deletion fixture post" }
     });
+    await prisma.coachConversation.create({
+      data: {
+        userId: owner.id,
+        title: "Deletion fixture conversation",
+        messages: { create: [
+          { role: "user", content: "How is my training going?" },
+          { role: "assistant", content: "Let's review your logged sessions." }
+        ] }
+      }
+    });
 
     await Promise.all([
       prisma.dailyLog.create({
@@ -107,6 +117,8 @@ test("account deletion removes owned records and private exercises while preserv
       plannedSessions,
       coachEvents,
       coachPreferences,
+      coachConversations,
+      coachMessages,
       posts,
       friendships,
       reactions,
@@ -122,6 +134,8 @@ test("account deletion removes owned records and private exercises while preserv
       prisma.plannedSession.count({ where: { userId: owner.id } }),
       prisma.coachEvent.count({ where: { userId: owner.id } }),
       prisma.coachPreference.count({ where: { userId: owner.id } }),
+      prisma.coachConversation.count({ where: { userId: owner.id } }),
+      prisma.coachMessage.count({ where: { conversation: { userId: owner.id } } }),
       prisma.feedPost.count({ where: { userId: owner.id } }),
       prisma.friendConnection.count({ where: { OR: [{ requesterId: owner.id }, { addresseeId: owner.id }] } }),
       prisma.reaction.count({ where: { userId: owner.id } }),
@@ -132,7 +146,7 @@ test("account deletion removes owned records and private exercises while preserv
     ]);
 
     assert.equal(deletedUser, null);
-    for (const count of [dailyLogs, routines, sessions, plannedSessions, coachEvents, coachPreferences, posts, friendships, reactions, comments, privateExercises]) {
+    for (const count of [dailyLogs, routines, sessions, plannedSessions, coachEvents, coachPreferences, coachConversations, coachMessages, posts, friendships, reactions, comments, privateExercises]) {
       assert.equal(count, 0);
     }
     assert.equal(sharedExerciseAfterDeletion, 1);

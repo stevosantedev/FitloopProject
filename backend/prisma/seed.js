@@ -501,6 +501,33 @@ for (const exercise of exercises) {
  * Stable unique slugs and resolvable muscle links are required because both are
  * used as identifiers by the API, filters, analytics and anatomy interface.
  */
+function hasNonEmptyStrings(values, minimum = 1) {
+  return Array.isArray(values) &&
+    values.length >= minimum &&
+    values.every((value) => typeof value === "string" && value.trim().length > 0);
+}
+
+function hasUniqueStrings(values) {
+  if (!hasNonEmptyStrings(values)) return false;
+  const normalised = values.map((value) => value.trim().toLocaleLowerCase("en-GB"));
+  return new Set(normalised).size === normalised.length;
+}
+
+function hasUsefulDescription(value) {
+  return typeof value === "string" && value.trim().length >= 60;
+}
+
+function validateGuideContent(slug, guide, label = "Exercise") {
+  if (!hasUsefulDescription(guide.description) ||
+      !hasUniqueStrings(guide.aliases) ||
+      !hasNonEmptyStrings(guide.coachingCues, 3) ||
+      !hasUniqueStrings(guide.coachingCues) ||
+      !hasNonEmptyStrings(guide.equipmentAlternatives) ||
+      !hasUniqueStrings(guide.equipmentAlternatives)) {
+    throw new Error(`${label} ${slug} needs a 60-character description, non-empty unique aliases, three unique coaching cues and non-empty unique equipment alternatives.`);
+  }
+}
+
 function validateCatalogue() {
   const muscleSlugs = new Set(muscles.map(([slug]) => slug));
   if (muscleSlugs.size !== muscles.length) {
@@ -514,8 +541,10 @@ function validateCatalogue() {
     }
     exerciseSlugs.add(exercise.slug);
 
-    if (!exercise.primary.length) {
-      throw new Error(`Exercise ${exercise.slug} must have at least one primary muscle.`);
+    if (!hasNonEmptyStrings(exercise.primary) ||
+        !Array.isArray(exercise.secondary) ||
+        exercise.secondary.some((slug) => typeof slug !== "string" || !slug.trim())) {
+      throw new Error(`Exercise ${exercise.slug} must have valid primary and secondary muscle slug arrays, including at least one primary muscle.`);
     }
 
     const linkedSlugs = [...exercise.primary, ...exercise.secondary];
@@ -537,15 +566,10 @@ function validateCatalogue() {
     if (!exerciseGuides[exercise.slug]) {
       throw new Error(`Exercise ${exercise.slug} is missing its guide entry.`);
     }
-    if (!Array.isArray(exercise.instructions) || exercise.instructions.length < 3 ||
-        exercise.instructions.some((step) => !step.trim())) {
-      throw new Error(`Exercise ${exercise.slug} needs at least three non-empty technique steps.`);
+    if (!hasNonEmptyStrings(exercise.instructions, 3)) {
+      throw new Error(`Exercise ${exercise.slug} needs at least three non-empty string technique steps.`);
     }
-    if (!exercise.description?.trim() || exercise.description.trim().length < 60 ||
-        !exercise.aliases?.length || !exercise.coachingCues || exercise.coachingCues.length < 3 ||
-        !exercise.equipmentAlternatives?.length) {
-      throw new Error(`Exercise ${exercise.slug} is missing its description, alias, three coaching cues or equipment alternatives.`);
-    }
+    validateGuideContent(exercise.slug, exercise);
   }
 
   // Guide entries are keyed by the same stable slugs as catalogue rows. Catch
@@ -555,11 +579,7 @@ function validateCatalogue() {
     if (!exerciseSlugs.has(slug)) {
       throw new Error(`Exercise guide references unknown exercise ${slug}.`);
     }
-    if (!guide.description?.trim() || guide.description.trim().length < 60 ||
-        !guide.aliases?.length || !guide.coachingCues || guide.coachingCues.length < 3 ||
-        !guide.equipmentAlternatives?.length) {
-      throw new Error(`Exercise guide ${slug} needs a useful description, alias, three coaching cues and equipment alternatives.`);
-    }
+    validateGuideContent(slug, guide, "Exercise guide");
   }
 
   // Every canonical muscle should be represented in at least one movement so

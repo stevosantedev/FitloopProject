@@ -2,7 +2,9 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import express from "express";
 import { once } from "node:events";
-import { createCoachRouter } from "./coach.js";
+process.env.DATABASE_URL ??= "postgresql://fitloop:fitloop@localhost:5432/fitloop_test";
+process.env.JWT_SECRET ??= "fitloop-route-test-secret-at-least-32-characters";
+const { createCoachRouter } = await import("./coach.js");
 
 async function withApi(prisma, fetchImpl, run) {
   const app = express();

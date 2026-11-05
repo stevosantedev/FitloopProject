@@ -192,15 +192,13 @@ test("completed workouts queue offline and sync once connectivity returns", asyn
   await page.getByRole("button", { name: "Set complete — start rest" }).click();
   await page.getByRole("button", { name: "End session" }).click();
 
+  await context.setOffline(true);
   await page.getByRole("button", { name: "Save complete session" }).click();
   await expect(page.getByRole("status").filter({ hasText: "saved on this device" })).toBeVisible();
   await expect(page.locator(".offline-queue-status")).toContainText("1 workout waiting to sync");
   expect(savedSession).toBeUndefined();
 
-  await page.evaluate(() => {
-    (window as any).__fitloopOnline = true;
-    window.dispatchEvent(new Event("online"));
-  });
+  await context.setOffline(false);
   await expect(page.getByRole("status").filter({ hasText: "offline workouts have synced" })).toBeVisible();
   await expect(page.locator(".offline-queue-status")).toHaveCount(0);
   expect(savedSession.clientRequestId).toMatch(/^[0-9a-f-]{36}$/i);
@@ -433,7 +431,6 @@ test("offline workouts survive a reload and sign-out, then sync for the same acc
   await page.getByRole("button", { name: "Set complete — start rest" }).click();
   await page.getByRole("button", { name: "End session" }).click();
 
-  await context.setOffline(true);
   await page.getByRole("button", { name: "Save complete session" }).click();
   await expect(page.locator(".offline-queue-status")).toContainText("1 workout waiting to sync");
   expect(syncCount).toBe(0);
@@ -449,7 +446,10 @@ test("offline workouts survive a reload and sign-out, then sync for the same acc
   await expect(page.locator(".offline-queue-status")).toContainText("1 workout waiting to sync");
   expect(syncCount).toBe(0);
 
-  await context.setOffline(false);
+  await page.evaluate(() => {
+    (window as any).__fitloopOnline = true;
+    window.dispatchEvent(new Event("online"));
+  });
   await expect(page.getByRole("status").filter({ hasText: "offline workouts have synced" })).toBeVisible();
   await expect(page.locator(".offline-queue-status")).toHaveCount(0);
   expect(syncCount).toBe(1);

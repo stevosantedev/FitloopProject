@@ -84,8 +84,8 @@ The application has an app-oriented responsive shell and installable web-app fou
 
 ## Scope decisions still needed
 
-The project should not grow indefinitely by adding features without reference to the assessment brief. In particular, notifications, password reset/email verification, data export and public deployment depend on the intended final scope. The priority should be to stabilise and evaluate the existing training-centred product before expanding it.
+The project should not grow indefinitely by adding features without reference to the assessment brief. In particular, notifications, password reset/email verification, data export and public deployment depend on the intended final scope. The priority is to keep stabilising and evaluating the training foundation while delivering the AI Coach and Community workstreams in controlled, testable slices.
 
 ## Current release status
 
-The feature branch and pull request remain in draft and unmerged. The project is not yet a finished production service. The latest branch-head CI run (5 November 2026) passed both jobs, including the expanded browser suite. The next major product phase is now planned in `docs/product-expansion-roadmap.md`: begin the AI Coach conversation experience and the richer Community feed in parallel, while exercise-library review, media-rights checks and human QA continue as parallel quality work. Do not hold these product workstreams until all 101 exercise guides have received expert review.
+The feature branch and pull request remain in draft and unmerged. The project is not yet a finished production service. The latest completed CI run on the previous branch head (5 November 2026) passed both jobs, including the expanded browser suite; CI for the current documentation updates is pending. The next major product phase is now planned in `docs/product-expansion-roadmap.md`: begin the AI Coach conversation experience and the richer Community feed in parallel, while exercise-library review, media-rights checks and human QA continue as parallel quality work. Do not hold these product workstreams until all 101 exercise guides have received expert review.

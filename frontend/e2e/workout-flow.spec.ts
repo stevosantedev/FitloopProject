@@ -42,6 +42,7 @@ async function mockApplicationApi(page: Page, onSessionSave?: (body: any) => voi
   const routines: any[] = [];
   const conversations: any[] = [];
   const chatMessages: Record<string, any[]> = {};
+  const socialPosts: any[] = [];
   await page.route("http://localhost:4000/**", async route => {
     const request = route.request();
     const url = new URL(request.url());
@@ -122,8 +123,17 @@ async function mockApplicationApi(page: Page, onSessionSave?: (body: any) => voi
       body = { muscles: muscleStats };
     } else if (url.pathname === "/api/social/friends") {
       body = { connections: [] };
+    } else if (url.pathname === "/api/social/posts" && method === "POST") {
+      const input = request.postDataJSON();
+      const post = { id: "post-text-1", type: "update", text: input.text, createdAt: new Date().toISOString(),
+        user: { id: "user-1", username: "tester" }, reactions: [], comments: [] };
+      socialPosts.unshift(post);
+      body = { post };
+    } else if (url.pathname === "/api/social/posts/post-text-1" && method === "DELETE") {
+      socialPosts.splice(0, socialPosts.length);
+      body = { deleted: true };
     } else if (url.pathname === "/api/social/feed") {
-      body = { posts: [] };
+      body = { posts: socialPosts };
     }
 
     await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) });

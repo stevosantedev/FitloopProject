@@ -299,8 +299,8 @@ test("muscle map controls expose muscle names and training totals to assistive t
   await expect(muscleButton).toHaveAttribute("aria-pressed", "false");
   await muscleButton.click();
   await expect(muscleButton).toHaveAttribute("aria-pressed", "true");
-  await expect(page.getByRole("complementary")).toContainText("Pectoralis major");
-  await expect(page.getByRole("complementary")).toContainText("4 weighted sets");
+  await expect(page.locator(".muscle-detail")).toContainText("Pectoralis major");
+  await expect(page.locator(".muscle-detail")).toContainText("4 weighted sets");
 });
 
 test("exercise filters and the selected-movement tray stay in sync", async ({ page }) => {

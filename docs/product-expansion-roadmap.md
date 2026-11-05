@@ -66,10 +66,13 @@ The current friends-only feed, workout posts, reactions and comments provide a s
 ### Delivery slices
 
 1. **Feed experience**
-   - Rich, responsive feed cards for completed workouts and user-created updates.
-   - Clear author identity, timestamps, post detail, reaction counts and comment previews.
-   - Cursor-based pagination and deliberate loading, empty, error and retry states.
-   - Optimistic reactions only where failures can be rolled back accurately.
+   - [x] Create friends-only text updates from the Community screen, with a 500-character limit and a clear accepted-friends audience notice.
+   - [x] Allow authors to delete their own posts; the API scopes deletion to the authenticated author and database cascades remove associated reactions/comments.
+   - [x] Add API validation and route tests for text post creation, blank/overlong content and author-only deletion; add a browser journey for composing and sharing an update.
+   - [ ] Expand the feed into richer responsive cards for completed workouts and user-created updates, with polished author identity, timestamps, reaction counts and comment previews.
+   - [ ] Add cursor-based pagination and deliberate loading, empty, error and retry states.
+   - [ ] Add optimistic reactions only where failures can be rolled back accurately.
+   - Image uploads remain out of scope until private media storage, file validation, metadata stripping, access control and deletion are implemented.
 
 2. **Profiles and relationships**
    - User profile with display name, avatar, short bio and chosen training highlights.
@@ -91,7 +94,8 @@ The current friends-only feed, workout posts, reactions and comments provide a s
 
 ### Community MVP exit criteria
 
-- Users can create, view, react to and comment on permitted posts.
+- [x] Users can create friends-only text updates; authors can delete their own posts.
+- [ ] Users can view, react to and comment on permitted posts with polished feed presentation and pagination.
 - Feed and profile APIs enforce audience and relationship rules on the server, not just in the UI.
 - Users can manage their profile and relationships and can report or block another account.
 - Pagination, media failure, empty states and permission changes are tested.

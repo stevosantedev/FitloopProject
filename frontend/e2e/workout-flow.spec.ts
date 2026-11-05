@@ -245,6 +245,11 @@ test("the app uses persistent navigation on desktop and a bottom tab bar on mobi
   await page.getByRole("button", { name: "Workouts" }).click();
   await expect(page.getByRole("heading", { name: "Build a workout" })).toBeVisible();
 
+  // Tablet portrait uses the compact navigation layout; desktop retains the sidebar.
+  await page.setViewportSize({ width: 768, height: 1024 });
+  await expect(page.locator(".mobile-nav")).toBeVisible();
+  await expect(page.locator(".app-sidebar")).toBeHidden();
+
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.locator(".mobile-nav")).toBeVisible();
   await expect(page.locator('meta[name="viewport"]')).toHaveAttribute("content", /viewport-fit=cover/);

@@ -32,12 +32,13 @@ export default function MuscleMap({ view, muscles, selectedSlug, onSelect }: Mus
         <MuscleAnatomyIllustration view={view} selectedSlug={selectedSlug} />
         <p className="chart-note">Original muscle reference artwork. Select a named muscle to view its logged training summary.</p>
       </div>
-      <div className="muscle-map-list" aria-label={view + " muscle selection"}>
+      <div className="muscle-map-list" role="group" aria-label={view + " muscle selection"}>
         {visibleMuscles.map(muscle => (
           <button
             type="button"
             key={muscle.id}
             className={selectedSlug === muscle.slug ? "muscle-chip selected" : "muscle-chip"}
+            aria-label={`${muscle.name}, ${muscle.effectiveSets} effective sets`}
             aria-pressed={selectedSlug === muscle.slug}
             onClick={() => onSelect(muscle.slug)}
           >

@@ -549,3 +549,45 @@ test("sign-in remains usable with keyboard-only navigation and visible focus", a
   await page.keyboard.press("Shift+Tab");
   await expect(email).toBeFocused();
 });
+
+
+test("workout loading state is announced before the exercise library arrives", async ({ page }) => {
+  await mockApplicationApi(page);
+  await page.route("http://localhost:4000/api/workouts/exercises", async route => {
+    await new Promise(resolve => setTimeout(resolve, 150));
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ exercises: [exercise] }) });
+  });
+  await page.goto("/");
+  await page.getByLabel("Email").fill("tester@example.com");
+  await page.getByLabel("Password").fill("test-password");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("button", { name: "Workouts" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Loading your training data" })).toBeVisible();
+  await expect(page.getByText("Goblet squat", { exact: true }).first()).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: "Loading your training data" })).toHaveCount(0);
+});
+
+test("a failed exercise-library request shows an explicit retry instead of an empty state", async ({ page }) => {
+  await mockApplicationApi(page);
+  let attempts = 0;
+  await page.route("http://localhost:4000/api/workouts/exercises", async route => {
+    attempts += 1;
+    if (attempts === 1) {
+      await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ error: "Exercise service temporarily unavailable." }) });
+      return;
+    }
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ exercises: [exercise] }) });
+  });
+  await page.goto("/");
+  await page.getByLabel("Email").fill("tester@example.com");
+  await page.getByLabel("Password").fill("test-password");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("button", { name: "Workouts" }).click();
+
+  await expect(page.getByRole("alert").filter({ hasText: "Exercise service temporarily unavailable." })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Try again" })).toBeVisible();
+  await expect(page.getByText("No movements match your search and filters.")).toHaveCount(0);
+  await page.getByRole("button", { name: "Try again" }).click();
+  await expect(page.getByText("Goblet squat", { exact: true }).first()).toBeVisible();
+  expect(attempts).toBe(2);
+});

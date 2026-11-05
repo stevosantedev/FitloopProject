@@ -48,6 +48,8 @@ type FriendConnection = {
 type FeedPost = {
   id: string;
   createdAt: string;
+  text?: string | null;
+  type?: string;
   user: User;
   session?: WorkoutSession | null;
   reactions: Array<{ value: string; userId: string }>;
@@ -132,6 +134,7 @@ export default function App() {
     };
   }
   const [friendUsername, setFriendUsername] = useState("");
+  const [communityPostDraft, setCommunityPostDraft] = useState("");
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
 
   /**
@@ -560,6 +563,32 @@ export default function App() {
       setExerciseDrafts({});
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Could not save that workout.");
+    }
+  }
+
+  // Text updates are shared only to the existing friends-only audience.
+  async function createCommunityPost(event: React.FormEvent) {
+    event.preventDefault();
+    const text = communityPostDraft.trim();
+    if (!text) return;
+    try {
+      await request("/api/social/posts", { method: "POST", body: JSON.stringify({ text }) });
+      setCommunityPostDraft("");
+      setNotice("Your update has been shared with your accepted friends.");
+      await loadCommunity();
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Could not share your update.");
+    }
+  }
+
+  async function deleteCommunityPost(postId: string) {
+    if (!window.confirm("Delete this post and its comments and reactions?")) return;
+    try {
+      await request("/api/social/posts/" + postId, { method: "DELETE" });
+      setNotice("Your post has been deleted.");
+      await loadCommunity();
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Could not delete your post.");
     }
   }
 
@@ -1302,13 +1331,20 @@ export default function App() {
             })}</ul>}
         </section>
       </div>
+      <form className="panel community-composer" onSubmit={createCommunityPost}>
+        <p className="eyebrow">SHARE A MOMENT</p><h2>What's on your training mind?</h2>
+        <label className="sr-only" htmlFor="community-post">Write a community update</label>
+        <textarea id="community-post" value={communityPostDraft} onChange={event => setCommunityPostDraft(event.target.value)} placeholder="Share a win, a goal or a training thought with your friends…" rows={3} maxLength={500} />
+        <div className="composer-footer"><small>{communityPostDraft.trim().length}/500 · Shared with accepted friends</small><button disabled={!communityPostDraft.trim()}>Share update</button></div>
+      </form>
       <section className="panel section-gap">
         <p className="eyebrow">FRIENDS-ONLY FEED</p><h2>Recent activity</h2>
         {posts.length === 0 && communityLoading ? <p className="muted" role="status">Loading recent activity…</p> : posts.length === 0 && communityError ? <p className="muted">The feed is unavailable until the community can be refreshed.</p> : posts.length === 0 ? <p className="muted">No shared workouts yet. Once you and your friends log a session, it can appear here.</p> :
           <div className="feed-list">{posts.map(post => <article className="feed-card" key={post.id}>
             <div className="feed-heading"><strong>@{post.user.username}</strong><span>{new Date(post.createdAt).toLocaleString()}</span></div>
-            <p>{post.session?.routine?.name ?? "Completed a workout"}</p>
-            {post.session && <p className="muted">{post.session.sets.length} sets · {post.session.sets.map(item => item.exercise.name).filter((name, index, all) => all.indexOf(name) === index).join(", ")}</p>}
+            {post.text ? <p className="community-post-text">{post.text}</p> : <p>{post.session?.routine?.name ?? "Completed a workout"}</p>}
+            {post.session && <p className="muted">{post.session.routine?.name ?? "Workout"} · {post.session.sets.length} sets · {post.session.sets.map(item => item.exercise.name).filter((name, index, all) => all.indexOf(name) === index).join(", ")}</p>}
+            {post.user.id === user?.id && <button type="button" className="small-button post-delete" onClick={() => void deleteCommunityPost(post.id)}>Delete post</button>}
             <div className="reaction-row"><button className="reaction-button" onClick={() => void reactToPost(post.id, "like")}>👏 {post.reactions.filter(item => item.value === "like").length} Like</button><button className="reaction-button" onClick={() => void reactToPost(post.id, "strong")}>💪 Strong</button><button className="reaction-button" onClick={() => void reactToPost(post.id, "clap")}>🙌 Clap</button></div>
             {post.comments.map(comment => <p className="comment" key={comment.id}><strong>@{comment.user.username}</strong> {comment.text}</p>)}
             <form className="comment-form" onSubmit={event => void commentOnPost(event, post.id)}>

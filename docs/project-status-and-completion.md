@@ -42,8 +42,10 @@ The application has an app-oriented responsive shell and installable web-app fou
 - [ ] Check anatomy labels and diagram coverage with a credible anatomy reference; keep the illustration clearly labelled as an orientation aid, not clinical anatomy.
 
 ### 3. Expand the AI Coach and Community experience
-- [ ] Build a persistent AI Coach conversation experience on top of the existing Python coaching service, with authenticated conversation history, grounded FitLoop context, user-confirmed routine drafts and a deterministic fallback.
-- [ ] Define AI safety, privacy, provider, retention and evaluation rules before sending user context to an external model; use synthetic scenarios for evaluation until ethics and data-protection requirements are settled.
+- [x] Deliver a dedicated responsive Coach screen with private, persistent conversations, message history, send/reply, deletion and loading/error states; the current replies are transparently identified as rule-guided, not generative AI.
+- [x] Scope coach conversation data to the authenticated account and pass only a small summary of recent completed workouts to the rule-guided service; exclude account identifiers, daily wellbeing logs and private workout notes.
+- [ ] Integrate a generative model behind a provider-neutral server adapter, with explicit user consent, data-protection review, retention rules, safety evaluation and cost controls before any external model receives personal context.
+- [ ] Add user-confirmed routine drafts and safe, evidence-grounded training adjustments after the model and evaluation approach are approved.
 - [ ] Expand the existing friends-only feed into a visual community experience with rich workout and user posts, profiles, relationship management, pagination and robust loading/error states.
 - [ ] Add profile/post audience controls, edit/delete, reporting and blocking before enabling broader discovery; keep private wellbeing logs, workout notes and exact location out of social responses.
 - [ ] Add image upload only after storage, access control, file validation, metadata stripping, deletion and media-rights decisions are implemented.

@@ -191,6 +191,8 @@ export default function App() {
         if (cachedUser) {
           try { setUser(JSON.parse(cachedUser) as User); } catch { localStorage.removeItem("fitloop-user"); }
         }
+        const message = "You are offline. Cached overview data may be incomplete until you reconnect.";
+        setDashboardError(message);
         setNotice("You are offline. You can record a workout and it will sync when connected.");
       } else {
         const message = error instanceof Error ? error.message : "Could not load your dashboard.";
@@ -232,10 +234,14 @@ export default function App() {
             setNotice("You are offline. Your saved exercise library is available; new workouts will sync later.");
           } catch {
             if (user?.id) localStorage.removeItem(`fitloop-exercise-catalogue:${user.id}`);
-            setNotice("The offline exercise library could not be read. Reconnect to reload it.");
+            const message = "The offline exercise library could not be read. Reconnect to reload it.";
+            setWorkoutsError(message);
+            setNotice(message);
           }
         } else {
-          setNotice("Connect once to make the exercise library available offline.");
+          const message = "Connect once to make the exercise library available offline.";
+          setWorkoutsError(message);
+          setNotice(message);
         }
       } else {
         const message = error instanceof Error ? error.message : "Could not load workouts.";

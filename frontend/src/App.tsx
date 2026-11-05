@@ -522,8 +522,14 @@ export default function App() {
         body: JSON.stringify({ password: deletePassword, confirmation: deleteConfirmation })
       });
       // Clear this account's offline queue and catalogue only after server-side deletion succeeds.
+      let localDataCleared = true;
       if (deletedUserId) {
-        try { await clearQueuedWorkouts(deletedUserId); } catch (cleanupError) { console.error("Could not clear deleted account offline queue.", cleanupError); }
+        try {
+          await clearQueuedWorkouts(deletedUserId);
+        } catch (cleanupError) {
+          localDataCleared = false;
+          console.error("Could not clear deleted account offline queue.", cleanupError);
+        }
         localStorage.removeItem("fitloop-exercise-catalogue:" + deletedUserId);
       }
       localStorage.removeItem("fitloop-token");
@@ -532,7 +538,9 @@ export default function App() {
       setUser(null);
       setDeletePassword("");
       setDeleteConfirmation("");
-      setNotice("Your account and linked records have been deleted.");
+      setNotice(localDataCleared
+        ? "Your account and linked records have been deleted."
+        : "Your account has been deleted, but this browser could not clear its saved offline workouts. Clear this site's storage to remove the remaining local copy.");
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Could not delete your account.");
     }

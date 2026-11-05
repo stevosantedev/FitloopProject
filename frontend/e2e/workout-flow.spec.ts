@@ -642,7 +642,7 @@ test("dedicated coach workspace creates a conversation and displays a guided rep
   await page.getByLabel("Email").fill("tester@example.com");
   await page.getByLabel("Password").fill("test-password");
   await page.getByRole("button", { name: "Sign in" }).click();
-  await page.getByRole("button", { name: "Coach" }).click();
+  await page.locator(".sidebar-nav").getByRole("button", { name: "Coach" }).click();
   await expect(page.getByRole("heading", { name: "Meet your coach." })).toBeVisible();
   await page.getByLabel("Message your coach").fill("Can you help me review my progress?");
   await page.getByRole("button", { name: "Send message" }).click();

@@ -1,9 +1,9 @@
 import { Router } from "express";
 import { z } from "zod";
-import { prisma } from "../prismaClient.js";
+import { prisma } from "../prisma.js";
 import { config } from "../config.js";
 
-export function createCoachRouter(prismaClient = prisma) {
+export function createCoachRouter(prismaClient = prisma, fetchImpl = fetch) {
 const router = Router();
 
 const preferenceInput = z.object({
@@ -14,6 +14,7 @@ const decisionInput = z.object({ decision: z.enum(["approved", "declined"]) });
 const conversationInput = z.object({
   title: z.string().trim().min(1).max(80).optional()
 });
+const messageInput = z.object({ message: z.string().trim().min(1).max(2000) });
 
 
  // Conversation metadata is always scoped to the authenticated owner.
@@ -54,6 +55,46 @@ const conversationInput = z.object({
        select: { id: true, role: true, content: true, createdAt: true }
      });
      return res.json({ messages });
+   } catch (error) { return next(error); }
+ });
+
+ router.post("/conversations/:id/messages", async (req, res, next) => {
+   try {
+     const input = messageInput.parse(req.body);
+     const conversation = await prismaClient.coachConversation.findFirst({
+       where: { id: req.params.id, userId: req.userId }, select: { id: true, title: true }
+     });
+     if (!conversation) return res.status(404).json({ error: "Conversation not found." });
+
+     // Only recent completed training details are sent; account IDs, private notes and wellbeing logs stay out.
+     const sessions = await prismaClient.workoutSession.findMany({
+       where: { userId: req.userId }, orderBy: { startedAt: "desc" }, take: 5,
+       select: { startedAt: true, routine: { select: { name: true } },
+         sets: { where: { completed: true }, select: { reps: true, weightKg: true, exercise: { select: { name: true } } } } }
+     });
+     const preference = await prismaClient.coachPreference.findUnique({ where: { userId: req.userId } });
+     const response = await fetchImpl(config.COACH_SERVICE_URL + "/coach/conversation", {
+       method: "POST", headers: { "content-type": "application/json" },
+       body: JSON.stringify({ message: input.message, style: preference?.style ?? "gentle",
+         focus: preference?.focus ?? "energy", context: { recentSessions: sessions.map(session => ({
+           date: session.startedAt.toISOString().slice(0, 10), routine: session.routine?.name ?? null,
+           exercises: session.sets.map(set => ({ name: set.exercise.name, reps: set.reps, weightKg: set.weightKg }))
+         })) } })
+     });
+     if (!response.ok) return res.status(503).json({ error: "The coach is temporarily unavailable. Your message was not saved; please try again." });
+     const result = await response.json();
+     if (typeof result.message !== "string" || !result.message.trim())
+       return res.status(503).json({ error: "The coach returned an incomplete response. Please try again." });
+
+     const messages = await prismaClient.$transaction(async tx => {
+       const userMessage = await tx.coachMessage.create({ data: { conversationId: conversation.id, role: "user", content: input.message } });
+       const assistantMessage = await tx.coachMessage.create({ data: { conversationId: conversation.id, role: "assistant", content: result.message } });
+       await tx.coachConversation.update({ where: { id: conversation.id }, data: {
+         ...(conversation.title === "New conversation" ? { title: input.message.slice(0, 70) } : {}), updatedAt: new Date()
+       } });
+       return [userMessage, assistantMessage];
+     });
+     return res.status(201).json({ messages, responseMode: result.responseMode ?? "guided_rules" });
    } catch (error) { return next(error); }
  });
 

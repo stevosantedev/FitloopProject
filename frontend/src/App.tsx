@@ -654,6 +654,10 @@ export default function App() {
       localStorage.removeItem("fitloop-user");
       setToken("");
       setUser(null);
+      setCoachConversations([]);
+      setActiveCoachConversationId("");
+      setCoachChatMessages([]);
+      setCoachDraft("");
       setDeletePassword("");
       setDeleteConfirmation("");
       setNotice(localDataCleared

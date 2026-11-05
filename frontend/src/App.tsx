@@ -674,6 +674,10 @@ export default function App() {
     setUser(null);
     setLogs([]);
     setCoachMessages([]);
+    setCoachConversations([]);
+    setActiveCoachConversationId("");
+    setCoachChatMessages([]);
+    setCoachDraft("");
     setExercises([]);
     setRoutines([]);
     setSessions([]);

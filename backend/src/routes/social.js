@@ -31,7 +31,7 @@ router.patch("/profile/me", async (req, res, next) => {
     const profile = await prismaClient.user.update({
       where: { id: req.userId },
       data: input,
-      select: { id: true, username: true, displayName: true, bio: true }
+      select: { id: true, username: true, displayName: true, bio: true, privateAccount: true }
     });
     return res.json({ profile });
   } catch (error) { return next(error); }
@@ -170,7 +170,7 @@ router.get("/feed", async (req, res, next) => {
     const posts = await prismaClient.feedPost.findMany({
       where: { userId: { in: ids } },
       include: {
-        user: { select: { id: true, username: true } },
+        user: { select: { id: true, username: true, displayName: true } },
         session: { include: { routine: true, sets: { include: { exercise: true } } } },
         reactions: { select: { value: true, userId: true } },
         comments: {

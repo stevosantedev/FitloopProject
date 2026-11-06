@@ -1,6 +1,6 @@
 # Product expansion roadmap: AI Coach and Community
 
-Last reviewed: 6 November 2026
+Last reviewed: 5 November 2026
 
 ## Why these workstreams start now
 
@@ -78,8 +78,7 @@ The current friends-only feed, workout posts, reactions and comments provide a s
    - [x] Add account-owned display name and short bio editing, with bounded validation and no exposure of email or credentials.
    - [x] Show a consistent author identity in feed posts and friend lists using the chosen display name and a generated initial avatar.
    - [ ] Add uploaded avatars and chosen training highlights only after private media storage, file validation, metadata stripping and deletion controls are ready.
-   - [x] Add a private-by-default profile visibility setting; private profile lookups are restricted server-side to the owner and accepted friends, while public profiles expose only display name and bio to signed-in members.
-   - [ ] Add uploaded avatars and chosen training highlights only after private media storage, file validation, metadata stripping and deletion controls are ready.
+   - [ ] Profile visibility and audience controls with private-by-default handling for sensitive details; the current profile is only editable by its owner and is surfaced to existing accepted friends.
    - Friend discovery/search, requests, accepted connections and clear pending states.
    - Follow relationships only if they add value beyond the existing friend model; avoid duplicating relationship concepts without a product decision.
 

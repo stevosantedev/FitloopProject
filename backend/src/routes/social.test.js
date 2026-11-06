@@ -157,3 +157,33 @@ test("profile visibility can only be changed through the strict authenticated pr
   assert.equal(update.where.id, "user-a");
   assert.deepEqual(update.data, { privateAccount: false });
 });
+
+test("feed includes display name with the safe author identity fields", async () => {
+  let args;
+  const prisma = {
+    friendConnection: { findMany: async () => [] },
+    feedPost: { findMany: async input => { args = input; return []; } }
+  };
+  await withSocialApi(prisma, async base => {
+    const response = await fetch(base + "/api/social/feed");
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { posts: [] });
+  });
+  assert.deepEqual(args.include.user.select, { id: true, username: true, displayName: true });
+  assert.deepEqual(args.where, { userId: { in: ["user-a"] } });
+});
+
+test("PATCH profile returns the updated private-account setting", async () => {
+  const profile = { id: "user-a", username: "runner", displayName: null, bio: null, privateAccount: false };
+  let query;
+  const prisma = { user: { update: async args => { query = args; return profile; } } };
+  await withSocialApi(prisma, async base => {
+    const response = await fetch(base + "/api/social/profile/me", {
+      method: "PATCH", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ privateAccount: false })
+    });
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { profile });
+  });
+  assert.equal(query.select.privateAccount, true);
+});

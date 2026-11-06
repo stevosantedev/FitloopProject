@@ -79,6 +79,7 @@ The current friends-only feed, workout posts, reactions and comments provide a s
    - [x] Show a consistent author identity in feed posts and friend lists using the chosen display name and a generated initial avatar.
    - [ ] Add uploaded avatars and chosen training highlights only after private media storage, file validation, metadata stripping and deletion controls are ready.
    - [ ] Profile visibility and audience controls with private-by-default handling for sensitive details; the current profile is only editable by its owner and is surfaced to existing accepted friends.
+   - [x] Add incoming-request decline, outgoing-request cancellation and accepted-friend removal, with server-enforced ownership/status checks and Community actions.
    - Friend discovery/search, requests, accepted connections and clear pending states.
    - Follow relationships only if they add value beyond the existing friend model; avoid duplicating relationship concepts without a product decision.
 

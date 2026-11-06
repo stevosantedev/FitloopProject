@@ -39,6 +39,7 @@ type WorkoutSession = {
   routine?: { name: string } | null;
   sets: Array<{ id: string; reps: number; weightKg?: number | null; completed: boolean; setType?: string; restSeconds?: number; rir?: number | null; rpe?: number | null; exercise: Exercise }>;
 };
+type BlockedAccount = { id: string; username: string; displayName?: string | null };
 type FriendConnection = {
   id: string;
   status: string;
@@ -99,6 +100,7 @@ export default function App() {
   const [personalRecords, setPersonalRecords] = useState<PersonalRecord[]>([]);
   const [selectedSessionId, setSelectedSessionId] = useState("");
   const [connections, setConnections] = useState<FriendConnection[]>([]);
+  const [blockedAccounts, setBlockedAccounts] = useState<BlockedAccount[]>([]);
   const [posts, setPosts] = useState<FeedPost[]>([]);
   const [activeTab, setActiveTab] = useState<"home" | "workouts" | "community" | "coach">("home");
   const [notice, setNotice] = useState("");
@@ -279,12 +281,14 @@ export default function App() {
     setCommunityError("");
     try {
       // Friends and feed data use the same access-controlled API as the rest of the account.
-      const [friendData, feedData] = await Promise.all([
+      const [friendData, feedData, blockData] = await Promise.all([
         request("/api/social/friends"),
-        request("/api/social/feed")
+        request("/api/social/feed"),
+        request("/api/social/blocks")
       ]);
       setConnections(friendData.connections);
       setPosts(feedData.posts);
+      setBlockedAccounts(blockData.blocks.map((item: any) => item.blockedUser));
     } catch (error) {
       const message = error instanceof Error ? error.message : "Could not load your community.";
       setCommunityError(message);
@@ -666,6 +670,36 @@ export default function App() {
       await loadCommunity();
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Could not remove this friend.");
+    }
+  }
+
+  async function reportCommunityTarget(targetType: "user" | "post", targetId: string) {
+    try {
+      await request("/api/social/reports", { method: "POST", body: JSON.stringify({ targetType, targetId, reason: "other" }) });
+      setNotice("Report submitted privately. Thank you for helping keep the community safe.");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Could not submit your report.");
+    }
+  }
+
+  async function blockCommunityUser(userId: string) {
+    if (!window.confirm("Block this account? Their profile and activity will be hidden from you, your connection will be removed, and they will not be able to send you a new friend request.")) return;
+    try {
+      await request("/api/social/blocks/" + userId, { method: "POST", body: JSON.stringify({}) });
+      setNotice("Account blocked. Their activity and connection have been hidden.");
+      await loadCommunity();
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Could not block this account.");
+    }
+  }
+
+  async function unblockCommunityUser(userId: string) {
+    try {
+      await request("/api/social/blocks/" + userId, { method: "DELETE" });
+      setNotice("Account unblocked. You can connect again if both accounts allow it.");
+      await loadCommunity();
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Could not unblock this account.");
     }
   }
 
@@ -1383,10 +1417,15 @@ export default function App() {
                 {connection.status === "pending" && incoming && <div className="connection-actions"><button type="button" className="small-button" onClick={() => void acceptFriendRequest(connection.id)}>Accept</button><button type="button" className="small-button secondary" onClick={() => void manageFriendRequest(connection.id, "decline")}>Decline</button></div>}
                 {connection.status === "pending" && !incoming && <button type="button" className="small-button secondary" onClick={() => void manageFriendRequest(connection.id, "cancel")}>Cancel request</button>}
                 {connection.status === "accepted" && <button type="button" className="small-button secondary" onClick={() => void removeFriend(connection.id)}>Remove friend</button>}
+                <div className="connection-actions"><button type="button" className="small-button secondary" onClick={() => void reportCommunityTarget("user", person.id)}>Report account</button><button type="button" className="small-button secondary" onClick={() => void blockCommunityUser(person.id)}>Block</button></div>
               </li>;
             })}</ul>}
         </section>
       </div>
+      <section className="panel section-gap">
+        <p className="eyebrow">PRIVACY & SAFETY</p><h2>Blocked accounts</h2>
+        {blockedAccounts.length === 0 ? <p className="muted">You haven't blocked anyone.</p> : <ul className="log-list">{blockedAccounts.map(account => <li key={account.id}><strong>{account.displayName || "@" + account.username}</strong><span>@{account.username}</span><button type="button" className="small-button secondary" onClick={() => void unblockCommunityUser(account.id)}>Unblock</button></li>)}</ul>}
+      </section>
       <form className="panel community-composer" onSubmit={createCommunityPost}>
         <p className="eyebrow">SHARE A MOMENT</p><h2>What's on your training mind?</h2>
         <label className="sr-only" htmlFor="community-post">Write a community update</label>
@@ -1401,6 +1440,7 @@ export default function App() {
             {post.text ? <p className="community-post-text">{post.text}</p> : <p>{post.session?.routine?.name ?? "Completed a workout"}</p>}
             {post.session && <p className="muted">{post.session.routine?.name ?? "Workout"} · {post.session.sets.length} sets · {post.session.sets.map(item => item.exercise.name).filter((name, index, all) => all.indexOf(name) === index).join(", ")}</p>}
             {post.user.id === user?.id && <button type="button" className="small-button post-delete" onClick={() => void deleteCommunityPost(post.id)}>Delete post</button>}
+            {post.user.id !== user?.id && <div className="connection-actions"><button type="button" className="small-button secondary" onClick={() => void reportCommunityTarget("post", post.id)}>Report post</button><button type="button" className="small-button secondary" onClick={() => void blockCommunityUser(post.user.id)}>Block author</button></div>}
             <div className="reaction-row"><button className="reaction-button" onClick={() => void reactToPost(post.id, "like")}>👏 {post.reactions.filter(item => item.value === "like").length} Like</button><button className="reaction-button" onClick={() => void reactToPost(post.id, "strong")}>💪 Strong</button><button className="reaction-button" onClick={() => void reactToPost(post.id, "clap")}>🙌 Clap</button></div>
             {post.comments.map(comment => <p className="comment" key={comment.id}><strong>@{comment.user.username}</strong> {comment.text}</p>)}
             <form className="comment-form" onSubmit={event => void commentOnPost(event, post.id)}>

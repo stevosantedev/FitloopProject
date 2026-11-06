@@ -78,7 +78,7 @@ The current friends-only feed, workout posts, reactions and comments provide a s
    - [x] Add account-owned display name and short bio editing, with bounded validation and no exposure of email or credentials.
    - [x] Show a consistent author identity in feed posts and friend lists using the chosen display name and a generated initial avatar.
    - [ ] Add uploaded avatars and chosen training highlights only after private media storage, file validation, metadata stripping and deletion controls are ready.
-   - [ ] Profile visibility and audience controls with private-by-default handling for sensitive details; the current profile is only editable by its owner and is surfaced to existing accepted friends.
+   - [x] Profile visibility controls with private-by-default handling; public profile payloads expose only display identity and bio, while private profiles are limited to owners and accepted friends.
    - [x] Add incoming-request decline, outgoing-request cancellation and accepted-friend removal, with server-enforced ownership/status checks and Community actions.
    - Friend discovery/search, requests, accepted connections and clear pending states.
    - Follow relationships only if they add value beyond the existing friend model; avoid duplicating relationship concepts without a product decision.
@@ -91,7 +91,7 @@ The current friends-only feed, workout posts, reactions and comments provide a s
 
 4. **Community quality and safety**
    - Edit/delete own posts and comments; prevent duplicate or unauthorised actions.
-   - Report content and users, block/mute accounts, and hide blocked users' content consistently.
+   - [x] Report visible posts and user accounts with a bounded reason/details schema and private moderation records.\n   - [x] Block/unblock accounts; blocking removes existing connections and hides each account's profiles, feed posts and new friend requests from the other.\n   - [ ] Build moderator review, triage and resolution workflows before public discovery.
    - Add moderation status and an auditable handling process before opening discovery beyond accepted friends.
    - Rate-limit post, comment, reaction, friend-request and report endpoints.
 
@@ -100,7 +100,7 @@ The current friends-only feed, workout posts, reactions and comments provide a s
 - [x] Users can create friends-only text updates; authors can delete their own posts.
 - [ ] Users can view, react to and comment on permitted posts with polished feed presentation and pagination.
 - Feed and profile APIs enforce audience and relationship rules on the server, not just in the UI.
-- Users can manage their profile and relationships and can report or block another account.
+- [x] Users can manage their profile and relationships and can report or block another account.
 - Pagination, media failure, empty states and permission changes are tested.
 - No private wellbeing, workout-note or account data leaks into public/community responses.
 

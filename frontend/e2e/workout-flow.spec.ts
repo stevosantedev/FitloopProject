@@ -697,6 +697,10 @@ test("community block and report controls call the moderation API", async ({ pag
       await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ blocks: [] }) });
       return;
     }
+    if (url.pathname === "/api/social/feed") {
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ posts: [] }) });
+      return;
+    }
     await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ blocked: true, report: { id: "report-1", status: "open" } }) });
   });
   page.on("dialog", dialog => dialog.accept());

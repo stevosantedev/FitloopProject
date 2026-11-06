@@ -123,6 +123,8 @@ async function mockApplicationApi(page: Page, onSessionSave?: (body: any) => voi
       body = { muscles: muscleStats };
     } else if (url.pathname === "/api/social/friends") {
       body = { connections: [] };
+    } else if (url.pathname === "/api/social/blocks" && method === "GET") {
+      body = { blocks: [] };
     } else if (url.pathname === "/api/social/posts" && method === "POST") {
       const input = request.postDataJSON();
       const post = { id: "post-text-1", type: "update", text: input.text, createdAt: new Date().toISOString(),
@@ -673,4 +675,41 @@ test("community users can share a friends-only text update", async ({ page }) =>
   await page.getByRole("button", { name: "Share update" }).click();
   await expect(page.locator(".feed-card")).toContainText("First week back in the gym. Feeling good about the progress.");
   await expect(page.getByText(/Shared with accepted friends/)).toBeVisible();
+});
+
+
+test("community block and report controls call the moderation API", async ({ page }) => {
+  await mockApplicationApi(page);
+  const calls: Array<{ path: string; method: string }> = [];
+  await page.route("http://localhost:4000/api/social/**", async route => {
+    const request = route.request();
+    const url = new URL(request.url());
+    calls.push({ path: url.pathname, method: request.method() });
+    if (url.pathname === "/api/social/friends") {
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ connections: [{
+        id: "connection-1", status: "accepted",
+        requester: { id: "user-1", username: "tester", displayName: "Tester" },
+        addressee: { id: "user-2", username: "friend", displayName: "Friend" }
+      }] }) });
+      return;
+    }
+    if (url.pathname === "/api/social/blocks") {
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ blocks: [] }) });
+      return;
+    }
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ blocked: true, report: { id: "report-1", status: "open" } }) });
+  });
+  page.on("dialog", dialog => dialog.accept());
+  await page.goto("/");
+  await page.getByLabel("Email").fill("tester@example.com");
+  await page.getByLabel("Password").fill("test-password");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.locator(".sidebar-nav").getByRole("button", { name: "Community" }).click();
+  await expect(page.getByRole("heading", { name: "Friends and requests" })).toBeVisible();
+  await page.getByRole("button", { name: "Report account" }).click();
+  await expect(page.getByRole("status")).toContainText("Report submitted privately");
+  expect(calls.some(call => call.path === "/api/social/reports" && call.method === "POST")).toBeTruthy();
+  await page.getByRole("button", { name: "Block", exact: true }).click();
+  await expect(page.getByRole("status")).toContainText("Account blocked");
+  expect(calls.some(call => call.path === "/api/social/blocks/user-2" && call.method === "POST")).toBeTruthy();
 });

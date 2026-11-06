@@ -10,7 +10,7 @@ const reactionInput = z.object({ value: z.enum(["like", "strong", "clap"]).defau
 const profileInput = z.object({
   displayName: z.string().trim().min(1).max(40).nullable().optional(),
   bio: z.string().trim().max(160).nullable().optional()
-}).refine(input => Object.keys(input).length > 0);
+}).strict().refine(input => Object.keys(input).length > 0);
 
 // Profile fields are deliberately limited to display identity; email and private account data never leave the API.
 router.get("/profile/me", async (req, res, next) => {

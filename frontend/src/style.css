@@ -688,3 +688,8 @@ footer { padding: 22px 0 0; border-top: 1px solid #202c25; }
   .community-profile-form { grid-template-columns: 1fr; padding: 14px; }
   .community-profile-form > div:first-child, .community-profile-form .composer-footer { grid-column: auto; }
 }
+
+
+/* Keep relationship safety actions grouped and easy to reach on narrow screens. */
+.connection-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; }
+.connection-actions .small-button { min-height: 36px; }

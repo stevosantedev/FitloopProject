@@ -1,6 +1,6 @@
 # Product expansion roadmap: AI Coach and Community
 
-Last reviewed: 5 November 2026
+Last reviewed: 6 November 2026
 
 ## Why these workstreams start now
 
@@ -80,7 +80,7 @@ The current friends-only feed, workout posts, reactions and comments provide a s
    - [ ] Add uploaded avatars and chosen training highlights only after private media storage, file validation, metadata stripping and deletion controls are ready.
    - [x] Profile visibility controls with private-by-default handling; public profile payloads expose only display identity and bio, while private profiles are limited to owners and accepted friends.
    - [x] Add incoming-request decline, outgoing-request cancellation and accepted-friend removal, with server-enforced ownership/status checks and Community actions.
-   - Friend discovery/search, requests, accepted connections and clear pending states.
+   - [ ] Friend discovery/search and suggestions; request, accepted-connection and pending-state management is implemented.
    - Follow relationships only if they add value beyond the existing friend model; avoid duplicating relationship concepts without a product decision.
 
 3. **Post creation and media**

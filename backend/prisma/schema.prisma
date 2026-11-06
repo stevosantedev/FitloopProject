@@ -34,6 +34,10 @@ model User {
   reactions      Reaction[]
   comments       FeedComment[]
   customExercises Exercise[]
+  blocksMade      UserBlock[] @relation("Blocker")
+  blocksReceived  UserBlock[] @relation("Blocked")
+  reportsFiled    ContentReport[] @relation("ReportAuthor")
+  reportsReceived ContentReport[] @relation("ReportedUser")
 }
 
 // One row per user per calendar day keeps daily check-ins easy to query and update.
@@ -230,6 +234,7 @@ model FeedPost {
   session   WorkoutSession? @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   reactions Reaction[]
   comments  FeedComment[]
+  reports   ContentReport[]
   @@index([userId, createdAt])
 }
 
@@ -244,6 +249,38 @@ model FriendConnection {
   addressee   User     @relation("FriendAddressee", fields: [addresseeId], references: [id], onDelete: Cascade)
 
   @@unique([requesterId, addresseeId])
+}
+
+// Blocks are directional: either member can stop the relationship and hide each other's activity.
+model UserBlock {
+  id            String   @id @default(cuid())
+  blockerId     String
+  blockedUserId String
+  createdAt     DateTime @default(now())
+  blocker       User     @relation("Blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blockedUser   User     @relation("Blocked", fields: [blockedUserId], references: [id], onDelete: Cascade)
+
+  @@unique([blockerId, blockedUserId])
+  @@index([blockedUserId])
+}
+
+// Reports are private moderation records; they never appear in the community feed.
+model ContentReport {
+  id             String   @id @default(cuid())
+  reporterId     String
+  reportedUserId String?
+  postId         String?
+  reason         String
+  details        String?  @db.VarChar(1000)
+  status         String   @default("open")
+  createdAt      DateTime @default(now())
+  reporter       User     @relation("ReportAuthor", fields: [reporterId], references: [id], onDelete: Cascade)
+  reportedUser   User?    @relation("ReportedUser", fields: [reportedUserId], references: [id], onDelete: SetNull)
+  post           FeedPost? @relation(fields: [postId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([reportedUserId, createdAt])
+  @@index([postId, createdAt])
 }
 
 // Reactions are limited to one per user and post to keep the feed predictable.

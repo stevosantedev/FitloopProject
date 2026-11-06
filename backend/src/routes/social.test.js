@@ -33,7 +33,7 @@ test("POST posts creates a friends-only update for the authenticated author", as
     assert.deepEqual(await response.json(), { post });
   });
   assert.deepEqual(args.data, { userId: "user-a", type: "update", text: "First training update" });
-  assert.deepEqual(args.include.user.select, { id: true, username: true });
+  assert.deepEqual(args.include.user.select, { id: true, username: true, displayName: true });
 });
 
 test("POST posts rejects blank and overlong updates before writing", async () => {

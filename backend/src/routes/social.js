@@ -74,6 +74,15 @@ router.get("/profile/:id", async (req, res, next) => {
   } catch (error) { return next(error); }
 });
 
+// A block is mutual for visibility: either party stops seeing the other's social activity.
+async function blockedIds(userId) {
+  const blocks = await prismaClient.userBlock.findMany({
+    where: { OR: [{ blockerId: userId }, { blockedUserId: userId }] },
+    select: { blockerId: true, blockedUserId: true }
+  });
+  return blocks.map(block => block.blockerId === userId ? block.blockedUserId : block.blockerId);
+}
+
 // Resolve accepted connections in both directions because a friendship is stored as one request row.
 async function friendIds(userId) {
   const connections = await prismaClient.friendConnection.findMany({
@@ -189,6 +198,80 @@ router.delete("/friends/:id", async (req, res, next) => {
   } catch (error) { return next(error); }
 });
 
+
+// Blocking removes any pending/accepted relationship and hides both accounts' activity from one another.
+router.post("/blocks/:userId", async (req, res, next) => {
+  try {
+    const targetId = req.params.userId;
+    if (!targetId || targetId === req.userId) return res.status(400).json({ error: "You cannot block this account." });
+    const target = await prismaClient.user.findUnique({ where: { id: targetId }, select: { id: true } });
+    if (!target) return res.status(404).json({ error: "User not found." });
+    await prismaClient.$transaction(async transaction => {
+      await transaction.friendConnection.deleteMany({
+        where: { OR: [{ requesterId: req.userId, addresseeId: targetId }, { requesterId: targetId, addresseeId: req.userId }] }
+      });
+      await transaction.userBlock.upsert({
+        where: { blockerId_blockedUserId: { blockerId: req.userId, blockedUserId: targetId } },
+        create: { blockerId: req.userId, blockedUserId: targetId },
+        update: {}
+      });
+    });
+    return res.json({ blocked: true });
+  } catch (error) { return next(error); }
+});
+
+router.get("/blocks", async (req, res, next) => {
+  try {
+    const blocks = await prismaClient.userBlock.findMany({
+      where: { blockerId: req.userId },
+      include: { blockedUser: { select: { id: true, username: true, displayName: true } } },
+      orderBy: { createdAt: "desc" }
+    });
+    return res.json({ blocks });
+  } catch (error) { return next(error); }
+});
+
+router.delete("/blocks/:userId", async (req, res, next) => {
+  try {
+    const result = await prismaClient.userBlock.deleteMany({
+      where: { blockerId: req.userId, blockedUserId: req.params.userId }
+    });
+    if (result.count === 0) return res.status(404).json({ error: "Block not found." });
+    return res.json({ unblocked: true });
+  } catch (error) { return next(error); }
+});
+
+// Reports are accepted only for a real account or a post the reporter can already view.
+router.post("/reports", reportLimiter, async (req, res, next) => {
+  try {
+    const input = reportInput.parse(req.body);
+    let reportTarget;
+    if (input.targetType === "user") {
+      if (input.targetId === req.userId) return res.status(400).json({ error: "You cannot report your own account." });
+      reportTarget = await prismaClient.user.findUnique({ where: { id: input.targetId }, select: { id: true } });
+      if (!reportTarget) return res.status(404).json({ error: "Report target not found." });
+    } else {
+      const ids = [req.userId, ...await friendIds(req.userId)];
+      reportTarget = await prismaClient.feedPost.findFirst({
+        where: { id: input.targetId, userId: { in: ids } },
+        select: { id: true, userId: true }
+      });
+      if (!reportTarget) return res.status(404).json({ error: "Report target not found." });
+      if (reportTarget.userId === req.userId) return res.status(400).json({ error: "You cannot report your own post." });
+    }
+    const report = await prismaClient.contentReport.create({
+      data: {
+        reporterId: req.userId,
+        reportedUserId: input.targetType === "user" ? reportTarget.id : reportTarget.userId,
+        postId: input.targetType === "post" ? reportTarget.id : null,
+        reason: input.reason,
+        details: input.details || null
+      },
+      select: { id: true, reason: true, status: true, createdAt: true }
+    });
+    return res.status(201).json({ report });
+  } catch (error) { return next(error); }
+});
 
 router.post("/posts", async (req, res, next) => {
   try {

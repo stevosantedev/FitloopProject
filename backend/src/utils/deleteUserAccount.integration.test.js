@@ -104,7 +104,32 @@ test("account deletion removes owned records and private exercises while preserv
         data: { requesterId: owner.id, addresseeId: friend.id, status: "accepted" }
       }),
       prisma.reaction.create({ data: { userId: owner.id, postId: post.id, value: "like" } }),
-      prisma.feedComment.create({ data: { userId: owner.id, postId: post.id, text: "Deletion fixture comment" } })
+      prisma.feedComment.create({ data: { userId: owner.id, postId: post.id, text: "Deletion fixture comment" } }),
+      prisma.userBlock.create({ data: { blockerId: owner.id, blockedUserId: friend.id } }),
+      prisma.userBlock.create({ data: { blockerId: friend.id, blockedUserId: owner.id } }),
+      prisma.contentReport.create({
+        data: {
+          reporterId: owner.id,
+          reportedUserId: friend.id,
+          reason: "spam"
+        }
+      }),
+      prisma.contentReport.create({
+        data: {
+          reporterId: friend.id,
+          reportedUserId: owner.id,
+          reason: "harassment"
+        }
+      }),
+      prisma.contentReport.create({
+        data: {
+          reporterId: friend.id,
+          reportedUserId: owner.id,
+          postId: post.id,
+          reason: "other",
+          details: "Report against the owner's post"
+        }
+      })
     ]);
 
     await deleteUserAccount(prisma, owner.id);
@@ -123,6 +148,9 @@ test("account deletion removes owned records and private exercises while preserv
       friendships,
       reactions,
       comments,
+      blocksInvolvingOwner,
+      reportsFiledByOwner,
+      survivingFriendReports,
       privateExercises,
       sharedExerciseAfterDeletion,
       survivingFriend
@@ -140,15 +168,30 @@ test("account deletion removes owned records and private exercises while preserv
       prisma.friendConnection.count({ where: { OR: [{ requesterId: owner.id }, { addresseeId: owner.id }] } }),
       prisma.reaction.count({ where: { userId: owner.id } }),
       prisma.feedComment.count({ where: { userId: owner.id } }),
+      prisma.userBlock.count({
+        where: { OR: [{ blockerId: owner.id }, { blockedUserId: owner.id }] }
+      }),
+      prisma.contentReport.count({ where: { reporterId: owner.id } }),
+      prisma.contentReport.findMany({
+        where: { reporterId: friend.id },
+        select: { reportedUserId: true, postId: true, reason: true }
+      }),
       prisma.exercise.count({ where: { id: privateExercise.id } }),
       prisma.exercise.count({ where: { id: sharedExercise.id } }),
       prisma.user.findUnique({ where: { id: friend.id } })
     ]);
 
     assert.equal(deletedUser, null);
-    for (const count of [dailyLogs, routines, sessions, plannedSessions, coachEvents, coachPreferences, coachConversations, coachMessages, posts, friendships, reactions, comments, privateExercises]) {
+    for (const count of [
+      dailyLogs, routines, sessions, plannedSessions, coachEvents, coachPreferences,
+      coachConversations, coachMessages, posts, friendships, reactions, comments,
+      blocksInvolvingOwner, reportsFiledByOwner, privateExercises
+    ]) {
       assert.equal(count, 0);
     }
+    assert.equal(survivingFriendReports.length, 2);
+    assert.ok(survivingFriendReports.every(report => report.reportedUserId === null));
+    assert.ok(survivingFriendReports.every(report => report.postId === null));
     assert.equal(sharedExerciseAfterDeletion, 1);
     assert.ok(survivingFriend);
   } finally {

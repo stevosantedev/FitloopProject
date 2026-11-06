@@ -380,3 +380,40 @@ test("a block hides a public profile even when it is otherwise discoverable", as
     assert.equal(response.status, 404);
   });
 });
+
+
+test("GET feed returns a bounded cursor page and scopes it to visible friends", async () => {
+  let query;
+  const rows = [{ id: "post-new" }, { id: "post-next" }, { id: "lookahead" }];
+  const prisma = {
+    friendConnection: { findMany: async () => [] },
+    userBlock: { findMany: async () => [] },
+    feedPost: { findMany: async args => { query = args; return rows; } }
+  };
+  await withSocialApi(prisma, async base => {
+    const response = await fetch(base + "/api/social/feed?limit=2&cursor=post-old");
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { posts: rows.slice(0, 2), hasMore: true, nextCursor: "post-next" });
+  });
+  assert.deepEqual(query.where, { userId: { in: ["user-a"] } });
+  assert.deepEqual(query.orderBy, [{ createdAt: "desc" }, { id: "desc" }]);
+  assert.deepEqual(query.cursor, { id: "post-old" });
+  assert.equal(query.skip, 1);
+  assert.equal(query.take, 3);
+});
+
+test("GET feed rejects invalid cursors and page sizes before querying", async () => {
+  let reads = 0;
+  const prisma = {
+    friendConnection: { findMany: async () => [] },
+    userBlock: { findMany: async () => [] },
+    feedPost: { findMany: async () => { reads += 1; return []; } }
+  };
+  await withSocialApi(prisma, async base => {
+    for (const query of ["?limit=0", "?limit=51", "?cursor="]) {
+      const response = await fetch(base + "/api/social/feed" + query);
+      assert.equal(response.status, 400);
+    }
+  });
+  assert.equal(reads, 0);
+});

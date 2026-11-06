@@ -286,6 +286,7 @@ model ContentReport {
   @@index([status, createdAt])
   @@index([reportedUserId, createdAt])
   @@index([postId, createdAt])
+  @@index([reviewedById, reviewedAt])
 }
 
 // Reactions are limited to one per user and post to keep the feed predictable.

@@ -305,8 +305,14 @@ router.delete("/posts/:id", async (req, res, next) => {
 
 router.get("/feed", async (req, res, next) => {
   try {
+    // Re-evaluate visibility for every page; a block or friendship change
+    // must affect older posts just as it affects the first page.
+    const input = z.object({
+      cursor: z.string().min(1).max(64).optional(),
+      limit: z.coerce.number().int().min(1).max(50).default(20)
+    }).strict().parse(req.query);
     const ids = [req.userId, ...await friendIds(req.userId)];
-    const posts = await prismaClient.feedPost.findMany({
+    const rows = await prismaClient.feedPost.findMany({
       where: { userId: { in: ids } },
       include: {
         user: { select: { id: true, username: true, displayName: true } },
@@ -318,10 +324,13 @@ router.get("/feed", async (req, res, next) => {
           take: 20
         }
       },
-      orderBy: { createdAt: "desc" },
-      take: 50
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      ...(input.cursor ? { cursor: { id: input.cursor }, skip: 1 } : {}),
+      take: input.limit + 1
     });
-    return res.json({ posts });
+    const hasMore = rows.length > input.limit;
+    const posts = hasMore ? rows.slice(0, input.limit) : rows;
+    return res.json({ posts, hasMore, nextCursor: hasMore ? posts[posts.length - 1].id : null });
   } catch (error) {
     return next(error);
   }

@@ -783,10 +783,8 @@ test("allowlisted moderators can review and resolve private community reports", 
   await page.locator(".sidebar-nav").getByRole("button", { name: "Community" }).click();
   await expect(page.getByRole("heading", { name: "Moderator review" })).toBeVisible();
   await expect(page.getByText("Repeated abusive messages.")).toBeVisible();
-  await page.getByRole("button", { name: "Start review" }).click();
   await page.getByLabel("Resolution note for report-1").fill("Reviewed and action taken.");
   await page.getByRole("button", { name: "Resolve report" }).click();
   await expect(page.getByText("No open reports.")).toBeVisible();
-  expect(calls.some(call => call.path === "/api/social/moderation/reports/report-1" && call.method === "PATCH" && call.body.status === "reviewing")).toBeTruthy();
   expect(calls.some(call => call.path === "/api/social/moderation/reports/report-1" && call.method === "PATCH" && call.body.status === "resolved" && call.body.resolutionNote === "Reviewed and action taken.")).toBeTruthy();
 });

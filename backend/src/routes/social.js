@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
+import rateLimit from "express-rate-limit";
 import { prisma } from "../prisma.js";
 
 export function createSocialRouter(prismaClient = prisma) {
@@ -7,6 +8,7 @@ const router = Router();
 const commentInput = z.object({ text: z.string().trim().min(1).max(500) });
 const postInput = z.object({ text: z.string().trim().min(1).max(500) });
 const reactionInput = z.object({ value: z.enum(["like", "strong", "clap"]).default("like") });
+const reportLimiter = rateLimit({ windowMs: 60 * 60 * 1000, limit: 5, standardHeaders: true, legacyHeaders: false, keyGenerator: req => req.userId });
 const reportInput = z.object({
   targetType: z.enum(["user", "post"]),
   targetId: z.string().min(1).max(64),

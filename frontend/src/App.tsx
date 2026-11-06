@@ -102,6 +102,9 @@ export default function App() {
   const [connections, setConnections] = useState<FriendConnection[]>([]);
   const [blockedAccounts, setBlockedAccounts] = useState<BlockedAccount[]>([]);
   const [posts, setPosts] = useState<FeedPost[]>([]);
+  const [feedCursor, setFeedCursor] = useState<string | null>(null);
+  const [feedHasMore, setFeedHasMore] = useState(false);
+  const [feedLoadingMore, setFeedLoadingMore] = useState(false);
   const [activeTab, setActiveTab] = useState<"home" | "workouts" | "community" | "coach">("home");
   const [notice, setNotice] = useState("");
   // Keep first-load and refresh failures separate from legitimate empty account data.
@@ -288,6 +291,8 @@ export default function App() {
       ]);
       setConnections(friendData.connections);
       setPosts(feedData.posts);
+      setFeedCursor(feedData.nextCursor ?? null);
+      setFeedHasMore(Boolean(feedData.hasMore));
       setBlockedAccounts(blockData.blocks.map((item: any) => item.blockedUser));
     } catch (error) {
       const message = error instanceof Error ? error.message : "Could not load your community.";
@@ -295,6 +300,26 @@ export default function App() {
       setNotice(message);
     } finally {
       setCommunityLoading(false);
+    }
+  }
+
+  // Append older posts without replacing the current feed. The API applies
+  // the same live friendship and block checks to every cursor request.
+  async function loadMoreCommunityPosts() {
+    if (!feedHasMore || !feedCursor || feedLoadingMore) return;
+    setFeedLoadingMore(true);
+    try {
+      const data = await request("/api/social/feed?cursor=" + encodeURIComponent(feedCursor));
+      setPosts(current => {
+        const existing = new Set(current.map(post => post.id));
+        return [...current, ...data.posts.filter((post: FeedPost) => !existing.has(post.id))];
+      });
+      setFeedCursor(data.nextCursor ?? null);
+      setFeedHasMore(Boolean(data.hasMore));
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Could not load older community posts.");
+    } finally {
+      setFeedLoadingMore(false);
     }
   }
 
@@ -1448,6 +1473,7 @@ export default function App() {
               <button disabled={!commentDrafts[post.id]?.trim()}>Send</button>
             </form>
           </article>)}</div>}
+        {feedHasMore && <button type="button" className="secondary-button feed-load-more" onClick={() => void loadMoreCommunityPosts()} disabled={feedLoadingMore}>{feedLoadingMore ? "Loading older posts…" : "Load older posts"}</button>}
       </section>
     </section>}
 

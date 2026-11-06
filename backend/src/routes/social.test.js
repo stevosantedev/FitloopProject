@@ -104,7 +104,8 @@ test("PATCH profile rejects empty, overlong and unexpected profile fields", asyn
 test("private profile lookup is hidden from non-friends", async () => {
   const prisma = {
     user: { findUnique: async () => ({ id: "user-b", username: "private-runner", displayName: "Private Runner", bio: null, privateAccount: true }) },
-    friendConnection: { findFirst: async () => null }
+    friendConnection: { findFirst: async () => null },
+    userBlock: { findMany: async () => [] }
   };
   await withSocialApi(prisma, async base => {
     const response = await fetch(base + "/api/social/profile/user-b");
@@ -121,7 +122,8 @@ test("private profile lookup is available to an accepted friend without exposing
         OR: [{ requesterId: "user-a", addresseeId: "user-b" }, { requesterId: "user-b", addresseeId: "user-a" }]
       });
       return { id: "friendship-a" };
-    } }
+    } },
+    userBlock: { findMany: async () => [] }
   };
   await withSocialApi(prisma, async base => {
     const response = await fetch(base + "/api/social/profile/user-b");
@@ -133,7 +135,8 @@ test("private profile lookup is available to an accepted friend without exposing
 test("public profile lookup is available without a friendship", async () => {
   const prisma = {
     user: { findUnique: async () => ({ id: "user-b", username: "open-runner", displayName: "Open Runner", bio: null, privateAccount: false }) },
-    friendConnection: { findFirst: async () => { throw new Error("Public profiles do not need a friendship query."); } }
+    friendConnection: { findFirst: async () => { throw new Error("Public profiles do not need a friendship query."); } },
+    userBlock: { findMany: async () => [] }
   };
   await withSocialApi(prisma, async base => {
     const response = await fetch(base + "/api/social/profile/user-b");
@@ -162,6 +165,7 @@ test("feed includes display name with the safe author identity fields", async ()
   let args;
   const prisma = {
     friendConnection: { findMany: async () => [] },
+    userBlock: { findMany: async () => [] },
     feedPost: { findMany: async input => { args = input; return []; } }
   };
   await withSocialApi(prisma, async base => {

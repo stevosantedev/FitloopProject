@@ -11,7 +11,7 @@ import MuscleMap from "./components/MuscleMap";
 import GuidedRestTimer from "./components/GuidedRestTimer";
 import { clearQueuedWorkouts, getQueuedWorkouts, queueWorkout, removeQueuedWorkout } from "./offlineWorkoutQueue";
 
-type User = { id: string; username: string; displayName?: string | null; bio?: string | null };
+type User = { id: string; username: string; displayName?: string | null; bio?: string | null; privateAccount?: boolean };
 
 class ApiRequestError extends Error {
   constructor(message: string, readonly status: number) {
@@ -136,6 +136,7 @@ export default function App() {
   const [friendUsername, setFriendUsername] = useState("");
   const [profileNameDraft, setProfileNameDraft] = useState("");
   const [profileBioDraft, setProfileBioDraft] = useState("");
+  const [profilePrivateDraft, setProfilePrivateDraft] = useState(true);
   const [profileSaving, setProfileSaving] = useState(false);
   const [communityPostDraft, setCommunityPostDraft] = useState("");
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
@@ -191,6 +192,7 @@ export default function App() {
       setUser(profile.user);
       setProfileNameDraft(profile.user.displayName ?? "");
       setProfileBioDraft(profile.user.bio ?? "");
+      setProfilePrivateDraft(profile.user.privateAccount ?? true);
       localStorage.setItem("fitloop-user", JSON.stringify(profile.user));
       const preferenceData = await request("/api/coach/preferences");
       setCoachPreference(preferenceData.preference);
@@ -580,7 +582,8 @@ export default function App() {
         method: "PATCH",
         body: JSON.stringify({
           displayName: profileNameDraft.trim() || null,
-          bio: profileBioDraft.trim() || null
+          bio: profileBioDraft.trim() || null,
+          privateAccount: profilePrivateDraft
         })
       });
       setUser(current => current ? { ...current, ...data.profile } : current);
@@ -1340,10 +1343,11 @@ export default function App() {
       {communityError && <div className="load-error" role="alert"><span>{communityError}</span><button type="button" className="secondary" onClick={() => void loadCommunity()}>Try again</button></div>}
       <div className="welcome compact"><p className="eyebrow">BETTER TOGETHER</p><h1>Your community.</h1><p className="muted">Share completed workouts with people you've connected with.</p></div>
       <form className="panel community-profile-form" onSubmit={saveProfile}>
-        <div><p className="eyebrow">YOUR PROFILE</p><h2>Make it yours</h2><p className="muted">Choose how your name and short introduction appear to accepted friends. Your email and private account details are never shown.</p></div>
+        <div><p className="eyebrow">YOUR PROFILE</p><h2>Make it yours</h2><p className="muted">Choose how your profile is shared. Your email and private account details are never shown.</p></div>
         <label>Display name<input value={profileNameDraft} onChange={event => setProfileNameDraft(event.target.value)} maxLength={40} placeholder={user?.username ?? "Your name"} /></label>
         <label>Short bio<textarea value={profileBioDraft} onChange={event => setProfileBioDraft(event.target.value)} maxLength={160} rows={3} placeholder="A little about your training…" /></label>
-        <div className="composer-footer"><small>{profileBioDraft.length}/160 · Visible to accepted friends</small><button disabled={profileSaving}>{profileSaving ? "Saving…" : "Save profile"}</button></div>
+        <label className="profile-privacy-control"><input type="checkbox" checked={profilePrivateDraft} onChange={event => setProfilePrivateDraft(event.target.checked)} /> <span><strong>Private profile</strong><small>Only you and accepted friends can view your profile. Turn this off to let signed-in FitLoop members view your display name and bio.</small></span></label>
+        <div className="composer-footer"><small>{profileBioDraft.length}/160 · {profilePrivateDraft ? "Private · accepted friends only" : "Visible to signed-in members"}</small><button disabled={profileSaving}>{profileSaving ? "Saving…" : "Save profile"}</button></div>
       </form>
       <div className="content-grid">
         <form className="panel" onSubmit={sendFriendRequest}>

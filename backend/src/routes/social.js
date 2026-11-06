@@ -9,7 +9,8 @@ const postInput = z.object({ text: z.string().trim().min(1).max(500) });
 const reactionInput = z.object({ value: z.enum(["like", "strong", "clap"]).default("like") });
 const profileInput = z.object({
   displayName: z.string().trim().min(1).max(40).nullable().optional(),
-  bio: z.string().trim().max(160).nullable().optional()
+  bio: z.string().trim().max(160).nullable().optional(),
+  privateAccount: z.boolean().optional()
 }).strict().refine(input => Object.keys(input).length > 0);
 
 // Profile fields are deliberately limited to display identity; email and private account data never leave the API.
@@ -17,7 +18,7 @@ router.get("/profile/me", async (req, res, next) => {
   try {
     const profile = await prismaClient.user.findUnique({
       where: { id: req.userId },
-      select: { id: true, username: true, displayName: true, bio: true }
+      select: { id: true, username: true, displayName: true, bio: true, privateAccount: true }
     });
     if (!profile) return res.status(404).json({ error: "Profile not found." });
     return res.json({ profile });
@@ -33,6 +34,32 @@ router.patch("/profile/me", async (req, res, next) => {
       select: { id: true, username: true, displayName: true, bio: true }
     });
     return res.json({ profile });
+  } catch (error) { return next(error); }
+});
+
+// A profile lookup is available to signed-in members, but private profiles resolve only for the owner or an accepted friend.
+router.get("/profile/:id", async (req, res, next) => {
+  try {
+    const profile = await prismaClient.user.findUnique({
+      where: { id: req.params.id },
+      select: { id: true, username: true, displayName: true, bio: true, privateAccount: true }
+    });
+    if (!profile) return res.status(404).json({ error: "Profile not found." });
+    if (profile.privateAccount && profile.id !== req.userId) {
+      const friendship = await prismaClient.friendConnection.findFirst({
+        where: {
+          status: "accepted",
+          OR: [
+            { requesterId: req.userId, addresseeId: profile.id },
+            { requesterId: profile.id, addresseeId: req.userId }
+          ]
+        },
+        select: { id: true }
+      });
+      if (!friendship) return res.status(404).json({ error: "Profile not found." });
+    }
+    const { privateAccount, ...visibleProfile } = profile;
+    return res.json({ profile: visibleProfile });
   } catch (error) { return next(error); }
 });
 

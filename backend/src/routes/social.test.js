@@ -100,3 +100,60 @@ test("PATCH profile rejects empty, overlong and unexpected profile fields", asyn
   });
   assert.equal(writes, 0);
 });
+
+test("private profile lookup is hidden from non-friends", async () => {
+  const prisma = {
+    user: { findUnique: async () => ({ id: "user-b", username: "private-runner", displayName: "Private Runner", bio: null, privateAccount: true }) },
+    friendConnection: { findFirst: async () => null }
+  };
+  await withSocialApi(prisma, async base => {
+    const response = await fetch(base + "/api/social/profile/user-b");
+    assert.equal(response.status, 404);
+  });
+});
+
+test("private profile lookup is available to an accepted friend without exposing privacy settings", async () => {
+  const prisma = {
+    user: { findUnique: async () => ({ id: "user-b", username: "friend-runner", displayName: "Friend Runner", bio: "Training steadily.", privateAccount: true }) },
+    friendConnection: { findFirst: async args => {
+      assert.deepEqual(args.where, {
+        status: "accepted",
+        OR: [{ requesterId: "user-a", addresseeId: "user-b" }, { requesterId: "user-b", addresseeId: "user-a" }]
+      });
+      return { id: "friendship-a" };
+    } }
+  };
+  await withSocialApi(prisma, async base => {
+    const response = await fetch(base + "/api/social/profile/user-b");
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { profile: { id: "user-b", username: "friend-runner", displayName: "Friend Runner", bio: "Training steadily." } });
+  });
+});
+
+test("public profile lookup is available without a friendship", async () => {
+  const prisma = {
+    user: { findUnique: async () => ({ id: "user-b", username: "open-runner", displayName: "Open Runner", bio: null, privateAccount: false }) },
+    friendConnection: { findFirst: async () => { throw new Error("Public profiles do not need a friendship query."); } }
+  };
+  await withSocialApi(prisma, async base => {
+    const response = await fetch(base + "/api/social/profile/user-b");
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { profile: { id: "user-b", username: "open-runner", displayName: "Open Runner", bio: null } });
+  });
+});
+
+test("profile visibility can only be changed through the strict authenticated profile update", async () => {
+  let update;
+  const profile = { id: "user-a", username: "runner", displayName: "Runner", bio: null, privateAccount: false };
+  const prisma = { user: { update: async args => { update = args; return profile; } } };
+  await withSocialApi(prisma, async base => {
+    const response = await fetch(base + "/api/social/profile/me", {
+      method: "PATCH", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ privateAccount: false })
+    });
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { profile });
+  });
+  assert.equal(update.where.id, "user-a");
+  assert.deepEqual(update.data, { privateAccount: false });
+});

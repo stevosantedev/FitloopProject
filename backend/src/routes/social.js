@@ -53,7 +53,10 @@ router.get("/profile/:id", async (req, res, next) => {
       select: { id: true, username: true, displayName: true, bio: true, privateAccount: true }
     });
     if (!profile) return res.status(404).json({ error: "Profile not found." });
-    if (profile.id !== req.userId && (await blockedIds(req.userId)).includes(profile.id)) {\n      return res.status(404).json({ error: "Profile not found." });\n    }\n    if (profile.privateAccount && profile.id !== req.userId) {
+    if (profile.id !== req.userId && (await blockedIds(req.userId)).includes(profile.id)) {
+      return res.status(404).json({ error: "Profile not found." });
+    }
+    if (profile.privateAccount && profile.id !== req.userId) {
       const friendship = await prismaClient.friendConnection.findFirst({
         where: {
           status: "accepted",
@@ -80,7 +83,8 @@ async function friendIds(userId) {
     },
     select: { requesterId: true, addresseeId: true }
   });
-  const blocked = new Set(await blockedIds(userId));\n  return connections.map(item => item.requesterId === userId ? item.addresseeId : item.requesterId).filter(id => !blocked.has(id));
+  const blocked = new Set(await blockedIds(userId));
+  return connections.map(item => item.requesterId === userId ? item.addresseeId : item.requesterId).filter(id => !blocked.has(id));
 }
 
 router.get("/friends", async (req, res, next) => {
@@ -108,7 +112,13 @@ router.post("/friends/request", async (req, res, next) => {
     if (!target || target.id === req.userId) return res.status(404).json({ error: "User not found." });
 
     // Check either direction to avoid creating two pending rows for the same pair of people.
-    const blocks = await prismaClient.userBlock.findFirst({\n      where: { OR: [{ blockerId: req.userId, blockedUserId: target.id }, { blockerId: target.id, blockedUserId: req.userId }] },\n      select: { id: true }\n    });\n    if (blocks) return res.status(404).json({ error: "User not found." });\n\n    const existing = await prismaClient.friendConnection.findFirst({
+    const blocks = await prismaClient.userBlock.findFirst({
+      where: { OR: [{ blockerId: req.userId, blockedUserId: target.id }, { blockerId: target.id, blockedUserId: req.userId }] },
+      select: { id: true }
+    });
+    if (blocks) return res.status(404).json({ error: "User not found." });
+
+    const existing = await prismaClient.friendConnection.findFirst({
       where: {
         OR: [
           { requesterId: req.userId, addresseeId: target.id },

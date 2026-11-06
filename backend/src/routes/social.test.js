@@ -171,7 +171,7 @@ test("feed includes display name with the safe author identity fields", async ()
   await withSocialApi(prisma, async base => {
     const response = await fetch(base + "/api/social/feed");
     assert.equal(response.status, 200);
-    assert.deepEqual(await response.json(), { posts: [] });
+    assert.deepEqual(await response.json(), { posts: [], hasMore: false, nextCursor: null });
   });
   assert.deepEqual(args.include.user.select, { id: true, username: true, displayName: true });
   assert.deepEqual(args.where, { userId: { in: ["user-a"] } });

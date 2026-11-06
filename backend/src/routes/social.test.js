@@ -501,6 +501,10 @@ test("moderator decision rejects unknown fields and detects concurrent status ch
   const app = express(); app.use(express.json());
   app.use((req, _res, next) => { req.userId = "moderator-a"; next(); });
   app.use("/api/social", createSocialRouter(prisma, ["moderator-a"]));
+  app.use((error, _req, res, _next) => {
+    if (error?.name === "ZodError") return res.status(400).json({ error: "Invalid request." });
+    return res.status(500).json({ error: "Unexpected test error." });
+  });
   const server = app.listen(0); await once(server, "listening");
   try {
     const base = "http://127.0.0.1:" + server.address().port + "/api/social/moderation/reports/report-1";

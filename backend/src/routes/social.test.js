@@ -84,7 +84,7 @@ test("PATCH profile updates only the authenticated account's display fields", as
   });
   assert.equal(query.where.id, "user-a");
   assert.deepEqual(query.data, { displayName: "Runner One", bio: "Building consistency." });
-  assert.deepEqual(query.select, { id: true, username: true, displayName: true, bio: true });
+  assert.deepEqual(query.select, { id: true, username: true, displayName: true, bio: true, privateAccount: true });
 });
 
 test("PATCH profile rejects empty, overlong and unexpected profile fields", async () => {

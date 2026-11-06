@@ -134,6 +134,44 @@ router.post("/friends/:id/accept", async (req, res, next) => {
 });
 
 
+// Declining is restricted to the intended recipient while the request is still pending.
+router.post("/friends/:id/decline", async (req, res, next) => {
+  try {
+    const result = await prismaClient.friendConnection.deleteMany({
+      where: { id: req.params.id, addresseeId: req.userId, status: "pending" }
+    });
+    if (result.count === 0) return res.status(404).json({ error: "Pending request not found." });
+    return res.json({ declined: true });
+  } catch (error) { return next(error); }
+});
+
+// The requester may withdraw only their own still-pending request.
+router.post("/friends/:id/cancel", async (req, res, next) => {
+  try {
+    const result = await prismaClient.friendConnection.deleteMany({
+      where: { id: req.params.id, requesterId: req.userId, status: "pending" }
+    });
+    if (result.count === 0) return res.status(404).json({ error: "Pending request not found." });
+    return res.json({ cancelled: true });
+  } catch (error) { return next(error); }
+});
+
+// Either member may remove an accepted connection; pending requests use the explicit actions above.
+router.delete("/friends/:id", async (req, res, next) => {
+  try {
+    const result = await prismaClient.friendConnection.deleteMany({
+      where: {
+        id: req.params.id,
+        status: "accepted",
+        OR: [{ requesterId: req.userId }, { addresseeId: req.userId }]
+      }
+    });
+    if (result.count === 0) return res.status(404).json({ error: "Accepted connection not found." });
+    return res.json({ removed: true });
+  } catch (error) { return next(error); }
+});
+
+
 router.post("/posts", async (req, res, next) => {
   try {
     const input = postInput.parse(req.body);

@@ -647,6 +647,28 @@ export default function App() {
     }
   }
 
+  // Each relationship action has a matching server-side ownership and status check.
+  async function manageFriendRequest(id: string, action: "decline" | "cancel") {
+    try {
+      await request(`/api/social/friends/${id}/${action}`, { method: "POST", body: JSON.stringify({}) });
+      setNotice(action === "decline" ? "Friend request declined." : "Friend request cancelled.");
+      await loadCommunity();
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Could not update that friend request.");
+    }
+  }
+
+  async function removeFriend(id: string) {
+    if (!window.confirm("Remove this friend? You will no longer see each other's friends-only activity.")) return;
+    try {
+      await request(`/api/social/friends/${id}`, { method: "DELETE" });
+      setNotice("Friend removed.");
+      await loadCommunity();
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Could not remove this friend.");
+    }
+  }
+
   // A reaction is an account-level action on one visible post. Reloading the
   // feed keeps reaction counts and the current user's selection in sync.
   async function reactToPost(id: string, value: string) {
@@ -1358,7 +1380,9 @@ export default function App() {
               const incoming = connection.addressee.id === user?.id;
               const person = incoming ? connection.requester : connection.addressee;
               return <li key={connection.id}><strong>{person.displayName || "@" + person.username}</strong><span>@{person.username} · {connection.status === "accepted" ? "Connected" : incoming ? "Waiting for your reply" : "Request sent"}</span>
-                {connection.status === "pending" && incoming && <button className="small-button" onClick={() => void acceptFriendRequest(connection.id)}>Accept request</button>}
+                {connection.status === "pending" && incoming && <div className="connection-actions"><button type="button" className="small-button" onClick={() => void acceptFriendRequest(connection.id)}>Accept</button><button type="button" className="small-button secondary" onClick={() => void manageFriendRequest(connection.id, "decline")}>Decline</button></div>}
+                {connection.status === "pending" && !incoming && <button type="button" className="small-button secondary" onClick={() => void manageFriendRequest(connection.id, "cancel")}>Cancel request</button>}
+                {connection.status === "accepted" && <button type="button" className="small-button secondary" onClick={() => void removeFriend(connection.id)}>Remove friend</button>}
               </li>;
             })}</ul>}
         </section>

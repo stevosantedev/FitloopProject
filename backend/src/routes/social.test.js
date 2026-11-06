@@ -368,3 +368,15 @@ test("reports reject unknown fields, self-reports and invisible posts", async ()
   });
   assert.equal(writes, 0);
 });
+
+
+test("a block hides a public profile even when it is otherwise discoverable", async () => {
+  const prisma = {
+    user: { findUnique: async () => ({ id: "user-b", username: "open-runner", displayName: "Open Runner", bio: null, privateAccount: false }) },
+    userBlock: { findMany: async () => [{ blockerId: "user-b", blockedUserId: "user-a" }] }
+  };
+  await withSocialApi(prisma, async base => {
+    const response = await fetch(base + "/api/social/profile/user-b");
+    assert.equal(response.status, 404);
+  });
+});

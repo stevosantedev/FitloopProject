@@ -70,7 +70,8 @@ The current friends-only feed, workout posts, reactions and comments provide a s
    - [x] Allow authors to delete their own posts; the API scopes deletion to the authenticated author and database cascades remove associated reactions/comments.
    - [x] Add API validation and route tests for text post creation, blank/overlong content and author-only deletion; add a browser journey for composing and sharing an update.
    - [ ] Expand the feed into richer responsive cards for completed workouts and user-created updates, with polished author identity, timestamps, reaction counts and comment previews.
-   - [x] Add cursor-based pagination with a bounded page size, deterministic ordering, a look-ahead query and server-side visibility checks on every page.\n   - [ ] Complete deliberate loading, empty, error and retry states for the full feed journey.
+   - [x] Add cursor-based pagination with a bounded page size, deterministic ordering, a look-ahead query and server-side visibility checks on every page.
+   - [ ] Complete deliberate loading, empty, error and retry states for the full feed journey.
    - [ ] Add optimistic reactions only where failures can be rolled back accurately.
    - Image uploads remain out of scope until private media storage, file validation, metadata stripping, access control and deletion are implemented.
 
@@ -91,14 +92,17 @@ The current friends-only feed, workout posts, reactions and comments provide a s
 
 4. **Community quality and safety**
    - Edit/delete own posts and comments; prevent duplicate or unauthorised actions.
-   - [x] Report visible posts and user accounts with a bounded reason/details schema and private moderation records.\n   - [x] Block/unblock accounts; blocking removes existing connections and hides each account's profiles, feed posts and new friend requests from the other.\n   - [ ] Build moderator review, triage and resolution workflows before public discovery.
+   - [x] Report visible posts and user accounts with a bounded reason/details schema and private moderation records.
+   - [x] Block/unblock accounts; blocking removes existing connections and hides each account's profiles, feed posts and new friend requests from the other.
+   - [ ] Build moderator review, triage and resolution workflows before public discovery.
    - Add moderation status and an auditable handling process before opening discovery beyond accepted friends.
    - Rate-limit post, comment, reaction, friend-request and report endpoints.
 
 ### Community MVP exit criteria
 
 - [x] Users can create friends-only text updates; authors can delete their own posts.
-- [x] Users can view, react to and comment on permitted posts; cursor-based pagination now loads older visible posts.\n- [ ] Finish polished feed presentation, comment management and comprehensive loading/error/retry states.
+- [x] Users can view, react to and comment on permitted posts; cursor-based pagination now loads older visible posts.
+- [ ] Finish polished feed presentation, comment management and comprehensive loading/error/retry states.
 - Feed and profile APIs enforce audience and relationship rules on the server, not just in the UI.
 - [x] Users can manage their profile and relationships and can report or block another account.
 - Pagination, media failure, empty states and permission changes are tested.

@@ -38,6 +38,7 @@ model User {
   blocksReceived  UserBlock[] @relation("Blocked")
   reportsFiled    ContentReport[] @relation("ReportAuthor")
   reportsReceived ContentReport[] @relation("ReportedUser")
+  moderationReviews ContentReport[] @relation("ReportReviewer")
 }
 
 // One row per user per calendar day keeps daily check-ins easy to query and update.
@@ -274,8 +275,12 @@ model ContentReport {
   details        String?  @db.VarChar(1000)
   status         String   @default("open")
   createdAt      DateTime @default(now())
+  reviewedById   String?
+  reviewedAt     DateTime?
+  resolutionNote String?  @db.VarChar(1000)
   reporter       User     @relation("ReportAuthor", fields: [reporterId], references: [id], onDelete: Cascade)
   reportedUser   User?    @relation("ReportedUser", fields: [reportedUserId], references: [id], onDelete: SetNull)
+  reviewer       User?    @relation("ReportReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
   post           FeedPost? @relation(fields: [postId], references: [id], onDelete: SetNull)
 
   @@index([status, createdAt])

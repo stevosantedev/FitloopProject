@@ -7,7 +7,9 @@ const settings = z.object({
   JWT_SECRET: z.string().min(32, "JWT_SECRET must be at least 32 characters"),
   PORT: z.coerce.number().int().positive().default(4000),
   FRONTEND_ORIGIN: z.string().url().default("http://localhost:5173"),
-  COACH_SERVICE_URL: z.string().url().default("http://127.0.0.1:8000")
+  COACH_SERVICE_URL: z.string().url().default("http://127.0.0.1:8000"),
+  // Moderator identities are provisioned by deployment operators, never by account profile updates.
+  MODERATOR_USER_IDS: z.string().default("")
 });
 
 export const config = settings.parse(process.env);

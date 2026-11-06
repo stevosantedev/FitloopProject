@@ -65,3 +65,12 @@ The installable browser app caches its application shell and static assets, but 
 Completed offline sessions are stored in IndexedDB with the owning account ID and a client-generated UUID. The bearer token is not copied into the queue. When connectivity returns, the app sends queued sessions using the currently signed-in account's token. The API stores the UUID as a unique nullable `WorkoutSession.clientRequestId`; retries return the original session rather than creating duplicate sets or feed posts. Queue entries are removed only after the API confirms success.
 
 Offline recording requires a prior successful sign-in and one successful exercise-catalogue load. If browser storage is unavailable, the app cannot promise offline persistence. Pending sessions remain on that browser until they sync; signing out does not delete them, and they are only read for the matching account. Clearing browser site data will remove unsynced sessions. This is a single-device queue, not cross-device sync or a backup.
+
+
+## Community moderation
+
+Community reports are private records and are not returned by feed or profile endpoints. Moderator access is granted only to account IDs provisioned by the deployment operator in the API environment variable `MODERATOR_USER_IDS`, as a comma-separated list. Never add a public profile field or self-service endpoint that can grant moderator access. Restart the API after changing the allowlist.
+
+Signed-in clients can check `GET /api/social/moderation/capability`; only allowlisted accounts can call `GET /api/social/moderation/reports` or `PATCH /api/social/moderation/reports/:id`. The queue returns a minimal identity projection, is status-filtered and cursor-paginated, and excludes email addresses and credentials. Closing a report as resolved or dismissed requires a reasoned resolution note. The latest reviewer ID and timestamp are stored with the report; concurrent decisions are rejected rather than silently overwriting a newer status.
+
+Provision moderator IDs through trusted deployment operations only. Treat report details as sensitive user-submitted content, restrict access to the smallest operational group, and establish a retention and escalation policy before public launch. This MVP stores the latest review decision on the report; a full immutable moderation event ledger and moderator UI remain future work.

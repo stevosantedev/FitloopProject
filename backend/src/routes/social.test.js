@@ -417,3 +417,97 @@ test("GET feed rejects invalid cursors and page sizes before querying", async ()
   });
   assert.equal(reads, 0);
 });
+
+
+test("moderation capability is derived from the server-side moderator allowlist", async () => {
+  const prisma = {};
+  await withSocialApi(prisma, async base => {
+    const ordinary = await fetch(base + "/api/social/moderation/capability");
+    assert.deepEqual(await ordinary.json(), { isModerator: false });
+  });
+  const app = express(); app.use(express.json());
+  app.use((req, _res, next) => { req.userId = "user-a"; next(); });
+  app.use("/api/social", createSocialRouter(prisma, ["user-a"]));
+  const server = app.listen(0); await once(server, "listening");
+  try {
+    const response = await fetch("http://127.0.0.1:" + server.address().port + "/api/social/moderation/capability");
+    assert.deepEqual(await response.json(), { isModerator: true });
+  } finally { await new Promise(resolve => server.close(resolve)); }
+});
+
+test("moderation queue is inaccessible to non-moderators and does not query reports", async () => {
+  let reads = 0;
+  const prisma = { contentReport: { findMany: async () => { reads += 1; return []; } } };
+  await withSocialApi(prisma, async base => {
+    const response = await fetch(base + "/api/social/moderation/reports");
+    assert.equal(response.status, 403);
+  });
+  assert.equal(reads, 0);
+});
+
+test("moderator queue filters status, uses bounded cursor pagination and safe identity projections", async () => {
+  let query;
+  const reports = [{ id: "report-1" }, { id: "report-2" }];
+  const prisma = { contentReport: { findMany: async args => { query = args; return reports; } } };
+  const app = express(); app.use(express.json());
+  app.use((req, _res, next) => { req.userId = "moderator-a"; next(); });
+  app.use("/api/social", createSocialRouter(prisma, ["moderator-a"]));
+  const server = app.listen(0); await once(server, "listening");
+  try {
+    const response = await fetch("http://127.0.0.1:" + server.address().port + "/api/social/moderation/reports?status=open&cursor=report-0&limit=1");
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { reports: [reports[0]], hasMore: true, nextCursor: "report-1" });
+  } finally { await new Promise(resolve => server.close(resolve)); }
+  assert.deepEqual(query.where, { status: "open" });
+  assert.deepEqual(query.orderBy, [{ createdAt: "asc" }, { id: "asc" }]);
+  assert.equal(query.take, 2);
+  assert.deepEqual(query.cursor, { id: "report-0" });
+  assert.deepEqual(query.select.reporter.select, { id: true, username: true, displayName: true });
+  assert.deepEqual(query.select.reportedUser.select, { id: true, username: true, displayName: true });
+});
+
+test("moderator decisions require a valid transition and an explanatory note to close", async () => {
+  let update;
+  const prisma = { contentReport: {
+    findUnique: async () => ({ id: "report-1", status: "open" }),
+    updateMany: async args => { update = args; return { count: 1 }; }
+  } };
+  const app = express(); app.use(express.json());
+  app.use((req, _res, next) => { req.userId = "moderator-a"; next(); });
+  app.use("/api/social", createSocialRouter(prisma, ["moderator-a"]));
+  const server = app.listen(0); await once(server, "listening");
+  try {
+    const base = "http://127.0.0.1:" + server.address().port + "/api/social/moderation/reports/report-1";
+    const missingNote = await fetch(base, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ status: "resolved" }) });
+    assert.equal(missingNote.status, 400);
+    const invalid = await fetch(base, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ status: "open" }) });
+    assert.equal(invalid.status, 409);
+    const resolved = await fetch(base, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ status: "resolved", resolutionNote: "Reviewed and action taken." }) });
+    assert.equal(resolved.status, 200);
+    assert.deepEqual(await resolved.json(), { updated: true, status: "resolved" });
+  } finally { await new Promise(resolve => server.close(resolve)); }
+  assert.deepEqual(update.where, { id: "report-1", status: "open" });
+  assert.equal(update.data.reviewedById, "moderator-a");
+  assert.ok(update.data.reviewedAt instanceof Date);
+  assert.equal(update.data.resolutionNote, "Reviewed and action taken.");
+});
+
+test("moderator decision rejects unknown fields and detects concurrent status changes", async () => {
+  let update;
+  const prisma = { contentReport: {
+    findUnique: async () => ({ id: "report-1", status: "reviewing" }),
+    updateMany: async args => { update = args; return { count: 0 }; }
+  } };
+  const app = express(); app.use(express.json());
+  app.use((req, _res, next) => { req.userId = "moderator-a"; next(); });
+  app.use("/api/social", createSocialRouter(prisma, ["moderator-a"]));
+  const server = app.listen(0); await once(server, "listening");
+  try {
+    const base = "http://127.0.0.1:" + server.address().port + "/api/social/moderation/reports/report-1";
+    const invalid = await fetch(base, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ status: "resolved", resolutionNote: "Reviewed carefully.", reviewedById: "attacker" }) });
+    assert.equal(invalid.status, 400);
+    const stale = await fetch(base, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ status: "resolved", resolutionNote: "Reviewed carefully." }) });
+    assert.equal(stale.status, 409);
+  } finally { await new Promise(resolve => server.close(resolve)); }
+  assert.deepEqual(update.where, { id: "report-1", status: "reviewing" });
+});

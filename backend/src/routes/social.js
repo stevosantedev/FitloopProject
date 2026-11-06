@@ -3,8 +3,9 @@ import { z } from "zod";
 import rateLimit from "express-rate-limit";
 import { prisma } from "../prisma.js";
 
-export function createSocialRouter(prismaClient = prisma) {
+export function createSocialRouter(prismaClient = prisma, moderatorIds = (process.env.MODERATOR_USER_IDS ?? "").split(",").map(id => id.trim()).filter(Boolean)) {
 const router = Router();
+const configuredModeratorIds = moderatorIds instanceof Set ? moderatorIds : new Set(moderatorIds);
 const commentInput = z.object({ text: z.string().trim().min(1).max(500) });
 const postInput = z.object({ text: z.string().trim().min(1).max(500) });
 const reactionInput = z.object({ value: z.enum(["like", "strong", "clap"]).default("like") });
@@ -272,6 +273,86 @@ router.post("/reports", reportLimiter, async (req, res, next) => {
     return res.status(201).json({ report });
   } catch (error) { return next(error); }
 });
+
+
+const reportStatuses = ["open", "reviewing", "resolved", "dismissed"];
+const moderationQueueInput = z.object({
+  status: z.enum(reportStatuses).default("open"),
+  cursor: z.string().min(1).max(64).optional(),
+  limit: z.coerce.number().int().min(1).max(50).default(20)
+}).strict();
+const moderationDecisionInput = z.object({
+  status: z.enum(["open", "reviewing", "resolved", "dismissed"]),
+  resolutionNote: z.string().trim().min(10).max(1000).optional()
+}).strict();
+
+function requireModerator(req, res, next) {
+  if (!configuredModeratorIds.has(req.userId)) return res.status(403).json({ error: "Moderator access required." });
+  return next();
+}
+
+// This signed-in capability check lets the client hide moderation controls without exposing the queue.
+router.get("/moderation/capability", (req, res) => {
+  return res.json({ isModerator: configuredModeratorIds.has(req.userId) });
+});
+
+// Only allowlisted moderators can inspect reports. Reporter and target projections intentionally omit email and credentials.
+router.get("/moderation/reports", requireModerator, async (req, res, next) => {
+  try {
+    const input = moderationQueueInput.parse(req.query);
+    const rows = await prismaClient.contentReport.findMany({
+      where: { status: input.status },
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+      ...(input.cursor ? { cursor: { id: input.cursor }, skip: 1 } : {}),
+      take: input.limit + 1,
+      select: {
+        id: true, reason: true, details: true, status: true, createdAt: true,
+        reviewedAt: true, resolutionNote: true,
+        reporter: { select: { id: true, username: true, displayName: true } },
+        reportedUser: { select: { id: true, username: true, displayName: true } },
+        post: { select: { id: true, text: true, user: { select: { id: true, username: true, displayName: true } } } }
+      }
+    });
+    const hasMore = rows.length > input.limit;
+    const reports = hasMore ? rows.slice(0, input.limit) : rows;
+    return res.json({ reports, hasMore, nextCursor: hasMore ? reports[reports.length - 1].id : null });
+  } catch (error) { return next(error); }
+});
+
+// A decision is conditional on the status just read, preventing two moderators silently overwriting each other.
+router.patch("/moderation/reports/:id", requireModerator, async (req, res, next) => {
+  try {
+    const input = moderationDecisionInput.parse(req.body);
+    const current = await prismaClient.contentReport.findUnique({
+      where: { id: req.params.id }, select: { id: true, status: true }
+    });
+    if (!current) return res.status(404).json({ error: "Report not found." });
+    const allowedTransitions = {
+      open: ["reviewing", "resolved", "dismissed"],
+      reviewing: ["open", "resolved", "dismissed"],
+      resolved: ["reviewing"],
+      dismissed: ["reviewing"]
+    };
+    if (!allowedTransitions[current.status]?.includes(input.status)) {
+      return res.status(409).json({ error: "This report cannot move to that status." });
+    }
+    if (["resolved", "dismissed"].includes(input.status) && !input.resolutionNote) {
+      return res.status(400).json({ error: "Add a resolution note before closing this report." });
+    }
+    const updated = await prismaClient.contentReport.updateMany({
+      where: { id: current.id, status: current.status },
+      data: {
+        status: input.status,
+        reviewedById: req.userId,
+        reviewedAt: new Date(),
+        resolutionNote: ["resolved", "dismissed"].includes(input.status) ? input.resolutionNote : null
+      }
+    });
+    if (updated.count === 0) return res.status(409).json({ error: "This report was updated by another moderator. Refresh the queue." });
+    return res.json({ updated: true, status: input.status });
+  } catch (error) { return next(error); }
+});
+
 
 router.post("/posts", async (req, res, next) => {
   try {

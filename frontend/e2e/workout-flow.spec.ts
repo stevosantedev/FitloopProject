@@ -750,3 +750,43 @@ test("community feed loads older posts without replacing the first page", async 
   await expect(page.getByRole("button", { name: "Load older posts" })).toHaveCount(0);
   expect(feedRequests).toBe(2);
 });
+
+test("allowlisted moderators can review and resolve private community reports", async ({ page }) => {
+  let reportOpen = true;
+  const report = {
+    id: "report-1", reason: "harassment", details: "Repeated abusive messages.",
+    status: "open", createdAt: "2026-11-06T10:00:00.000Z", reviewedAt: null, resolutionNote: null,
+    reporter: { id: "user-2", username: "reporter", displayName: "Reporter" },
+    reportedUser: { id: "user-3", username: "target", displayName: "Target" }, post: null
+  };
+  const calls: Array<{ path: string; method: string; body?: any }> = [];
+  await mockApplicationApi(page);
+  await page.route("http://localhost:4000/api/social/**", async route => {
+    const request = route.request(), url = new URL(request.url());
+    const body = request.method() === "PATCH" ? request.postDataJSON() : undefined;
+    calls.push({ path: url.pathname, method: request.method(), body });
+    if (url.pathname === "/api/social/friends") return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ connections: [] }) });
+    if (url.pathname === "/api/social/blocks") return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ blocks: [] }) });
+    if (url.pathname === "/api/social/feed") return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ posts: [], hasMore: false, nextCursor: null }) });
+    if (url.pathname === "/api/social/moderation/capability") return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ isModerator: true }) });
+    if (url.pathname === "/api/social/moderation/reports") return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ reports: reportOpen ? [report] : [], hasMore: false, nextCursor: null }) });
+    if (url.pathname === "/api/social/moderation/reports/report-1" && request.method() === "PATCH") {
+      reportOpen = false;
+      return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ updated: true, status: body.status }) });
+    }
+    return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({}) });
+  });
+  await page.goto("/");
+  await page.getByLabel("Email").fill("tester@example.com");
+  await page.getByLabel("Password").fill("test-password");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.locator(".sidebar-nav").getByRole("button", { name: "Community" }).click();
+  await expect(page.getByRole("heading", { name: "Moderator review" })).toBeVisible();
+  await expect(page.getByText("Repeated abusive messages.")).toBeVisible();
+  await page.getByRole("button", { name: "Start review" }).click();
+  await page.getByLabel("Resolution note for report-1").fill("Reviewed and action taken.");
+  await page.getByRole("button", { name: "Resolve report" }).click();
+  await expect(page.getByText("No open reports.")).toBeVisible();
+  expect(calls.some(call => call.path === "/api/social/moderation/reports/report-1" && call.method === "PATCH" && call.body.status === "reviewing")).toBeTruthy();
+  expect(calls.some(call => call.path === "/api/social/moderation/reports/report-1" && call.method === "PATCH" && call.body.status === "resolved" && call.body.resolutionNote === "Reviewed and action taken.")).toBeTruthy();
+});

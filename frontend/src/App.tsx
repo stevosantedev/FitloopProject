@@ -40,6 +40,12 @@ type WorkoutSession = {
   sets: Array<{ id: string; reps: number; weightKg?: number | null; completed: boolean; setType?: string; restSeconds?: number; rir?: number | null; rpe?: number | null; exercise: Exercise }>;
 };
 type BlockedAccount = { id: string; username: string; displayName?: string | null };
+type ModerationReport = {
+  id: string; reason: string; details?: string | null; status: "open" | "reviewing" | "resolved" | "dismissed";
+  createdAt: string; reviewedAt?: string | null; resolutionNote?: string | null;
+  reporter: User; reportedUser?: User | null;
+  post?: { id: string; text?: string | null; user: User } | null;
+};
 type FriendConnection = {
   id: string;
   status: string;
@@ -101,6 +107,13 @@ export default function App() {
   const [selectedSessionId, setSelectedSessionId] = useState("");
   const [connections, setConnections] = useState<FriendConnection[]>([]);
   const [blockedAccounts, setBlockedAccounts] = useState<BlockedAccount[]>([]);
+  // Moderator capability is granted by the API's deployment allowlist, never inferred from profile data.
+  const [isModerator, setIsModerator] = useState(false);
+  const [moderationReports, setModerationReports] = useState<ModerationReport[]>([]);
+  const [moderationStatusFilter, setModerationStatusFilter] = useState<ModerationReport["status"]>("open");
+  const [moderationLoading, setModerationLoading] = useState(false);
+  const [moderationError, setModerationError] = useState("");
+  const [moderationNoteDrafts, setModerationNoteDrafts] = useState<Record<string, string>>({});
   const [posts, setPosts] = useState<FeedPost[]>([]);
   const [feedCursor, setFeedCursor] = useState<string | null>(null);
   const [feedHasMore, setFeedHasMore] = useState(false);
@@ -294,12 +307,52 @@ export default function App() {
       setFeedCursor(feedData.nextCursor ?? null);
       setFeedHasMore(Boolean(feedData.hasMore));
       setBlockedAccounts(blockData.blocks.map((item: any) => item.blockedUser));
+      // A moderator-only request is made only after the server confirms this account's capability.
+      try {
+        const capability = await request("/api/social/moderation/capability");
+        setIsModerator(Boolean(capability.isModerator));
+        if (capability.isModerator) await loadModerationReports("open");
+        else setModerationReports([]);
+      } catch (error) {
+        setIsModerator(false);
+        setModerationError(error instanceof Error ? error.message : "Moderator tools are unavailable.");
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Could not load your community.";
       setCommunityError(message);
       setNotice(message);
     } finally {
       setCommunityLoading(false);
+    }
+  }
+
+
+  // Moderator queue data is fetched only after the API confirms the signed-in account is allowlisted.
+  async function loadModerationReports(status = moderationStatusFilter) {
+    setModerationLoading(true);
+    setModerationError("");
+    try {
+      const data = await request("/api/social/moderation/reports?status=" + encodeURIComponent(status));
+      setModerationReports(data.reports);
+    } catch (error) {
+      setModerationError(error instanceof Error ? error.message : "Could not load moderation reports.");
+    } finally { setModerationLoading(false); }
+  }
+
+  // Every decision is checked again by the API; terminal decisions include a short explanation for the record.
+  async function reviewCommunityReport(reportId: string, status: ModerationReport["status"]) {
+    const resolutionNote = moderationNoteDrafts[reportId]?.trim();
+    if (["resolved", "dismissed"].includes(status) && (!resolutionNote || resolutionNote.length < 10)) return;
+    try {
+      await request("/api/social/moderation/reports/" + reportId, {
+        method: "PATCH",
+        body: JSON.stringify({ status, ...(resolutionNote ? { resolutionNote } : {}) })
+      });
+      setModerationNoteDrafts(current => ({ ...current, [reportId]: "" }));
+      setNotice(status === "resolved" ? "Report marked as resolved." : status === "dismissed" ? "Report dismissed." : "Report status updated.");
+      await loadModerationReports();
+    } catch (error) {
+      setModerationError(error instanceof Error ? error.message : "Could not update this report.");
     }
   }
 
@@ -1475,6 +1528,45 @@ export default function App() {
           </article>)}</div>}
         {feedHasMore && <button type="button" className="small-button secondary feed-load-more" onClick={() => void loadMoreCommunityPosts()} disabled={feedLoadingMore}>{feedLoadingMore ? "Loading older posts…" : "Load older posts"}</button>}
       </section>
+
+      {isModerator && <section className="panel section-gap" aria-labelledby="moderation-heading">
+        <p className="eyebrow">PRIVATE OPERATIONS</p><h2 id="moderation-heading">Moderator review</h2>
+        <p className="muted">Reports are visible only to accounts provisioned as moderators by the server operator.</p>
+        <div className="composer-footer">
+          <label htmlFor="moderation-status-filter">Report status</label>
+          <select id="moderation-status-filter" value={moderationStatusFilter} onChange={event => {
+            const next = event.target.value as ModerationReport["status"];
+            setModerationStatusFilter(next);
+            void loadModerationReports(next);
+          }}>
+            <option value="open">Open</option><option value="reviewing">Reviewing</option>
+            <option value="resolved">Resolved</option><option value="dismissed">Dismissed</option>
+          </select>
+          <button type="button" className="small-button secondary" onClick={() => void loadModerationReports()} disabled={moderationLoading}>{moderationLoading ? "Refreshing…" : "Refresh reports"}</button>
+        </div>
+        {moderationError && <p role="alert" className="muted">{moderationError}</p>}
+        {moderationLoading && moderationReports.length === 0 ? <p role="status" className="muted">Loading private reports…</p>
+          : moderationReports.length === 0 ? <p className="muted">No {moderationStatusFilter} reports.</p>
+          : <div className="feed-list">{moderationReports.map(report => <article className="feed-card" key={report.id}>
+            <div className="feed-heading"><strong>{report.reason.replaceAll("_", " ")}</strong><span>{new Date(report.createdAt).toLocaleString()}</span></div>
+            <p className="muted">Reported by @{report.reporter.username}</p>
+            {report.reportedUser && <p>Account: {report.reportedUser.displayName || "@" + report.reportedUser.username}</p>}
+            {report.post && <p>Post by @{report.post.user.username}: {report.post.text || "Workout activity post"}</p>}
+            {report.details && <p className="community-post-text">{report.details}</p>}
+            {report.resolutionNote && <p className="muted">Previous decision: {report.resolutionNote}</p>}
+            <label htmlFor={"moderation-note-" + report.id}>Resolution note</label>
+            <textarea id={"moderation-note-" + report.id} aria-label={"Resolution note for " + report.id} value={moderationNoteDrafts[report.id] ?? ""} onChange={event => setModerationNoteDrafts(current => ({ ...current, [report.id]: event.target.value }))} rows={2} maxLength={1000} placeholder="Explain the action taken (at least 10 characters to close)." />
+            <div className="connection-actions">
+              {report.status === "open" && <button type="button" className="small-button secondary" onClick={() => void reviewCommunityReport(report.id, "reviewing")}>Start review</button>}
+              {report.status === "reviewing" && <button type="button" className="small-button secondary" onClick={() => void reviewCommunityReport(report.id, "open")}>Return to open</button>}
+              {(report.status === "resolved" || report.status === "dismissed") && <button type="button" className="small-button secondary" onClick={() => void reviewCommunityReport(report.id, "reviewing")}>Reopen for review</button>}
+              {(report.status === "open" || report.status === "reviewing") && <>
+                <button type="button" className="small-button secondary" disabled={(moderationNoteDrafts[report.id] ?? "").trim().length < 10} onClick={() => void reviewCommunityReport(report.id, "resolved")}>Resolve report</button>
+                <button type="button" className="small-button secondary" disabled={(moderationNoteDrafts[report.id] ?? "").trim().length < 10} onClick={() => void reviewCommunityReport(report.id, "dismissed")}>Dismiss report</button>
+              </>}
+            </div>
+          </article>)}</div>}
+      </section>}
     </section>}
 
     {notice && <p role="status" className="notice">{notice}</p>}

@@ -92,9 +92,9 @@ The current friends-only feed, workout posts, reactions and comments provide a s
 
 4. **Community quality and safety**
    - Edit/delete own posts and comments; prevent duplicate or unauthorised actions.
-   - [x] Report visible posts and user accounts with a bounded reason/details schema and private moderation records.
+   - [x] Report visible posts and user accounts with a bounded reason/details schema and private moderation records.\n   - [x] Restrict report queue and decisions to deployment-allowlisted moderators; expose only minimal reporter/target identities.
    - [x] Block/unblock accounts; blocking removes existing connections and hides each account's profiles, feed posts and new friend requests from the other.
-   - [ ] Build moderator review, triage and resolution workflows before public discovery.
+   - [x] Build allowlisted moderator review, status triage and resolution API/UI with reviewer timestamps and required resolution notes; retain a full immutable event ledger as future hardening.
    - Add moderation status and an auditable handling process before opening discovery beyond accepted friends.
    - Rate-limit post, comment, reaction, friend-request and report endpoints.
 

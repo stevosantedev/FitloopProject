@@ -252,3 +252,115 @@ test("removing a pending or unrelated connection returns not found", async () =>
     assert.equal(response.status, 404);
   });
 });
+
+
+test("block atomically removes existing connections and creates an owner-scoped block", async () => {
+  const calls = [];
+  const tx = {
+    friendConnection: { deleteMany: async args => { calls.push(["delete", args]); return { count: 1 }; } },
+    userBlock: { upsert: async args => { calls.push(["upsert", args]); return { id: "block-a" }; } }
+  };
+  const prisma = {
+    user: { findUnique: async () => ({ id: "user-b" }) },
+    $transaction: async callback => callback(tx)
+  };
+  await withSocialApi(prisma, async base => {
+    const response = await fetch(base + "/api/social/blocks/user-b", { method: "POST" });
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { blocked: true });
+  });
+  assert.deepEqual(calls[0][1].where, { OR: [{ requesterId: "user-a", addresseeId: "user-b" }, { requesterId: "user-b", addresseeId: "user-a" }] });
+  assert.deepEqual(calls[1][1].where.blockerId_blockedUserId, { blockerId: "user-a", blockedUserId: "user-b" });
+});
+
+test("blocking self or a missing account is rejected", async () => {
+  const prisma = { user: { findUnique: async () => null } };
+  await withSocialApi(prisma, async base => {
+    const self = await fetch(base + "/api/social/blocks/user-a", { method: "POST" });
+    assert.equal(self.status, 400);
+    const missing = await fetch(base + "/api/social/blocks/user-b", { method: "POST" });
+    assert.equal(missing.status, 404);
+  });
+});
+
+test("unblock can remove only a block created by the authenticated account", async () => {
+  let query;
+  const prisma = { userBlock: { deleteMany: async args => { query = args; return { count: 1 }; } } };
+  await withSocialApi(prisma, async base => {
+    const response = await fetch(base + "/api/social/blocks/user-b", { method: "DELETE" });
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { unblocked: true });
+  });
+  assert.deepEqual(query.where, { blockerId: "user-a", blockedUserId: "user-b" });
+});
+
+test("friend discovery feed excludes accounts blocked in either direction", async () => {
+  let feedQuery;
+  const prisma = {
+    friendConnection: { findMany: async () => [{ requesterId: "user-a", addresseeId: "user-b" }, { requesterId: "user-c", addresseeId: "user-a" }] },
+    userBlock: { findMany: async () => [{ blockerId: "user-a", blockedUserId: "user-b" }] },
+    feedPost: { findMany: async args => { feedQuery = args; return []; } }
+  };
+  await withSocialApi(prisma, async base => {
+    const response = await fetch(base + "/api/social/feed");
+    assert.equal(response.status, 200);
+  });
+  assert.deepEqual(feedQuery.where, { userId: { in: ["user-a", "user-c"] } });
+});
+
+test("friend requests are not created when either account has blocked the other", async () => {
+  let writes = 0;
+  const prisma = {
+    user: { findUnique: async () => ({ id: "user-b" }) },
+    userBlock: { findFirst: async args => { assert.equal(args.where.OR.length, 2); return { id: "block-a" }; } },
+    friendConnection: { findFirst: async () => { writes += 1; return null; }, create: async () => { writes += 1; } }
+  };
+  await withSocialApi(prisma, async base => {
+    const response = await fetch(base + "/api/social/friends/request", {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ username: "runner-b" })
+    });
+    assert.equal(response.status, 404);
+  });
+  assert.equal(writes, 0);
+});
+
+test("reports can be filed only against a visible post and store no reporter-supplied identity", async () => {
+  let create;
+  const prisma = {
+    friendConnection: { findMany: async () => [] },
+    userBlock: { findMany: async () => [] },
+    feedPost: { findFirst: async () => ({ id: "post-b", userId: "user-b" }) },
+    contentReport: { create: async args => { create = args; return { id: "report-a", reason: args.data.reason, status: "open", createdAt: new Date("2026-11-06T12:00:00Z") }; } }
+  };
+  await withSocialApi(prisma, async base => {
+    const response = await fetch(base + "/api/social/reports", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ targetType: "post", targetId: "post-b", reason: "harassment", details: "Abusive comments." })
+    });
+    assert.equal(response.status, 201);
+    assert.equal((await response.json()).report.status, "open");
+  });
+  assert.deepEqual(create.data, {
+    reporterId: "user-a", reportedUserId: "user-b", postId: "post-b", reason: "harassment", details: "Abusive comments."
+  });
+});
+
+test("reports reject unknown fields, self-reports and invisible posts", async () => {
+  let writes = 0;
+  const prisma = {
+    user: { findUnique: async () => ({ id: "user-b" }) },
+    friendConnection: { findMany: async () => [] },
+    userBlock: { findMany: async () => [] },
+    feedPost: { findFirst: async () => null },
+    contentReport: { create: async () => { writes += 1; } }
+  };
+  await withSocialApi(prisma, async base => {
+    const self = await fetch(base + "/api/social/reports", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ targetType: "user", targetId: "user-a", reason: "other" }) });
+    assert.equal(self.status, 400);
+    const invisible = await fetch(base + "/api/social/reports", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ targetType: "post", targetId: "hidden-post", reason: "spam" }) });
+    assert.equal(invisible.status, 404);
+    const extra = await fetch(base + "/api/social/reports", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ targetType: "user", targetId: "user-b", reason: "other", reporterId: "user-b" }) });
+    assert.equal(extra.status, 400);
+  });
+  assert.equal(writes, 0);
+});

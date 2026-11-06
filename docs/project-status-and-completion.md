@@ -48,7 +48,9 @@ The application has an app-oriented responsive shell and installable web-app fou
 - [ ] Add user-confirmed routine drafts and safe, evidence-grounded training adjustments after the model and evaluation approach are approved.
 - [x] Add profile editing, private-by-default visibility, friend-request/connection management, account blocking and private reports for visible posts/accounts. Blocking removes existing connections and prevents the blocked pair from viewing each other's profiles/feed activity or creating new friend requests.
 - [x] Add route and browser coverage for report/block actions, plus PostgreSQL-backed account-deletion checks for block cascades, reporter deletion and anonymisation of reports about deleted users/posts.
-- [x] Add server-enforced cursor pagination to the friends-only feed, with deterministic ordering, a bounded page size and visibility checks on every page.\n- [x] Add a browser journey proving older posts append without replacing the current feed.\n- [ ] Expand the visual feed with richer workout/update cards, comment management and comprehensive loading/error/retry states; pagination is now delivered, but the feed is not yet feature-complete.
+- [x] Add server-enforced cursor pagination to the friends-only feed, with deterministic ordering, a bounded page size and visibility checks on every page.
+- [x] Add a browser journey proving older posts append without replacing the current feed.
+- [ ] Expand the visual feed with richer workout/update cards, comment management and comprehensive loading/error/retry states; pagination is now delivered, but the feed is not yet feature-complete.
 - [ ] Add image upload only after storage, access control, file validation, metadata stripping, deletion and media-rights decisions are implemented.
 - [ ] Deliver the in-app activity inbox after core coach and community interactions; consider push notifications only with explicit preferences and permission handling.
 - [ ] Follow `docs/product-expansion-roadmap.md` for the detailed delivery slices and acceptance criteria.

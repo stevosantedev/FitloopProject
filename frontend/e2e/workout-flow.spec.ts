@@ -717,3 +717,36 @@ test("community block and report controls call the moderation API", async ({ pag
   await expect(page.getByRole("status")).toContainText("Account blocked");
   expect(calls.some(call => call.path === "/api/social/blocks/user-2" && call.method === "POST")).toBeTruthy();
 });
+
+
+test("community feed loads older posts without replacing the first page", async ({ page }) => {
+  await mockApplicationApi(page);
+  let feedRequests = 0;
+  const makePost = (id: string, text: string) => ({
+    id, createdAt: "2026-11-06T10:00:00.000Z", text, type: "update",
+    user: { id: "user-2", username: "friend", displayName: "Friend" },
+    reactions: [], comments: []
+  });
+  await page.route("http://localhost:4000/api/social/feed**", async route => {
+    feedRequests += 1;
+    const url = new URL(route.request().url());
+    const olderPage = url.searchParams.has("cursor");
+    await route.fulfill({
+      status: 200, contentType: "application/json",
+      body: JSON.stringify(olderPage
+        ? { posts: [makePost("post-older", "An older training update")], hasMore: false, nextCursor: null }
+        : { posts: [makePost("post-newest", "The latest training update")], hasMore: true, nextCursor: "cursor-one" })
+    });
+  });
+  await page.goto("/");
+  await page.getByLabel("Email").fill("tester@example.com");
+  await page.getByLabel("Password").fill("test-password");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.locator(".sidebar-nav").getByRole("button", { name: "Community" }).click();
+  await expect(page.getByText("The latest training update")).toBeVisible();
+  await page.getByRole("button", { name: "Load older posts" }).click();
+  await expect(page.getByText("An older training update")).toBeVisible();
+  await expect(page.getByText("The latest training update")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Load older posts" })).toHaveCount(0);
+  expect(feedRequests).toBe(2);
+});

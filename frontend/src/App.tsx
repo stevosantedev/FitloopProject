@@ -876,6 +876,11 @@ export default function App() {
     setSessions([]);
     setConnections([]);
     setPosts([]);
+    // Do not retain privileged UI or report data when another account signs in on this browser.
+    setIsModerator(false);
+    setModerationReports([]);
+    setModerationError("");
+    setModerationNoteDrafts({});
   }
 
   useEffect(() => {

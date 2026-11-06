@@ -714,7 +714,7 @@ test("community block and report controls call the moderation API", async ({ pag
   await expect(page.getByRole("status")).toContainText("Report submitted privately");
   expect(calls.some(call => call.path === "/api/social/reports" && call.method === "POST")).toBeTruthy();
   await page.getByRole("button", { name: "Block", exact: true }).click();
-  await expect(page.getByRole("status")).toContainText("Account blocked");
+  await expect(page.locator(".notice")).toContainText("Account blocked");
   expect(calls.some(call => call.path === "/api/social/blocks/user-2" && call.method === "POST")).toBeTruthy();
 });
 

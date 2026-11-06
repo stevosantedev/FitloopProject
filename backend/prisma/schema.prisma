@@ -13,6 +13,8 @@ datasource db {
 model User {
   id             String              @id @default(cuid())
   username       String              @unique
+  displayName    String?             @db.VarChar(40)
+  bio            String?             @db.VarChar(160)
   email          String              @unique
   passwordHash   String
   priority       String              @default("energy")

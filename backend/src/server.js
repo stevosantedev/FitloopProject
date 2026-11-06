@@ -35,7 +35,7 @@ app.get("/api/me", requireAuth, async (req, res, next) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.userId },
-      select: { id: true, username: true, privateAccount: true, priority: true }
+      select: { id: true, username: true, displayName: true, bio: true, privateAccount: true, priority: true }
     });
     if (!user) return res.status(404).json({ error: "Account not found." });
     return res.json({ user });

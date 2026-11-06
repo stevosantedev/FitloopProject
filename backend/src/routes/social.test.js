@@ -69,3 +69,34 @@ test("DELETE posts returns not found for another author's post", async () => {
     assert.equal(response.status, 404);
   });
 });
+
+test("PATCH profile updates only the authenticated account's display fields", async () => {
+  let query;
+  const profile = { id: "user-a", username: "runner", displayName: "Runner One", bio: "Building consistency." };
+  const prisma = { user: { update: async args => { query = args; return profile; } } };
+  await withSocialApi(prisma, async base => {
+    const response = await fetch(base + "/api/social/profile/me", {
+      method: "PATCH", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ displayName: " Runner One ", bio: "Building consistency." })
+    });
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { profile });
+  });
+  assert.equal(query.where.id, "user-a");
+  assert.deepEqual(query.data, { displayName: "Runner One", bio: "Building consistency." });
+  assert.deepEqual(query.select, { id: true, username: true, displayName: true, bio: true });
+});
+
+test("PATCH profile rejects empty, overlong and unexpected profile fields", async () => {
+  let writes = 0;
+  const prisma = { user: { update: async () => { writes += 1; return {}; } } };
+  await withSocialApi(prisma, async base => {
+    for (const body of [{ displayName: " " }, { bio: "x".repeat(161) }, { email: "private@example.com" }]) {
+      const response = await fetch(base + "/api/social/profile/me", {
+        method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify(body)
+      });
+      assert.equal(response.status, 400);
+    }
+  });
+  assert.equal(writes, 0);
+});

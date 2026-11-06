@@ -7,6 +7,34 @@ const router = Router();
 const commentInput = z.object({ text: z.string().trim().min(1).max(500) });
 const postInput = z.object({ text: z.string().trim().min(1).max(500) });
 const reactionInput = z.object({ value: z.enum(["like", "strong", "clap"]).default("like") });
+const profileInput = z.object({
+  displayName: z.string().trim().min(1).max(40).nullable().optional(),
+  bio: z.string().trim().max(160).nullable().optional()
+}).refine(input => Object.keys(input).length > 0);
+
+// Profile fields are deliberately limited to display identity; email and private account data never leave the API.
+router.get("/profile/me", async (req, res, next) => {
+  try {
+    const profile = await prismaClient.user.findUnique({
+      where: { id: req.userId },
+      select: { id: true, username: true, displayName: true, bio: true }
+    });
+    if (!profile) return res.status(404).json({ error: "Profile not found." });
+    return res.json({ profile });
+  } catch (error) { return next(error); }
+});
+
+router.patch("/profile/me", async (req, res, next) => {
+  try {
+    const input = profileInput.parse(req.body);
+    const profile = await prismaClient.user.update({
+      where: { id: req.userId },
+      data: input,
+      select: { id: true, username: true, displayName: true, bio: true }
+    });
+    return res.json({ profile });
+  } catch (error) { return next(error); }
+});
 
 // Resolve accepted connections in both directions because a friendship is stored as one request row.
 async function friendIds(userId) {
@@ -27,8 +55,8 @@ router.get("/friends", async (req, res, next) => {
         OR: [{ requesterId: req.userId }, { addresseeId: req.userId }]
       },
       include: {
-        requester: { select: { id: true, username: true } },
-        addressee: { select: { id: true, username: true } }
+        requester: { select: { id: true, username: true, displayName: true } },
+        addressee: { select: { id: true, username: true, displayName: true } }
       },
       orderBy: { createdAt: "desc" }
     });
@@ -85,7 +113,7 @@ router.post("/posts", async (req, res, next) => {
     const post = await prismaClient.feedPost.create({
       data: { userId: req.userId, type: "update", text: input.text },
       include: {
-        user: { select: { id: true, username: true } },
+        user: { select: { id: true, username: true, displayName: true } },
         reactions: { select: { value: true, userId: true } },
         comments: { include: { user: { select: { username: true } } }, orderBy: { createdAt: "asc" }, take: 20 }
       }

@@ -75,8 +75,10 @@ The current friends-only feed, workout posts, reactions and comments provide a s
    - Image uploads remain out of scope until private media storage, file validation, metadata stripping, access control and deletion are implemented.
 
 2. **Profiles and relationships**
-   - User profile with display name, avatar, short bio and chosen training highlights.
-   - Profile visibility and audience controls with private-by-default handling for sensitive details.
+   - [x] Add account-owned display name and short bio editing, with bounded validation and no exposure of email or credentials.
+   - [x] Show a consistent author identity in feed posts and friend lists using the chosen display name and a generated initial avatar.
+   - [ ] Add uploaded avatars and chosen training highlights only after private media storage, file validation, metadata stripping and deletion controls are ready.
+   - [ ] Profile visibility and audience controls with private-by-default handling for sensitive details; the current profile is only editable by its owner and is surfaced to existing accepted friends.
    - Friend discovery/search, requests, accepted connections and clear pending states.
    - Follow relationships only if they add value beyond the existing friend model; avoid duplicating relationship concepts without a product decision.
 

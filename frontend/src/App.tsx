@@ -11,7 +11,7 @@ import MuscleMap from "./components/MuscleMap";
 import GuidedRestTimer from "./components/GuidedRestTimer";
 import { clearQueuedWorkouts, getQueuedWorkouts, queueWorkout, removeQueuedWorkout } from "./offlineWorkoutQueue";
 
-type User = { id: string; username: string };
+type User = { id: string; username: string; displayName?: string | null; bio?: string | null };
 
 class ApiRequestError extends Error {
   constructor(message: string, readonly status: number) {
@@ -134,6 +134,9 @@ export default function App() {
     };
   }
   const [friendUsername, setFriendUsername] = useState("");
+  const [profileNameDraft, setProfileNameDraft] = useState("");
+  const [profileBioDraft, setProfileBioDraft] = useState("");
+  const [profileSaving, setProfileSaving] = useState(false);
   const [communityPostDraft, setCommunityPostDraft] = useState("");
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
 
@@ -186,6 +189,8 @@ export default function App() {
       // Restore the profile and coaching preferences when a saved session is reopened in the browser.
       const profile = await request("/api/me");
       setUser(profile.user);
+      setProfileNameDraft(profile.user.displayName ?? "");
+      setProfileBioDraft(profile.user.bio ?? "");
       localStorage.setItem("fitloop-user", JSON.stringify(profile.user));
       const preferenceData = await request("/api/coach/preferences");
       setCoachPreference(preferenceData.preference);
@@ -564,6 +569,27 @@ export default function App() {
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Could not save that workout.");
     }
+  }
+
+  // Keep the profile intentionally small: a display name and short bio are enough to give feed posts a human identity.
+  async function saveProfile(event: React.FormEvent) {
+    event.preventDefault();
+    setProfileSaving(true);
+    try {
+      const data = await request("/api/social/profile/me", {
+        method: "PATCH",
+        body: JSON.stringify({
+          displayName: profileNameDraft.trim() || null,
+          bio: profileBioDraft.trim() || null
+        })
+      });
+      setUser(current => current ? { ...current, ...data.profile } : current);
+      localStorage.setItem("fitloop-user", JSON.stringify({ ...user, ...data.profile }));
+      setNotice("Your profile has been updated.");
+      await loadCommunity();
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Could not update your profile.");
+    } finally { setProfileSaving(false); }
   }
 
   // Text updates are shared only to the existing friends-only audience.
@@ -1313,6 +1339,12 @@ export default function App() {
       {communityLoading && <p className="load-state" role="status">Loading your community…</p>}
       {communityError && <div className="load-error" role="alert"><span>{communityError}</span><button type="button" className="secondary" onClick={() => void loadCommunity()}>Try again</button></div>}
       <div className="welcome compact"><p className="eyebrow">BETTER TOGETHER</p><h1>Your community.</h1><p className="muted">Share completed workouts with people you've connected with.</p></div>
+      <form className="panel community-profile-form" onSubmit={saveProfile}>
+        <div><p className="eyebrow">YOUR PROFILE</p><h2>Make it yours</h2><p className="muted">Choose how your name and short introduction appear to accepted friends. Your email and private account details are never shown.</p></div>
+        <label>Display name<input value={profileNameDraft} onChange={event => setProfileNameDraft(event.target.value)} maxLength={40} placeholder={user?.username ?? "Your name"} /></label>
+        <label>Short bio<textarea value={profileBioDraft} onChange={event => setProfileBioDraft(event.target.value)} maxLength={160} rows={3} placeholder="A little about your training…" /></label>
+        <div className="composer-footer"><small>{profileBioDraft.length}/160 · Visible to accepted friends</small><button disabled={profileSaving}>{profileSaving ? "Saving…" : "Save profile"}</button></div>
+      </form>
       <div className="content-grid">
         <form className="panel" onSubmit={sendFriendRequest}>
           <p className="eyebrow">FIND YOUR PEOPLE</p><h2>Add a friend</h2>
@@ -1325,7 +1357,7 @@ export default function App() {
             <ul className="log-list">{connections.map(connection => {
               const incoming = connection.addressee.id === user?.id;
               const person = incoming ? connection.requester : connection.addressee;
-              return <li key={connection.id}><strong>@{person.username}</strong><span>{connection.status === "accepted" ? "Connected" : incoming ? "Waiting for your reply" : "Request sent"}</span>
+              return <li key={connection.id}><strong>{person.displayName || "@" + person.username}</strong><span>@{person.username} · {connection.status === "accepted" ? "Connected" : incoming ? "Waiting for your reply" : "Request sent"}</span>
                 {connection.status === "pending" && incoming && <button className="small-button" onClick={() => void acceptFriendRequest(connection.id)}>Accept request</button>}
               </li>;
             })}</ul>}
@@ -1341,7 +1373,7 @@ export default function App() {
         <p className="eyebrow">FRIENDS-ONLY FEED</p><h2>Recent activity</h2>
         {posts.length === 0 && communityLoading ? <p className="muted" role="status">Loading recent activity…</p> : posts.length === 0 && communityError ? <p className="muted">The feed is unavailable until the community can be refreshed.</p> : posts.length === 0 ? <p className="muted">No shared workouts yet. Once you and your friends log a session, it can appear here.</p> :
           <div className="feed-list">{posts.map(post => <article className="feed-card" key={post.id}>
-            <div className="feed-heading"><strong>@{post.user.username}</strong><span>{new Date(post.createdAt).toLocaleString()}</span></div>
+            <div className="feed-heading"><div className="feed-author"><span className="feed-avatar" aria-hidden="true">{(post.user.displayName || post.user.username).slice(0, 1).toUpperCase()}</span><div><strong>{post.user.displayName || "@" + post.user.username}</strong><small>@{post.user.username}</small></div></div><span>{new Date(post.createdAt).toLocaleString()}</span></div>
             {post.text ? <p className="community-post-text">{post.text}</p> : <p>{post.session?.routine?.name ?? "Completed a workout"}</p>}
             {post.session && <p className="muted">{post.session.routine?.name ?? "Workout"} · {post.session.sets.length} sets · {post.session.sets.map(item => item.exercise.name).filter((name, index, all) => all.indexOf(name) === index).join(", ")}</p>}
             {post.user.id === user?.id && <button type="button" className="small-button post-delete" onClick={() => void deleteCommunityPost(post.id)}>Delete post</button>}

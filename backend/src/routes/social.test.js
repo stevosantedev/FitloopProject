@@ -187,3 +187,68 @@ test("PATCH profile returns the updated private-account setting", async () => {
   });
   assert.equal(query.select.privateAccount, true);
 });
+
+
+test("incoming pending requests can be declined only by their addressee", async () => {
+  let query;
+  const prisma = { friendConnection: { deleteMany: async args => { query = args; return { count: 1 }; } } };
+  await withSocialApi(prisma, async base => {
+    const response = await fetch(base + "/api/social/friends/request-1/decline", { method: "POST" });
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { declined: true });
+  });
+  assert.deepEqual(query.where, { id: "request-1", addresseeId: "user-a", status: "pending" });
+});
+
+test("declining another user's request or a non-pending request returns not found", async () => {
+  let query;
+  const prisma = { friendConnection: { deleteMany: async args => { query = args; return { count: 0 }; } } };
+  await withSocialApi(prisma, async base => {
+    const response = await fetch(base + "/api/social/friends/request-2/decline", { method: "POST" });
+    assert.equal(response.status, 404);
+  });
+  assert.deepEqual(query.where, { id: "request-2", addresseeId: "user-a", status: "pending" });
+});
+
+test("outgoing pending requests can be cancelled only by their requester", async () => {
+  let query;
+  const prisma = { friendConnection: { deleteMany: async args => { query = args; return { count: 1 }; } } };
+  await withSocialApi(prisma, async base => {
+    const response = await fetch(base + "/api/social/friends/request-3/cancel", { method: "POST" });
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { cancelled: true });
+  });
+  assert.deepEqual(query.where, { id: "request-3", requesterId: "user-a", status: "pending" });
+});
+
+test("cancelling another user's request or an accepted connection returns not found", async () => {
+  let query;
+  const prisma = { friendConnection: { deleteMany: async args => { query = args; return { count: 0 }; } } };
+  await withSocialApi(prisma, async base => {
+    const response = await fetch(base + "/api/social/friends/request-4/cancel", { method: "POST" });
+    assert.equal(response.status, 404);
+  });
+  assert.deepEqual(query.where, { id: "request-4", requesterId: "user-a", status: "pending" });
+});
+
+test("either member may remove an accepted connection, but not a pending or unrelated row", async () => {
+  let query;
+  const prisma = { friendConnection: { deleteMany: async args => { query = args; return { count: 1 }; } } };
+  await withSocialApi(prisma, async base => {
+    const response = await fetch(base + "/api/social/friends/connection-5", { method: "DELETE" });
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { removed: true });
+  });
+  assert.deepEqual(query.where, {
+    id: "connection-5", status: "accepted",
+    OR: [{ requesterId: "user-a" }, { addresseeId: "user-a" }]
+  });
+});
+
+test("removing a pending or unrelated connection returns not found", async () => {
+  const prisma = { friendConnection: { deleteMany: async () => ({ count: 0 }) } };
+  await withSocialApi(prisma, async base => {
+    const response = await fetch(base + "/api/social/friends/connection-6", { method: "DELETE" });
+    assert.equal(response.status, 404);
+  });
+});

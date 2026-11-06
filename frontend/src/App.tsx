@@ -1473,7 +1473,7 @@ export default function App() {
               <button disabled={!commentDrafts[post.id]?.trim()}>Send</button>
             </form>
           </article>)}</div>}
-        {feedHasMore && <button type="button" className="secondary-button feed-load-more" onClick={() => void loadMoreCommunityPosts()} disabled={feedLoadingMore}>{feedLoadingMore ? "Loading older posts…" : "Load older posts"}</button>}
+        {feedHasMore && <button type="button" className="small-button secondary feed-load-more" onClick={() => void loadMoreCommunityPosts()} disabled={feedLoadingMore}>{feedLoadingMore ? "Loading older posts…" : "Load older posts"}</button>}
       </section>
     </section>}
 

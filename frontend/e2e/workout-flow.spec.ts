@@ -822,7 +822,7 @@ test("Community comment authors can edit and delete only their own comments", as
   await page.locator(".comment-edit").getByRole("button", { name: "Save" }).click();
   await expect(page.getByText("Updated training encouragement")).toBeVisible();
   page.once("dialog", dialog => dialog.accept());
-  await page.getByRole("button", { name: "Delete" }).click();
+  await page.getByRole("button", { name: "Delete", exact: true }).click();
   await expect(page.getByText("Updated training encouragement")).toHaveCount(0);
   expect(calls.some(call => call.method === "PATCH" && call.path === "/api/social/comments/comment-own" && call.body.text === "Updated training encouragement")).toBeTruthy();
   expect(calls.some(call => call.method === "DELETE" && call.path === "/api/social/comments/comment-own")).toBeTruthy();

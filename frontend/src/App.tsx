@@ -1402,7 +1402,7 @@ export default function App() {
       <section className="panel section-gap">
         <p className="eyebrow">SAVED ROUTINES</p><h2>Your routines</h2>
         {routines.length === 0 && workoutsLoading ? <p className="muted" role="status">Loading saved routines…</p> : routines.length === 0 && workoutsError ? <p className="muted">Saved routines are unavailable until training data can be refreshed.</p> : routines.length === 0 ? <p className="muted">No routines yet. Choose a few exercises above to make your first one.</p> :
-          <div className="routine-grid">{routines.map(routine => <article className="routine-card" key={routine.id}><strong>{routine.name}</strong><p className="muted">{routine.exercises.map(item => item.exercise.name).join(" · ")}</p><div className="routine-card-actions"><button type="button" className="secondary" onClick={() => editRoutine(routine)}>Edit</button><button type="button" className="danger-button" onClick={() => deleteRoutine(routine)}>Delete</button></div></article>;})}</div>}
+          <div className="routine-grid">{routines.map(routine => <article className="routine-card" key={routine.id}><strong>{routine.name}</strong><p className="muted">{routine.exercises.map(item => item.exercise.name).join(" · ")}</p><div className="routine-card-actions"><button type="button" className="secondary" onClick={() => editRoutine(routine)}>Edit</button><button type="button" className="danger-button" onClick={() => deleteRoutine(routine)}>Delete</button></div></article>)}</div>}
       </section>
       <section className="panel section-gap">
         <p className="eyebrow">EXERCISE LIBRARY</p><h2>Explore movements</h2>
@@ -1639,7 +1639,7 @@ export default function App() {
               <input aria-label="Write a comment" value={commentDrafts[post.id] ?? ""} onChange={event => setCommentDrafts(current => ({ ...current, [post.id]: event.target.value }))} placeholder="Write a supportive comment..." maxLength={500} />
               <button disabled={!commentDrafts[post.id]?.trim()}>Send</button>
             </form>
-          </article>)}</div>}
+          </article>;})}</div>}
         {feedHasMore && <button type="button" className="small-button secondary feed-load-more" onClick={() => void loadMoreCommunityPosts()} disabled={feedLoadingMore}>{feedLoadingMore ? "Loading older posts…" : "Load older posts"}</button>}
       </section>
 

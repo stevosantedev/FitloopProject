@@ -313,7 +313,9 @@ test("Community profile previews respect the profile API response", async ({ pag
   await page.getByLabel("Password").fill("test-password");
   await page.getByRole("button", { name: "Sign in" }).click();
   await page.locator(".sidebar-nav").getByRole("button", { name: "Community" }).click();
-  await page.getByRole("button", { name: "Friend" }).first().click();
+  await expect(page.locator(".feed-card")).toContainText("A friend's training update");
+  await expect(page.locator(".feed-profile-link")).toBeVisible();
+  await page.locator(".feed-profile-link").click();
   await expect(page.getByRole("dialog")).toContainText("Friend Athlete");
   await expect(page.getByRole("dialog")).toContainText("@friend");
   await expect(page.getByRole("dialog")).toContainText("Building strength one session at a time.");

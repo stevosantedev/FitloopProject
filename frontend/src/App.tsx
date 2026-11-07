@@ -63,6 +63,24 @@ type FeedPost = {
   comments: Array<{ id: string; text: string; user: { id: string; username: string } }>;
   _count?: { comments: number };
 };
+type WorkoutPostMovement = { exerciseId: string; name: string; completedSets: number; totalSets: number };
+
+function summariseWorkoutPost(session: WorkoutSession): WorkoutPostMovement[] {
+  const movements = new Map<string, WorkoutPostMovement>();
+  for (const set of session.sets) {
+    const movement = movements.get(set.exercise.id) ?? {
+      exerciseId: set.exercise.id,
+      name: set.exercise.name,
+      completedSets: 0,
+      totalSets: 0
+    };
+    movement.totalSets += 1;
+    if (set.completed) movement.completedSets += 1;
+    movements.set(set.exercise.id, movement);
+  }
+  return Array.from(movements.values());
+}
+
 type CoachMessage = { id: string; message: string; explanation: string; decision?: string };
 type CoachConversation = { id: string; title: string; updatedAt: string; messages?: Array<{ id: string; role: string; content: string }>; _count?: { messages: number } };
 type CoachChatMessage = { id: string; role: "user" | "assistant"; content: string; createdAt: string };
@@ -1384,7 +1402,7 @@ export default function App() {
       <section className="panel section-gap">
         <p className="eyebrow">SAVED ROUTINES</p><h2>Your routines</h2>
         {routines.length === 0 && workoutsLoading ? <p className="muted" role="status">Loading saved routines…</p> : routines.length === 0 && workoutsError ? <p className="muted">Saved routines are unavailable until training data can be refreshed.</p> : routines.length === 0 ? <p className="muted">No routines yet. Choose a few exercises above to make your first one.</p> :
-          <div className="routine-grid">{routines.map(routine => <article className="routine-card" key={routine.id}><strong>{routine.name}</strong><p className="muted">{routine.exercises.map(item => item.exercise.name).join(" · ")}</p><div className="routine-card-actions"><button type="button" className="secondary" onClick={() => editRoutine(routine)}>Edit</button><button type="button" className="danger-button" onClick={() => deleteRoutine(routine)}>Delete</button></div></article>)}</div>}
+          <div className="routine-grid">{routines.map(routine => <article className="routine-card" key={routine.id}><strong>{routine.name}</strong><p className="muted">{routine.exercises.map(item => item.exercise.name).join(" · ")}</p><div className="routine-card-actions"><button type="button" className="secondary" onClick={() => editRoutine(routine)}>Edit</button><button type="button" className="danger-button" onClick={() => deleteRoutine(routine)}>Delete</button></div></article>;})}</div>}
       </section>
       <section className="panel section-gap">
         <p className="eyebrow">EXERCISE LIBRARY</p><h2>Explore movements</h2>
@@ -1570,10 +1588,21 @@ export default function App() {
       <section className="panel section-gap">
         <p className="eyebrow">FRIENDS-ONLY FEED</p><h2>Recent activity</h2>
         {posts.length === 0 && communityLoading ? <p className="muted" role="status">Loading recent activity…</p> : posts.length === 0 && communityError ? <p className="muted">The feed is unavailable until the community can be refreshed.</p> : posts.length === 0 ? <p className="muted">No shared workouts yet. Once you and your friends log a session, it can appear here.</p> :
-          <div className="feed-list">{posts.map(post => <article className="feed-card" key={post.id}>
+          <div className="feed-list">{posts.map(post => {\n            const workoutSummary = post.session ? summariseWorkoutPost(post.session) : [];\n            return <article className="feed-card" key={post.id}>
             <div className="feed-heading"><div className="feed-author"><span className="feed-avatar" aria-hidden="true">{(post.user.displayName || post.user.username).slice(0, 1).toUpperCase()}</span><div><strong>{post.user.displayName || "@" + post.user.username}</strong><small>@{post.user.username}</small></div></div><span>{new Date(post.createdAt).toLocaleString()}</span></div>
             {post.text ? <p className="community-post-text">{post.text}</p> : <p>{post.session?.routine?.name ?? "Completed a workout"}</p>}
-            {post.session && <p className="muted">{post.session.routine?.name ?? "Workout"} · {post.session.sets.length} sets · {post.session.sets.map(item => item.exercise.name).filter((name, index, all) => all.indexOf(name) === index).join(", ")}</p>}
+            {post.session && <div className="workout-post-summary" aria-label="Workout summary">
+              <div className="workout-post-metrics">
+                <span><strong>{post.session.sets.filter(set => set.completed).length}</strong> sets completed</span>
+                <span><strong>{workoutSummary.length}</strong> movements</span>
+              </div>
+              <div className="workout-post-movements">
+                {workoutSummary.slice(0, 4).map(movement => <div className="workout-post-movement" key={movement.exerciseId}>
+                  <strong>{movement.name}</strong><span>{movement.completedSets}/{movement.totalSets} sets</span>
+                </div>)}
+                {workoutSummary.length > 4 && <p className="workout-post-more">+{workoutSummary.length - 4} more movements</p>}
+              </div>
+            </div>}
             {post.user.id === user?.id && <button type="button" className="small-button post-delete" onClick={() => void deleteCommunityPost(post.id)}>Delete post</button>}
             {post.user.id !== user?.id && <div className="connection-actions"><button type="button" className="small-button secondary" onClick={() => void reportCommunityTarget("post", post.id)}>Report post</button><button type="button" className="small-button secondary" onClick={() => void blockCommunityUser(post.user.id)}>Block author</button></div>}
             <div className="reaction-row" aria-label="Post reactions">

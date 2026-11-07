@@ -74,6 +74,16 @@ footer { margin-top: 32px; font-size: .8rem; }
 .feed-card:last-child { border-bottom: 0; }
 .feed-heading { display: flex; justify-content: space-between; gap: 12px; color: #eaf2ec; }
 .feed-heading span { color: #9cad9f; font-size: .8rem; }
+.workout-post-summary { margin: 12px 0; padding: 14px; border: 1px solid #344b3c; border-radius: 12px; background: #192a21; }
+.workout-post-metrics { display: flex; flex-wrap: wrap; gap: 16px; color: #aebfb2; font-size: .8rem; }
+.workout-post-metrics strong { color: #e7f1e8; font-size: 1rem; }
+.workout-post-movements { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+.workout-post-movement { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-width: 0; padding: 9px 10px; border-radius: 8px; background: #22362a; }
+.workout-post-movement strong { overflow-wrap: anywhere; color: #e2ece4; font-size: .82rem; }
+.workout-post-movement span { flex: 0 0 auto; color: #a8b9ac; font-size: .75rem; }
+.workout-post-more { grid-column: 1 / -1; margin: 0; color: #9cad9f; font-size: .78rem; }
+@media (max-width: 560px) { .workout-post-movements { grid-template-columns: 1fr; } }
+
 .reaction-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0; }
 .reaction-button, .small-button { width: auto !important; margin: 0 !important; padding: 8px 12px; border: 1px solid #435a49; background: #203329; color: #d8e7dc; font-size: .85rem; }
 .reaction-button:hover, .small-button:hover { background: #2b4334; }

@@ -820,6 +820,38 @@ test("allowlisted moderators can review and resolve private community reports", 
   expect(calls.some(call => call.path === "/api/social/moderation/reports/report-1" && call.method === "PATCH" && call.body.status === "resolved" && call.body.resolutionNote === "Reviewed and action taken.")).toBeTruthy();
 });
 
+test("Community workout cards summarise completed sets by movement", async ({ page }) => {
+  const socialPosts = await mockApplicationApi(page);
+  socialPosts.push({
+    id: "workout-post-summary", createdAt: "2026-11-07T08:00:00.000Z",
+    user: { id: "friend-1", username: "trainingfriend" }, reactions: [], comments: [],
+    session: {
+      id: "session-shared", startedAt: "2026-11-07T07:00:00.000Z",
+      routine: { name: "Upper body" },
+      notes: "This private session note must not appear in the feed.",
+      sets: [
+        { id: "set-1", reps: 10, weightKg: 20, completed: true, exercise: { id: "exercise-1", name: "Goblet squat" } },
+        { id: "set-2", reps: 8, weightKg: 22, completed: true, exercise: { id: "exercise-1", name: "Goblet squat" } },
+        { id: "set-3", reps: 12, weightKg: null, completed: false, exercise: { id: "exercise-2", name: "Push-up" } }
+      ]
+    }
+  });
+  await page.goto("/");
+  await page.getByLabel("Email").fill("tester@example.com");
+  await page.getByLabel("Password").fill("test-password");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.locator(".sidebar-nav").getByRole("button", { name: "Community" }).click();
+  const card = page.locator(".feed-card").filter({ hasText: "Upper body" });
+  await expect(card.getByText("2", { exact: true })).toBeVisible();
+  await expect(card.getByText("sets completed")).toBeVisible();
+  await expect(card.getByText("movements")).toBeVisible();
+  await expect(card.getByText("Goblet squat")).toBeVisible();
+  await expect(card.getByText("2/2 sets")).toBeVisible();
+  await expect(card.getByText("Push-up")).toBeVisible();
+  await expect(card.getByText("0/1 sets")).toBeVisible();
+  await expect(card.getByText("This private session note must not appear in the feed.")).toHaveCount(0);
+});
+
 test("Community posts can load older comments without replacing the first page", async ({ page }) => {
   const socialPosts = await mockApplicationApi(page);
   const firstPage = Array.from({ length: 20 }, (_, index) => ({

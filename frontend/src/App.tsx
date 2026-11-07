@@ -1588,7 +1588,9 @@ export default function App() {
       <section className="panel section-gap">
         <p className="eyebrow">FRIENDS-ONLY FEED</p><h2>Recent activity</h2>
         {posts.length === 0 && communityLoading ? <p className="muted" role="status">Loading recent activity…</p> : posts.length === 0 && communityError ? <p className="muted">The feed is unavailable until the community can be refreshed.</p> : posts.length === 0 ? <p className="muted">No shared workouts yet. Once you and your friends log a session, it can appear here.</p> :
-          <div className="feed-list">{posts.map(post => {\n            const workoutSummary = post.session ? summariseWorkoutPost(post.session) : [];\n            return <article className="feed-card" key={post.id}>
+          <div className="feed-list">{posts.map(post => {
+            const workoutSummary = post.session ? summariseWorkoutPost(post.session) : [];
+            return <article className="feed-card" key={post.id}>
             <div className="feed-heading"><div className="feed-author"><span className="feed-avatar" aria-hidden="true">{(post.user.displayName || post.user.username).slice(0, 1).toUpperCase()}</span><div><strong>{post.user.displayName || "@" + post.user.username}</strong><small>@{post.user.username}</small></div></div><span>{new Date(post.createdAt).toLocaleString()}</span></div>
             {post.text ? <p className="community-post-text">{post.text}</p> : <p>{post.session?.routine?.name ?? "Completed a workout"}</p>}
             {post.session && <div className="workout-post-summary" aria-label="Workout summary">

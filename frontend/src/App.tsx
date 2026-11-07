@@ -39,6 +39,12 @@ type WorkoutSession = {
   routine?: { name: string } | null;
   sets: Array<{ id: string; reps: number; weightKg?: number | null; completed: boolean; setType?: string; restSeconds?: number; rir?: number | null; rpe?: number | null; exercise: Exercise }>;
 };
+type WorkoutFeedSession = {
+  id: string;
+  startedAt: string;
+  routine?: { name: string } | null;
+  sets: Array<{ id: string; reps: number; weightKg?: number | null; completed: boolean; exercise: { id: string; name: string } }>;
+};
 type BlockedAccount = { id: string; username: string; displayName?: string | null };
 type ModerationReport = {
   id: string; reason: string; details?: string | null; status: "open" | "reviewing" | "resolved" | "dismissed";
@@ -58,14 +64,14 @@ type FeedPost = {
   text?: string | null;
   type?: string;
   user: User;
-  session?: WorkoutSession | null;
+  session?: WorkoutFeedSession | null;
   reactions: Array<{ value: string; userId: string }>;
   comments: Array<{ id: string; text: string; user: { id: string; username: string } }>;
   _count?: { comments: number };
 };
 type WorkoutPostMovement = { exerciseId: string; name: string; completedSets: number; totalSets: number };
 
-function summariseWorkoutPost(session: WorkoutSession): WorkoutPostMovement[] {
+function summariseWorkoutPost(session: WorkoutFeedSession): WorkoutPostMovement[] {
   const movements = new Map<string, WorkoutPostMovement>();
   for (const set of session.sets) {
     const movement = movements.get(set.exercise.id) ?? {

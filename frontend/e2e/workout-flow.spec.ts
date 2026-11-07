@@ -842,9 +842,10 @@ test("Community workout cards summarise completed sets by movement", async ({ pa
   await page.getByRole("button", { name: "Sign in" }).click();
   await page.locator(".sidebar-nav").getByRole("button", { name: "Community" }).click();
   const card = page.locator(".feed-card").filter({ hasText: "Upper body" });
-  await expect(card.getByText("2", { exact: true })).toBeVisible();
-  await expect(card.getByText("sets completed")).toBeVisible();
-  await expect(card.getByText("movements")).toBeVisible();
+  await expect(card.locator(".workout-post-metrics span").nth(0)).toContainText("2");
+  await expect(card.locator(".workout-post-metrics span").nth(0)).toContainText("sets completed");
+  await expect(card.locator(".workout-post-metrics span").nth(1)).toContainText("2");
+  await expect(card.locator(".workout-post-metrics span").nth(1)).toContainText("movements");
   await expect(card.getByText("Goblet squat")).toBeVisible();
   await expect(card.getByText("2/2 sets")).toBeVisible();
   await expect(card.getByText("Push-up")).toBeVisible();

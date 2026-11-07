@@ -60,7 +60,7 @@ type FeedPost = {
   user: User;
   session?: WorkoutSession | null;
   reactions: Array<{ value: string; userId: string }>;
-  comments: Array<{ id: string; text: string; user: { username: string } }>;
+  comments: Array<{ id: string; text: string; user: { id: string; username: string } }>;
 };
 type CoachMessage = { id: string; message: string; explanation: string; decision?: string };
 type CoachConversation = { id: string; title: string; updatedAt: string; messages?: Array<{ id: string; role: string; content: string }>; _count?: { messages: number } };
@@ -157,6 +157,8 @@ export default function App() {
   const [profileSaving, setProfileSaving] = useState(false);
   const [communityPostDraft, setCommunityPostDraft] = useState("");
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editingCommentDraft, setEditingCommentDraft] = useState("");
 
   /**
    * Send a JSON request to the API and attach the current bearer token.
@@ -813,6 +815,32 @@ export default function App() {
     }
   }
 
+
+  // Editing and deleting comments are author-only actions enforced again by the API.
+  async function saveCommentEdit(commentId: string) {
+    const text = editingCommentDraft.trim();
+    if (!text) return;
+    try {
+      await request("/api/social/comments/" + commentId, { method: "PATCH", body: JSON.stringify({ text }) });
+      setEditingCommentId(null);
+      setEditingCommentDraft("");
+      await loadCommunity();
+      setNotice("Your comment has been updated.");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Could not update your comment.");
+    }
+  }
+
+  async function deleteComment(commentId: string) {
+    if (!window.confirm("Delete this comment?")) return;
+    try {
+      await request("/api/social/comments/" + commentId, { method: "DELETE" });
+      await loadCommunity();
+      setNotice("Your comment has been deleted.");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Could not delete your comment.");
+    }
+  }
 
   // Account removal is intentionally harder to trigger than sign-out: the user
   // must type the confirmation word and the API must verify their password.
@@ -1525,7 +1553,19 @@ export default function App() {
             {post.user.id === user?.id && <button type="button" className="small-button post-delete" onClick={() => void deleteCommunityPost(post.id)}>Delete post</button>}
             {post.user.id !== user?.id && <div className="connection-actions"><button type="button" className="small-button secondary" onClick={() => void reportCommunityTarget("post", post.id)}>Report post</button><button type="button" className="small-button secondary" onClick={() => void blockCommunityUser(post.user.id)}>Block author</button></div>}
             <div className="reaction-row"><button className="reaction-button" onClick={() => void reactToPost(post.id, "like")}>👏 {post.reactions.filter(item => item.value === "like").length} Like</button><button className="reaction-button" onClick={() => void reactToPost(post.id, "strong")}>💪 Strong</button><button className="reaction-button" onClick={() => void reactToPost(post.id, "clap")}>🙌 Clap</button></div>
-            {post.comments.map(comment => <p className="comment" key={comment.id}><strong>@{comment.user.username}</strong> {comment.text}</p>)}
+            {post.comments.map(comment => <div className="comment" key={comment.id}>
+              {editingCommentId === comment.id ? <div className="comment-edit">
+                <label className="sr-only" htmlFor={"edit-comment-" + comment.id}>Edit your comment</label>
+                <input id={"edit-comment-" + comment.id} aria-label="Edit your comment" value={editingCommentDraft} maxLength={500} onChange={event => setEditingCommentDraft(event.target.value)} />
+                <button type="button" className="small-button secondary" disabled={!editingCommentDraft.trim()} onClick={() => void saveCommentEdit(comment.id)}>Save</button>
+                <button type="button" className="small-button secondary" onClick={() => { setEditingCommentId(null); setEditingCommentDraft(""); }}>Cancel</button>
+              </div> : <><strong>@{comment.user.username}</strong> {comment.text}
+                {comment.user.id === user?.id && <span className="comment-actions">
+                  <button type="button" className="text-button" onClick={() => { setEditingCommentId(comment.id); setEditingCommentDraft(comment.text); }}>Edit</button>
+                  <button type="button" className="text-button danger-text" onClick={() => void deleteComment(comment.id)}>Delete</button>
+                </span>}
+              </>}
+            </div>)}
             <form className="comment-form" onSubmit={event => void commentOnPost(event, post.id)}>
               <input aria-label="Write a comment" value={commentDrafts[post.id] ?? ""} onChange={event => setCommentDrafts(current => ({ ...current, [post.id]: event.target.value }))} placeholder="Write a supportive comment..." maxLength={500} />
               <button disabled={!commentDrafts[post.id]?.trim()}>Send</button>

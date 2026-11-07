@@ -419,6 +419,81 @@ test("GET feed rejects invalid cursors and page sizes before querying", async ()
 });
 
 
+
+test("PATCH comments edits only the author's comment on a currently visible post", async () => {
+  let updateArgs, lookupArgs;
+  const comment = { id: "comment-a", text: "Updated support", user: { id: "user-a", username: "alice" } };
+  const prisma = {
+    friendConnection: { findMany: async () => [] },
+    userBlock: { findMany: async () => [] },
+    feedComment: {
+      updateMany: async args => { updateArgs = args; return { count: 1 }; },
+      findUnique: async args => { lookupArgs = args; return comment; }
+    }
+  };
+  await withSocialApi(prisma, async base => {
+    const response = await fetch(base + "/api/social/comments/comment-a", {
+      method: "PATCH", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ text: "  Updated support  " })
+    });
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { comment });
+  });
+  assert.deepEqual(updateArgs.where, { id: "comment-a", userId: "user-a", post: { userId: { in: ["user-a"] } } });
+  assert.deepEqual(updateArgs.data, { text: "Updated support" });
+  assert.deepEqual(lookupArgs.include.user.select, { id: true, username: true });
+});
+
+test("PATCH comments hides other authors' comments and rejects invalid payloads", async () => {
+  let writes = 0;
+  const prisma = {
+    friendConnection: { findMany: async () => [] },
+    userBlock: { findMany: async () => [] },
+    feedComment: { updateMany: async () => { writes += 1; return { count: 0 }; } }
+  };
+  await withSocialApi(prisma, async base => {
+    const hidden = await fetch(base + "/api/social/comments/another-users-comment", {
+      method: "PATCH", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ text: "Trying to edit another person's comment" })
+    });
+    assert.equal(hidden.status, 404);
+    for (const body of [{ text: "  " }, { text: "valid", extra: true }, { text: "x".repeat(501) }]) {
+      const response = await fetch(base + "/api/social/comments/another-users-comment", {
+        method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify(body)
+      });
+      assert.equal(response.status, 400);
+    }
+  });
+  assert.equal(writes, 1);
+});
+
+test("DELETE comments removes only the author's comment on a currently visible post", async () => {
+  let query;
+  const prisma = {
+    friendConnection: { findMany: async () => [] },
+    userBlock: { findMany: async () => [] },
+    feedComment: { deleteMany: async args => { query = args; return { count: 1 }; } }
+  };
+  await withSocialApi(prisma, async base => {
+    const response = await fetch(base + "/api/social/comments/comment-a", { method: "DELETE" });
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { deleted: true });
+  });
+  assert.deepEqual(query.where, { id: "comment-a", userId: "user-a", post: { userId: { in: ["user-a"] } } });
+});
+
+test("DELETE comments returns not found for another author or a post outside the current feed", async () => {
+  const prisma = {
+    friendConnection: { findMany: async () => [] },
+    userBlock: { findMany: async () => [] },
+    feedComment: { deleteMany: async () => ({ count: 0 }) }
+  };
+  await withSocialApi(prisma, async base => {
+    const response = await fetch(base + "/api/social/comments/private-comment", { method: "DELETE" });
+    assert.equal(response.status, 404);
+  });
+});
+
 test("moderation capability is derived from the server-side moderator allowlist", async () => {
   const prisma = {};
   await withSocialApi(prisma, async base => {

@@ -362,7 +362,7 @@ router.post("/posts", async (req, res, next) => {
       include: {
         user: { select: { id: true, username: true, displayName: true } },
         reactions: { select: { value: true, userId: true } },
-        comments: { include: { user: { select: { username: true } } }, orderBy: { createdAt: "asc" }, take: 20 }
+        comments: { include: { user: { select: { id: true, username: true } } }, orderBy: { createdAt: "asc" }, take: 20 }
       }
     });
     return res.status(201).json({ post });
@@ -400,7 +400,7 @@ router.get("/feed", async (req, res, next) => {
         session: { include: { routine: true, sets: { include: { exercise: true } } } },
         reactions: { select: { value: true, userId: true } },
         comments: {
-          include: { user: { select: { username: true } } },
+          include: { user: { select: { id: true, username: true } } },
           orderBy: { createdAt: "asc" },
           take: 20
         }
@@ -448,12 +448,44 @@ router.post("/posts/:id/comments", async (req, res, next) => {
 
     const comment = await prismaClient.feedComment.create({
       data: { userId: req.userId, postId: post.id, text: input.text },
-      include: { user: { select: { username: true } } }
+      include: { user: { select: { id: true, username: true } } }
     });
     return res.status(201).json({ comment });
   } catch (error) {
     return next(error);
   }
+});
+
+// Authors may edit their own comments only while the parent post remains visible to them.
+// The nested post filter makes ownership and current feed visibility part of the write itself.
+router.patch("/comments/:id", async (req, res, next) => {
+  try {
+    const input = commentInput.strict().parse(req.body);
+    const ids = [req.userId, ...await friendIds(req.userId)];
+    const result = await prismaClient.feedComment.updateMany({
+      where: { id: req.params.id, userId: req.userId, post: { userId: { in: ids } } },
+      data: { text: input.text }
+    });
+    if (result.count === 0) return res.status(404).json({ error: "Comment not found." });
+    const comment = await prismaClient.feedComment.findUnique({
+      where: { id: req.params.id },
+      include: { user: { select: { id: true, username: true } } }
+    });
+    if (!comment) return res.status(404).json({ error: "Comment not found." });
+    return res.json({ comment });
+  } catch (error) { return next(error); }
+});
+
+// Deletion uses the same atomic author and current-visibility checks as editing.
+router.delete("/comments/:id", async (req, res, next) => {
+  try {
+    const ids = [req.userId, ...await friendIds(req.userId)];
+    const result = await prismaClient.feedComment.deleteMany({
+      where: { id: req.params.id, userId: req.userId, post: { userId: { in: ids } } }
+    });
+    if (result.count === 0) return res.status(404).json({ error: "Comment not found." });
+    return res.json({ deleted: true });
+  } catch (error) { return next(error); }
 });
 
 return router;

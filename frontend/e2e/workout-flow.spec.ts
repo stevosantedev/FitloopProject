@@ -788,3 +788,43 @@ test("allowlisted moderators can review and resolve private community reports", 
   await expect(page.getByText("No open reports.")).toBeVisible();
   expect(calls.some(call => call.path === "/api/social/moderation/reports/report-1" && call.method === "PATCH" && call.body.status === "resolved" && call.body.resolutionNote === "Reviewed and action taken.")).toBeTruthy();
 });
+
+test("Community comment authors can edit and delete only their own comments", async ({ page }) => {
+  const calls: Array<{ method: string; path: string; body?: any }> = [];
+  const comments = [{ id: "comment-own", text: "Great session", user: { id: "user-1", username: "tester" } }];
+  await mockApplicationApi(page);
+  await page.route("http://localhost:4000/api/social/**", async route => {
+    const req = route.request(), url = new URL(req.url());
+    const body = req.method() === "PATCH" ? req.postDataJSON() : undefined;
+    calls.push({ method: req.method(), path: url.pathname, body });
+    if (url.pathname === "/api/social/friends") return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ connections: [] }) });
+    if (url.pathname === "/api/social/blocks") return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ blocks: [] }) });
+    if (url.pathname === "/api/social/moderation/capability") return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ isModerator: false }) });
+    if (url.pathname === "/api/social/feed") return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ posts: [{ id: "post-own", type: "update", text: "My training update", createdAt: "2026-11-07T08:00:00.000Z", user: { id: "user-1", username: "tester" }, reactions: [], comments: comments.slice() }], hasMore: false, nextCursor: null }) });
+    if (url.pathname === "/api/social/comments/comment-own" && req.method() === "PATCH") {
+      comments[0].text = body.text;
+      return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ comment: { ...comments[0] } }) });
+    }
+    if (url.pathname === "/api/social/comments/comment-own" && req.method() === "DELETE") {
+      comments.splice(0, 1);
+      return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ deleted: true }) });
+    }
+    return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({}) });
+  });
+  await page.goto("/");
+  await page.getByLabel("Email").fill("tester@example.com");
+  await page.getByLabel("Password").fill("test-password");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.locator(".sidebar-nav").getByRole("button", { name: "Community" }).click();
+  await expect(page.getByText("Great session")).toBeVisible();
+  await page.getByRole("button", { name: "Edit" }).click();
+  await page.getByLabel("Edit your comment").fill("Updated training encouragement");
+  await page.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByText("Updated training encouragement")).toBeVisible();
+  page.once("dialog", dialog => dialog.accept());
+  await page.getByRole("button", { name: "Delete" }).click();
+  await expect(page.getByText("Updated training encouragement")).toHaveCount(0);
+  expect(calls.some(call => call.method === "PATCH" && call.path === "/api/social/comments/comment-own" && call.body.text === "Updated training encouragement")).toBeTruthy();
+  expect(calls.some(call => call.method === "DELETE" && call.path === "/api/social/comments/comment-own")).toBeTruthy();
+});
+

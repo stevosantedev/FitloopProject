@@ -397,6 +397,7 @@ test("GET feed returns a bounded cursor page and scopes it to visible friends", 
   });
   assert.deepEqual(query.where, { userId: { in: ["user-a"] } });
   assert.deepEqual(query.orderBy, [{ createdAt: "desc" }, { id: "desc" }]);
+  assert.deepEqual(query.include.comments.orderBy, [{ createdAt: "asc" }, { id: "asc" }]);
   assert.deepEqual(query.cursor, { id: "post-old" });
   assert.equal(query.skip, 1);
   assert.equal(query.take, 3);

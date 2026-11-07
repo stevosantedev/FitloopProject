@@ -362,7 +362,7 @@ router.post("/posts", async (req, res, next) => {
       include: {
         user: { select: { id: true, username: true, displayName: true } },
         reactions: { select: { value: true, userId: true } },
-        comments: { include: { user: { select: { id: true, username: true } } }, orderBy: { createdAt: "asc" }, take: 20 },
+        comments: { include: { user: { select: { id: true, username: true } } }, orderBy: [{ createdAt: "asc" }, { id: "asc" }], take: 20 },
         _count: { select: { comments: true } }
       }
     });
@@ -402,7 +402,7 @@ router.get("/feed", async (req, res, next) => {
         reactions: { select: { value: true, userId: true } },
         comments: {
           include: { user: { select: { id: true, username: true } } },
-          orderBy: { createdAt: "asc" },
+          orderBy: [{ createdAt: "asc" }, { id: "asc" }],
           take: 20
         },
         _count: { select: { comments: true } }

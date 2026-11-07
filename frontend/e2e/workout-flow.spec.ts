@@ -820,6 +820,44 @@ test("allowlisted moderators can review and resolve private community reports", 
   expect(calls.some(call => call.path === "/api/social/moderation/reports/report-1" && call.method === "PATCH" && call.body.status === "resolved" && call.body.resolutionNote === "Reviewed and action taken.")).toBeTruthy();
 });
 
+test("Community posts can load older comments without replacing the first page", async ({ page }) => {
+  const socialPosts = await mockApplicationApi(page);
+  const firstPage = Array.from({ length: 20 }, (_, index) => ({
+    id: "comment-" + (index + 1),
+    text: "Comment number " + (index + 1),
+    user: { id: "friend-1", username: "trainingfriend" }
+  }));
+  socialPosts.push({
+    id: "post-with-comments", type: "update", text: "A busy discussion",
+    createdAt: "2026-11-07T08:00:00.000Z",
+    user: { id: "friend-1", username: "trainingfriend" },
+    reactions: [], comments: firstPage, _count: { comments: 22 }
+  });
+  await page.route("**/api/social/posts/post-with-comments/comments?*", async route => {
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({
+      comments: [21, 22].map(index => ({
+        id: "comment-" + index,
+        text: "Comment number " + index,
+        user: { id: "friend-1", username: "trainingfriend" }
+      })),
+      hasMore: false, nextCursor: null
+    }) });
+  });
+  await page.goto("/");
+  await page.getByLabel("Email").fill("tester@example.com");
+  await page.getByLabel("Password").fill("test-password");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.locator(".sidebar-nav").getByRole("button", { name: "Community" }).click();
+  const post = page.locator(".feed-card").filter({ hasText: "A busy discussion" });
+  await expect(post.getByText("Comment number 1")).toBeVisible();
+  await expect(post.getByText("Comment number 20")).toBeVisible();
+  await post.getByRole("button", { name: "Load older comments" }).click();
+  await expect(post.getByText("Comment number 21")).toBeVisible();
+  await expect(post.getByText("Comment number 22")).toBeVisible();
+  await expect(post.getByText("Comment number 1")).toBeVisible();
+  await expect(post.getByRole("button", { name: "Load older comments" })).toHaveCount(0);
+});
+
 test("Community comment authors can edit and delete only their own comments", async ({ page }) => {
   const calls: Array<{ method: string; path: string; body?: any }> = [];
   const comments = [{ id: "comment-own", text: "Great session", user: { id: "user-1", username: "tester" } }];

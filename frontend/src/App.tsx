@@ -61,6 +61,7 @@ type FeedPost = {
   session?: WorkoutSession | null;
   reactions: Array<{ value: string; userId: string }>;
   comments: Array<{ id: string; text: string; user: { id: string; username: string } }>;
+  _count?: { comments: number };
 };
 type CoachMessage = { id: string; message: string; explanation: string; decision?: string };
 type CoachConversation = { id: string; title: string; updatedAt: string; messages?: Array<{ id: string; role: string; content: string }>; _count?: { messages: number } };
@@ -157,6 +158,7 @@ export default function App() {
   const [profileSaving, setProfileSaving] = useState(false);
   const [communityPostDraft, setCommunityPostDraft] = useState("");
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
+  const [commentLoading, setCommentLoading] = useState<Record<string, boolean>>({});
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editingCommentDraft, setEditingCommentDraft] = useState("");
 
@@ -375,6 +377,27 @@ export default function App() {
       setNotice(error instanceof Error ? error.message : "Could not load older community posts.");
     } finally {
       setFeedLoadingMore(false);
+    }
+  }
+
+  // Load the next chronological comment page without replacing comments already on the card.
+  // The API rechecks the post's current friends/block visibility before returning any rows.
+  async function loadMoreComments(postId: string) {
+    const post = posts.find(item => item.id === postId);
+    const cursor = post?.comments[post.comments.length - 1]?.id;
+    if (!post || !cursor || commentLoading[postId] || post.comments.length >= (post._count?.comments ?? post.comments.length)) return;
+    setCommentLoading(current => ({ ...current, [postId]: true }));
+    try {
+      const data = await request(`/api/social/posts/${postId}/comments?cursor=${encodeURIComponent(cursor)}`);
+      setPosts(current => current.map(item => {
+        if (item.id !== postId) return item;
+        const existing = new Set(item.comments.map(comment => comment.id));
+        return { ...item, comments: [...item.comments, ...data.comments.filter((comment: FeedPost["comments"][number]) => !existing.has(comment.id))] };
+      }));
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Could not load older comments.");
+    } finally {
+      setCommentLoading(current => ({ ...current, [postId]: false }));
     }
   }
 
@@ -1580,6 +1603,7 @@ export default function App() {
                 </span>}
               </>}
             </div>)}
+            {(post._count?.comments ?? post.comments.length) > post.comments.length && <button type="button" className="small-button secondary comment-load-more" onClick={() => void loadMoreComments(post.id)} disabled={Boolean(commentLoading[post.id])}>{commentLoading[post.id] ? "Loading older comments…" : "Load older comments"}</button>}
             <form className="comment-form" onSubmit={event => void commentOnPost(event, post.id)}>
               <input aria-label="Write a comment" value={commentDrafts[post.id] ?? ""} onChange={event => setCommentDrafts(current => ({ ...current, [post.id]: event.target.value }))} placeholder="Write a supportive comment..." maxLength={500} />
               <button disabled={!commentDrafts[post.id]?.trim()}>Send</button>

@@ -402,6 +402,47 @@ test("GET feed returns a bounded cursor page and scopes it to visible friends", 
   assert.equal(query.take, 3);
 });
 
+test("GET post comments returns a bounded cursor page only for visible posts", async () => {
+  let postQuery, commentQuery;
+  const rows = [{ id: "comment-1" }, { id: "comment-2" }, { id: "comment-lookahead" }];
+  const prisma = {
+    friendConnection: { findMany: async () => [] },
+    userBlock: { findMany: async () => [] },
+    feedPost: { findFirst: async args => { postQuery = args; return { id: "post-visible" }; } },
+    feedComment: { findMany: async args => { commentQuery = args; return rows; } }
+  };
+  await withSocialApi(prisma, async base => {
+    const response = await fetch(base + "/api/social/posts/post-visible/comments?limit=2&cursor=comment-old");
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { comments: rows.slice(0, 2), hasMore: true, nextCursor: "comment-2" });
+  });
+  assert.deepEqual(postQuery.where, { id: "post-visible", userId: { in: ["user-a"] } });
+  assert.deepEqual(commentQuery.where, { postId: "post-visible" });
+  assert.deepEqual(commentQuery.orderBy, [{ createdAt: "asc" }, { id: "asc" }]);
+  assert.deepEqual(commentQuery.cursor, { id: "comment-old" });
+  assert.equal(commentQuery.skip, 1);
+  assert.equal(commentQuery.take, 3);
+});
+
+test("GET post comments hides unavailable posts and rejects invalid pagination", async () => {
+  let reads = 0;
+  const prisma = {
+    friendConnection: { findMany: async () => [] },
+    userBlock: { findMany: async () => [] },
+    feedPost: { findFirst: async () => null },
+    feedComment: { findMany: async () => { reads += 1; return []; } }
+  };
+  await withSocialApi(prisma, async base => {
+    const hidden = await fetch(base + "/api/social/posts/hidden-post/comments");
+    assert.equal(hidden.status, 404);
+    for (const query of ["?limit=0", "?limit=51", "?cursor="]) {
+      const invalid = await fetch(base + "/api/social/posts/hidden-post/comments" + query);
+      assert.equal(invalid.status, 400);
+    }
+  });
+  assert.equal(reads, 0);
+});
+
 test("GET feed rejects invalid cursors and page sizes before querying", async () => {
   let reads = 0;
   const prisma = {

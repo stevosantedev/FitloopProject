@@ -362,7 +362,8 @@ router.post("/posts", async (req, res, next) => {
       include: {
         user: { select: { id: true, username: true, displayName: true } },
         reactions: { select: { value: true, userId: true } },
-        comments: { include: { user: { select: { id: true, username: true } } }, orderBy: { createdAt: "asc" }, take: 20 }
+        comments: { include: { user: { select: { id: true, username: true } } }, orderBy: { createdAt: "asc" }, take: 20 },
+        _count: { select: { comments: true } }
       }
     });
     return res.status(201).json({ post });
@@ -403,7 +404,8 @@ router.get("/feed", async (req, res, next) => {
           include: { user: { select: { id: true, username: true } } },
           orderBy: { createdAt: "asc" },
           take: 20
-        }
+        },
+        _count: { select: { comments: true } }
       },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       ...(input.cursor ? { cursor: { id: input.cursor }, skip: 1 } : {}),
@@ -444,6 +446,35 @@ router.post("/posts/:id/reactions", async (req, res, next) => {
       update: { value: input.value }
     });
     return res.json({ reaction, removed: false });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+// Return older comments only when the signed-in member can still see the parent post.
+router.get("/posts/:id/comments", async (req, res, next) => {
+  try {
+    const input = z.object({
+      cursor: z.string().min(1).max(64).optional(),
+      limit: z.coerce.number().int().min(1).max(50).default(20)
+    }).strict().parse(req.query);
+    const ids = [req.userId, ...await friendIds(req.userId)];
+    const post = await prismaClient.feedPost.findFirst({
+      where: { id: req.params.id, userId: { in: ids } },
+      select: { id: true }
+    });
+    if (!post) return res.status(404).json({ error: "Post not found." });
+
+    const rows = await prismaClient.feedComment.findMany({
+      where: { postId: post.id },
+      include: { user: { select: { id: true, username: true } } },
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+      ...(input.cursor ? { cursor: { id: input.cursor }, skip: 1 } : {}),
+      take: input.limit + 1
+    });
+    const hasMore = rows.length > input.limit;
+    const comments = hasMore ? rows.slice(0, input.limit) : rows;
+    return res.json({ comments, hasMore, nextCursor: hasMore ? comments[comments.length - 1].id : null });
   } catch (error) {
     return next(error);
   }

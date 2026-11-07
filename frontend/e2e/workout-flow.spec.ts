@@ -320,9 +320,16 @@ test("Community profile previews respect the profile API response", async ({ pag
   await expect(page.getByRole("dialog")).toContainText("@friend");
   await expect(page.getByRole("dialog")).toContainText("Building strength one session at a time.");
   await expect(page.getByRole("dialog")).toContainText("Private workout notes and account details are not part");
+  const profileTrigger = page.locator(".feed-profile-link");
+  await expect(page.getByRole("dialog").getByRole("button", { name: "Close" })).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(profileTrigger).toBeFocused();
+  await profileTrigger.click();
+  await expect(page.getByRole("dialog")).toBeVisible();
   await page.getByRole("dialog").getByRole("button", { name: "Close" }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
-  expect(profileRequests).toBe(1);
+  expect(profileRequests).toBe(2);
 });
 
 test("Community reactions can be selected, changed and toggled off", async ({ page }) => {

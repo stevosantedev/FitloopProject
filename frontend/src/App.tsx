@@ -6,7 +6,7 @@
  * access is centralised in request() so private calls share the same token and
  * error-handling behaviour.
  */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import MuscleMap from "./components/MuscleMap";
 import GuidedRestTimer from "./components/GuidedRestTimer";
 import { clearQueuedWorkouts, getQueuedWorkouts, queueWorkout, removeQueuedWorkout } from "./offlineWorkoutQueue";
@@ -136,6 +136,9 @@ export default function App() {
   const [viewedProfile, setViewedProfile] = useState<CommunityProfile | null>(null);
   const [profileViewLoading, setProfileViewLoading] = useState(false);
   const [profileViewError, setProfileViewError] = useState("");
+  // Keep focus in the preview and return it to the author link when the dialog closes.
+  const profileDialogCloseRef = useRef<HTMLButtonElement | null>(null);
+  const profileTriggerRef = useRef<HTMLElement | null>(null);
   // Moderator capability is granted by the API's deployment allowlist, never inferred from profile data.
   const [isModerator, setIsModerator] = useState(false);
   const [moderationReports, setModerationReports] = useState<ModerationReport[]>([]);
@@ -984,6 +987,23 @@ export default function App() {
   }
 
   useEffect(() => {
+    const isOpen = profileViewLoading || Boolean(profileViewError) || Boolean(viewedProfile);
+    if (!isOpen) return;
+    profileDialogCloseRef.current?.focus();
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setViewedProfile(null);
+        setProfileViewError("");
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      profileTriggerRef.current?.focus();
+    };
+  }, [profileViewLoading, profileViewError, viewedProfile]);
+
+  useEffect(() => {
     // Each feature loads only when the account is signed in, keeping private requests out of the public screen.
     if (token) void loadDashboard();
   }, [token]);
@@ -1621,7 +1641,7 @@ export default function App() {
           <div className="feed-list">{posts.map(post => {
             const workoutSummary = post.session ? summariseWorkoutPost(post.session) : [];
             return <article className="feed-card" key={post.id}>
-            <div className="feed-heading"><div className="feed-author"><span className="feed-avatar" aria-hidden="true">{(post.user.displayName || post.user.username).slice(0, 1).toUpperCase()}</span><div><button type="button" className="feed-profile-link" onClick={() => void openCommunityProfile(post.user.id)}>{post.user.displayName || "@" + post.user.username}</button><small>@{post.user.username}</small></div></div><span>{new Date(post.createdAt).toLocaleString()}</span></div>
+            <div className="feed-heading"><div className="feed-author"><span className="feed-avatar" aria-hidden="true">{(post.user.displayName || post.user.username).slice(0, 1).toUpperCase()}</span><div><button type="button" className="feed-profile-link" onClick={event => { profileTriggerRef.current = event.currentTarget; void openCommunityProfile(post.user.id); }}>{post.user.displayName || "@" + post.user.username}</button><small>@{post.user.username}</small></div></div><span>{new Date(post.createdAt).toLocaleString()}</span></div>
             {post.text ? <p className="community-post-text">{post.text}</p> : <p>{post.session?.routine?.name ?? "Completed a workout"}</p>}
             {post.session && <div className="workout-post-summary" aria-label="Workout summary">
               <div className="workout-post-metrics">
@@ -1716,16 +1736,16 @@ export default function App() {
     </section>}
 
     {(profileViewLoading || profileViewError || viewedProfile) && <div className="profile-dialog-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) { setViewedProfile(null); setProfileViewError(""); } }}>
-      <section className="profile-dialog panel" role="dialog" aria-modal="true" aria-labelledby="community-profile-heading">
+      <section className="profile-dialog panel" role="dialog" aria-modal="true" aria-labelledby="community-profile-heading" aria-describedby="community-profile-privacy">
         <div className="profile-dialog-heading"><div><p className="eyebrow">COMMUNITY PROFILE</p><h2 id="community-profile-heading">{profileViewLoading ? "Loading profile…" : viewedProfile?.displayName || (viewedProfile ? "@" + viewedProfile.username : "Profile unavailable")}</h2></div>
-          <button type="button" className="small-button secondary" onClick={() => { setViewedProfile(null); setProfileViewError(""); }}>Close</button>
+          <button ref={profileDialogCloseRef} type="button" className="small-button secondary" onClick={() => { setViewedProfile(null); setProfileViewError(""); }}>Close</button>
         </div>
         {profileViewLoading && <p role="status" className="muted">Checking profile visibility…</p>}
         {profileViewError && <p role="alert" className="load-error">{profileViewError}</p>}
         {viewedProfile && <>
           <p className="profile-dialog-username">@{viewedProfile.username}</p>
           <p className="profile-dialog-bio">{viewedProfile.bio || "This member hasn't added a bio yet."}</p>
-          <p className="profile-dialog-privacy">Only profile information allowed by this member's privacy settings is shown. Private workout notes and account details are not part of a community profile.</p>
+          <p id="community-profile-privacy" className="profile-dialog-privacy">Only profile information allowed by this member's privacy settings is shown. Private workout notes and account details are not part of a community profile.</p>
         </>}
       </section>
     </div>}

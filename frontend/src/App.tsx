@@ -143,6 +143,7 @@ export default function App() {
   const [feedCursor, setFeedCursor] = useState<string | null>(null);
   const [feedHasMore, setFeedHasMore] = useState(false);
   const [feedLoadingMore, setFeedLoadingMore] = useState(false);
+  const [feedLoadMoreError, setFeedLoadMoreError] = useState("");
   const [activeTab, setActiveTab] = useState<"home" | "workouts" | "community" | "coach">("home");
   const [notice, setNotice] = useState("");
   // Keep first-load and refresh failures separate from legitimate empty account data.
@@ -183,6 +184,7 @@ export default function App() {
   const [communityPostDraft, setCommunityPostDraft] = useState("");
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
   const [commentLoading, setCommentLoading] = useState<Record<string, boolean>>({});
+  const [commentLoadErrors, setCommentLoadErrors] = useState<Record<string, string>>({});
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editingCommentDraft, setEditingCommentDraft] = useState("");
 
@@ -389,6 +391,7 @@ export default function App() {
   async function loadMoreCommunityPosts() {
     if (!feedHasMore || !feedCursor || feedLoadingMore) return;
     setFeedLoadingMore(true);
+    setFeedLoadMoreError("");
     try {
       const data = await request("/api/social/feed?cursor=" + encodeURIComponent(feedCursor));
       setPosts(current => {
@@ -398,7 +401,7 @@ export default function App() {
       setFeedCursor(data.nextCursor ?? null);
       setFeedHasMore(Boolean(data.hasMore));
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Could not load older community posts.");
+      setFeedLoadMoreError(error instanceof Error ? error.message : "Could not load older community posts.");
     } finally {
       setFeedLoadingMore(false);
     }
@@ -411,6 +414,7 @@ export default function App() {
     const cursor = post?.comments[post.comments.length - 1]?.id;
     if (!post || !cursor || commentLoading[postId] || post.comments.length >= (post._count?.comments ?? post.comments.length)) return;
     setCommentLoading(current => ({ ...current, [postId]: true }));
+    setCommentLoadErrors(current => ({ ...current, [postId]: "" }));
     try {
       const data = await request(`/api/social/posts/${postId}/comments?cursor=${encodeURIComponent(cursor)}`);
       setPosts(current => current.map(item => {
@@ -419,7 +423,7 @@ export default function App() {
         return { ...item, comments: [...item.comments, ...data.comments.filter((comment: FeedPost["comments"][number]) => !existing.has(comment.id))] };
       }));
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Could not load older comments.");
+      setCommentLoadErrors(current => ({ ...current, [postId]: error instanceof Error ? error.message : "Could not load older comments." }));
     } finally {
       setCommentLoading(current => ({ ...current, [postId]: false }));
     }
@@ -1641,12 +1645,14 @@ export default function App() {
               </>}
             </div>)}
             {(post._count?.comments ?? post.comments.length) > post.comments.length && <button type="button" className="small-button secondary comment-load-more" onClick={() => void loadMoreComments(post.id)} disabled={Boolean(commentLoading[post.id])}>{commentLoading[post.id] ? "Loading older comments…" : "Load older comments"}</button>}
+            {commentLoadErrors[post.id] && <div className="load-error" role="alert"><span>{commentLoadErrors[post.id]}</span><button type="button" className="secondary" onClick={() => void loadMoreComments(post.id)}>Try again</button></div>}
             <form className="comment-form" onSubmit={event => void commentOnPost(event, post.id)}>
               <input aria-label="Write a comment" value={commentDrafts[post.id] ?? ""} onChange={event => setCommentDrafts(current => ({ ...current, [post.id]: event.target.value }))} placeholder="Write a supportive comment..." maxLength={500} />
               <button disabled={!commentDrafts[post.id]?.trim()}>Send</button>
             </form>
           </article>})}</div>}
         {feedHasMore && <button type="button" className="small-button secondary feed-load-more" onClick={() => void loadMoreCommunityPosts()} disabled={feedLoadingMore}>{feedLoadingMore ? "Loading older posts…" : "Load older posts"}</button>}
+        {feedLoadMoreError && <div className="load-error" role="alert"><span>{feedLoadMoreError}</span><button type="button" className="secondary" onClick={() => void loadMoreCommunityPosts()}>Try again</button></div>}
       </section>
 
       {isModerator && <section className="panel section-gap" aria-labelledby="moderation-heading">

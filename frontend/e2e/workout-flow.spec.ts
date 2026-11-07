@@ -782,6 +782,80 @@ test("community feed loads older posts without replacing the first page", async 
   expect(feedRequests).toBe(2);
 });
 
+test("Community feed pagination offers a retry after a temporary failure", async ({ page }) => {
+  await mockApplicationApi(page);
+  let olderPageRequests = 0;
+  const makePost = (id: string, text: string) => ({
+    id, createdAt: "2026-11-06T10:00:00.000Z", text, type: "update",
+    user: { id: "user-2", username: "friend", displayName: "Friend" },
+    reactions: [], comments: []
+  });
+  await page.route("http://localhost:4000/api/social/feed**", async route => {
+    const url = new URL(route.request().url());
+    if (url.searchParams.has("cursor")) {
+      olderPageRequests += 1;
+      if (olderPageRequests === 1) {
+        return route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ error: "Temporary feed failure." }) });
+      }
+      return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({
+        posts: [makePost("post-older", "An older training update")], hasMore: false, nextCursor: null
+      }) });
+    }
+    return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({
+      posts: [makePost("post-newest", "The latest training update")], hasMore: true, nextCursor: "cursor-one"
+    }) });
+  });
+  await page.goto("/");
+  await page.getByLabel("Email").fill("tester@example.com");
+  await page.getByLabel("Password").fill("test-password");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.locator(".sidebar-nav").getByRole("button", { name: "Community" }).click();
+  await page.getByRole("button", { name: "Load older posts" }).click();
+  await expect(page.getByRole("alert").filter({ hasText: "Temporary feed failure." })).toBeVisible();
+  await page.getByRole("alert").getByRole("button", { name: "Try again" }).click();
+  await expect(page.getByText("An older training update")).toBeVisible();
+  await expect(page.getByText("The latest training update")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Load older posts" })).toHaveCount(0);
+  expect(olderPageRequests).toBe(2);
+});
+
+test("Community comment pagination offers a retry without losing loaded comments", async ({ page }) => {
+  const socialPosts = await mockApplicationApi(page);
+  const comments = Array.from({ length: 20 }, (_, index) => ({
+    id: "comment-" + (index + 1), text: "Comment " + (index + 1),
+    user: { id: "user-2", username: "friend" }
+  }));
+  socialPosts.push({
+    id: "post-comments", createdAt: "2026-11-06T10:00:00.000Z", text: "A post with many comments",
+    user: { id: "user-2", username: "friend" }, reactions: [], comments, _count: { comments: 21 }
+  });
+  let olderCommentRequests = 0;
+  await page.route("http://localhost:4000/api/social/posts/post-comments/comments**", async route => {
+    olderCommentRequests += 1;
+    if (olderCommentRequests === 1) {
+      return route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ error: "Temporary comment failure." }) });
+    }
+    return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({
+      comments: [{ id: "comment-21", text: "Comment 21", user: { id: "user-2", username: "friend" } }],
+      hasMore: false, nextCursor: null
+    }) });
+  });
+  await page.goto("/");
+  await page.getByLabel("Email").fill("tester@example.com");
+  await page.getByLabel("Password").fill("test-password");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.locator(".sidebar-nav").getByRole("button", { name: "Community" }).click();
+  const card = page.locator(".feed-card").filter({ hasText: "A post with many comments" });
+  await expect(card.getByText("Comment 1", { exact: true })).toBeVisible();
+  await card.getByRole("button", { name: "Load older comments" }).click();
+  await expect(card.getByRole("alert").filter({ hasText: "Temporary comment failure." })).toBeVisible();
+  await card.getByRole("alert").getByRole("button", { name: "Try again" }).click();
+  await expect(card.getByText("Comment 21", { exact: true })).toBeVisible();
+  await expect(card.getByText("Comment 1", { exact: true })).toBeVisible();
+  await expect(card.getByRole("button", { name: "Load older comments" })).toHaveCount(0);
+  expect(olderCommentRequests).toBe(2);
+});
+
 test("allowlisted moderators can review and resolve private community reports", async ({ page }) => {
   let reportOpen = true;
   const report = {

@@ -398,7 +398,20 @@ router.get("/feed", async (req, res, next) => {
       where: { userId: { in: ids } },
       include: {
         user: { select: { id: true, username: true, displayName: true } },
-        session: { include: { routine: true, sets: { include: { exercise: true } } } },
+        session: { select: {
+          id: true,
+          startedAt: true,
+          routine: { select: { name: true } },
+          sets: {
+            select: {
+              id: true,
+              reps: true,
+              weightKg: true,
+              completed: true,
+              exercise: { select: { id: true, name: true } }
+            }
+          }
+        } },
         reactions: { select: { value: true, userId: true } },
         comments: {
           include: { user: { select: { id: true, username: true } } },

@@ -174,6 +174,20 @@ test("feed includes display name with the safe author identity fields", async ()
     assert.deepEqual(await response.json(), { posts: [], hasMore: false, nextCursor: null });
   });
   assert.deepEqual(args.include.user.select, { id: true, username: true, displayName: true });
+  assert.deepEqual(args.include.session.select, {
+    id: true,
+    startedAt: true,
+    routine: { select: { name: true } },
+    sets: {
+      select: {
+        id: true,
+        reps: true,
+        weightKg: true,
+        completed: true,
+        exercise: { select: { id: true, name: true } }
+      }
+    }
+  });
   assert.deepEqual(args.where, { userId: { in: ["user-a"] } });
 });
 

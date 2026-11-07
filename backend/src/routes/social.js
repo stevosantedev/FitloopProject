@@ -426,12 +426,24 @@ router.post("/posts/:id/reactions", async (req, res, next) => {
     const post = await prismaClient.feedPost.findFirst({ where: { id: req.params.id, userId: { in: ids } }, select: { id: true } });
     if (!post) return res.status(404).json({ error: "Post not found." });
 
+    const key = { userId: req.userId, postId: post.id };
+    const existing = await prismaClient.reaction.findUnique({ where: { userId_postId: key } });
+
+    // Clicking the selected reaction removes it; choosing another value changes
+    // the existing row rather than creating a second reaction for this account.
+    if (existing?.value === input.value) {
+      const removed = await prismaClient.reaction.deleteMany({
+        where: { ...key, value: input.value }
+      });
+      return res.json({ reaction: null, removed: removed.count > 0 });
+    }
+
     const reaction = await prismaClient.reaction.upsert({
-      where: { userId_postId: { userId: req.userId, postId: post.id } },
-      create: { userId: req.userId, postId: post.id, value: input.value },
+      where: { userId_postId: key },
+      create: { ...key, value: input.value },
       update: { value: input.value }
     });
-    return res.json({ reaction });
+    return res.json({ reaction, removed: false });
   } catch (error) {
     return next(error);
   }

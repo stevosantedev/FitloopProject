@@ -294,6 +294,34 @@ test("the app uses persistent navigation on desktop and a bottom tab bar on mobi
   await expect(page.locator(".app-sidebar")).toBeHidden();
 });
 
+test("Community reactions can be selected, changed and toggled off", async ({ page }) => {
+  await mockApplicationApi(page);
+  let selected: string | null = null;
+  await page.route("**/api/social/posts/post-text-1/reactions", async route => {
+    const value = route.request().postDataJSON().value as string;
+    selected = selected === value ? null : value;
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({
+      reaction: selected ? { userId: "user-1", postId: "post-text-1", value: selected } : null,
+      removed: selected === null
+    }) });
+  });
+  await signInAndOpenWorkouts(page);
+  await page.locator(".mobile-nav").getByRole("button", { name: "Community" }).click();
+  await page.getByLabel("Share an update with your friends").fill("A reaction test post");
+  await page.getByRole("button", { name: "Share update" }).click();
+  const post = page.locator(".feed-post").filter({ hasText: "A reaction test post" });
+  const like = post.getByRole("button", { name: /Like/ });
+  const strong = post.getByRole("button", { name: /Strong/ });
+  await expect(like).toHaveAttribute("aria-pressed", "false");
+  await like.click();
+  await expect(like).toHaveAttribute("aria-pressed", "true");
+  await strong.click();
+  await expect(like).toHaveAttribute("aria-pressed", "false");
+  await expect(strong).toHaveAttribute("aria-pressed", "true");
+  await strong.click();
+  await expect(strong).toHaveAttribute("aria-pressed", "false");
+});
+
 test("exercise guide opens technique, coaching and muscle information", async ({ page }) => {
   await mockApplicationApi(page);
   await signInAndOpenWorkouts(page);

@@ -590,3 +590,67 @@ test("moderator decision rejects unknown fields and detects concurrent status ch
   } finally { await new Promise(resolve => server.close(resolve)); }
   assert.deepEqual(update.where, { id: "report-1", status: "reviewing" });
 });
+
+
+test("POST reactions toggles the current reaction off without touching another account", async () => {
+  let deleted;
+  const prisma = {
+    friendConnection: { findMany: async () => [] },
+    userBlock: { findMany: async () => [] },
+    feedPost: { findFirst: async args => {
+      assert.deepEqual(args.where, { id: "post-a", userId: { in: ["user-a"] } });
+      return { id: "post-a" };
+    } },
+    reaction: {
+      findUnique: async () => ({ id: "reaction-a", userId: "user-a", postId: "post-a", value: "like" }),
+      deleteMany: async args => { deleted = args; return { count: 1 }; }
+    }
+  };
+  await withSocialApi(prisma, async base => {
+    const response = await fetch(base + "/api/social/posts/post-a/reactions", {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ value: "like" })
+    });
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { reaction: null, removed: true });
+  });
+  assert.deepEqual(deleted.where, { userId: "user-a", postId: "post-a", value: "like" });
+});
+
+test("POST reactions changes the current account's selected reaction", async () => {
+  let upserted;
+  const prisma = {
+    friendConnection: { findMany: async () => [] },
+    userBlock: { findMany: async () => [] },
+    feedPost: { findFirst: async () => ({ id: "post-a" }) },
+    reaction: {
+      findUnique: async () => ({ id: "reaction-a", userId: "user-a", postId: "post-a", value: "like" }),
+      upsert: async args => { upserted = args; return { id: "reaction-a", userId: "user-a", postId: "post-a", value: "strong" }; }
+    }
+  };
+  await withSocialApi(prisma, async base => {
+    const response = await fetch(base + "/api/social/posts/post-a/reactions", {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ value: "strong" })
+    });
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { reaction: { id: "reaction-a", userId: "user-a", postId: "post-a", value: "strong" }, removed: false });
+  });
+  assert.deepEqual(upserted.where, { userId_postId: { userId: "user-a", postId: "post-a" } });
+  assert.deepEqual(upserted.update, { value: "strong" });
+});
+
+test("POST reactions rejects posts outside the current visible feed", async () => {
+  let reads = 0;
+  const prisma = {
+    friendConnection: { findMany: async () => [] },
+    userBlock: { findMany: async () => [] },
+    feedPost: { findFirst: async () => null },
+    reaction: { findUnique: async () => { reads += 1; } }
+  };
+  await withSocialApi(prisma, async base => {
+    const response = await fetch(base + "/api/social/posts/hidden-post/reactions", {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ value: "like" })
+    });
+    assert.equal(response.status, 404);
+  });
+  assert.equal(reads, 0);
+});

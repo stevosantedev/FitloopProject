@@ -783,15 +783,16 @@ export default function App() {
     }
   }
 
-  // A reaction is an account-level action on one visible post. Reloading the
-  // feed keeps reaction counts and the current user's selection in sync.
+  // The API toggles the selected value off or switches this account to a
+  // different value; reloading keeps every count and selected state canonical.
   async function reactToPost(id: string, value: string) {
     try {
-      await request(`/api/social/posts/${id}/reactions`, {
+      const result = await request(`/api/social/posts/${id}/reactions`, {
         method: "POST",
         body: JSON.stringify({ value })
       });
       await loadCommunity();
+      setNotice(result.removed ? "Reaction removed." : "Reaction saved.");
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Could not save your reaction.");
     }
@@ -1552,7 +1553,20 @@ export default function App() {
             {post.session && <p className="muted">{post.session.routine?.name ?? "Workout"} · {post.session.sets.length} sets · {post.session.sets.map(item => item.exercise.name).filter((name, index, all) => all.indexOf(name) === index).join(", ")}</p>}
             {post.user.id === user?.id && <button type="button" className="small-button post-delete" onClick={() => void deleteCommunityPost(post.id)}>Delete post</button>}
             {post.user.id !== user?.id && <div className="connection-actions"><button type="button" className="small-button secondary" onClick={() => void reportCommunityTarget("post", post.id)}>Report post</button><button type="button" className="small-button secondary" onClick={() => void blockCommunityUser(post.user.id)}>Block author</button></div>}
-            <div className="reaction-row"><button className="reaction-button" onClick={() => void reactToPost(post.id, "like")}>👏 {post.reactions.filter(item => item.value === "like").length} Like</button><button className="reaction-button" onClick={() => void reactToPost(post.id, "strong")}>💪 Strong</button><button className="reaction-button" onClick={() => void reactToPost(post.id, "clap")}>🙌 Clap</button></div>
+            <div className="reaction-row" aria-label="Post reactions">
+              {([
+                { value: "like", label: "Like", emoji: "👏" },
+                { value: "strong", label: "Strong", emoji: "💪" },
+                { value: "clap", label: "Clap", emoji: "🙌" }
+              ] as const).map(reaction => {
+                const selected = post.reactions.some(item => item.userId === user?.id && item.value === reaction.value);
+                const count = post.reactions.filter(item => item.value === reaction.value).length;
+                return <button key={reaction.value} type="button" className={`reaction-button${selected ? " is-selected" : ""}`}
+                  aria-pressed={selected} onClick={() => void reactToPost(post.id, reaction.value)}>
+                  {reaction.emoji} {reaction.label} <span className="reaction-count">{count}</span>
+                </button>;
+              })}
+            </div>
             {post.comments.map(comment => <div className="comment" key={comment.id}>
               {editingCommentId === comment.id ? <div className="comment-edit">
                 <label className="sr-only" htmlFor={"edit-comment-" + comment.id}>Edit your comment</label>

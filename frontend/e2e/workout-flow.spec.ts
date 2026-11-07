@@ -819,7 +819,7 @@ test("Community comment authors can edit and delete only their own comments", as
   await expect(page.getByText("Great session")).toBeVisible();
   await page.getByRole("button", { name: "Edit" }).click();
   await page.getByLabel("Edit your comment").fill("Updated training encouragement");
-  await page.getByRole("button", { name: "Save" }).click();
+  await page.locator(".comment-edit").getByRole("button", { name: "Save" }).click();
   await expect(page.getByText("Updated training encouragement")).toBeVisible();
   page.once("dialog", dialog => dialog.accept());
   await page.getByRole("button", { name: "Delete" }).click();

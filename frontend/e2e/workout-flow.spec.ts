@@ -296,7 +296,6 @@ test("the app uses persistent navigation on desktop and a bottom tab bar on mobi
 });
 
 test("Community profile previews respect the profile API response", async ({ page }) => {
-  await mockApplicationApi(page);
   const socialPosts = await mockApplicationApi(page);
   socialPosts.push({
     id: "post-profile-preview", createdAt: "2026-11-06T10:00:00.000Z", text: "A friend's training update",

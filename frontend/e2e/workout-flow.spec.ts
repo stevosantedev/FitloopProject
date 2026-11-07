@@ -321,7 +321,12 @@ test("Community profile previews respect the profile API response", async ({ pag
   await expect(page.getByRole("dialog")).toContainText("Building strength one session at a time.");
   await expect(page.getByRole("dialog")).toContainText("Private workout notes and account details are not part");
   const profileTrigger = page.locator(".feed-profile-link");
-  await expect(page.getByRole("dialog").getByRole("button", { name: "Close" })).toBeFocused();
+  const closeProfile = page.getByRole("dialog").getByRole("button", { name: "Close" });
+  await expect(closeProfile).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(closeProfile).toBeFocused();
+  await page.keyboard.press("Shift+Tab");
+  await expect(closeProfile).toBeFocused();
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(profileTrigger).toBeFocused();

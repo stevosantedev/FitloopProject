@@ -994,6 +994,10 @@ export default function App() {
       if (event.key === "Escape") {
         setViewedProfile(null);
         setProfileViewError("");
+      } else if (event.key === "Tab") {
+        // The preview currently has one action. Keep forward and reverse tab navigation inside the modal.
+        event.preventDefault();
+        profileDialogCloseRef.current?.focus();
       }
     };
     window.addEventListener("keydown", handleKeyDown);

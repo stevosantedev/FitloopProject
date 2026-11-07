@@ -312,7 +312,7 @@ test("Community reactions can be selected, changed and toggled off", async ({ pa
   await page.locator(".sidebar-nav").getByRole("button", { name: "Community" }).click();
   await page.getByLabel("Share an update with your friends").fill("A reaction test post");
   await page.getByRole("button", { name: "Share update" }).click();
-  const post = page.locator(".feed-post").filter({ hasText: "A reaction test post" });
+  const post = page.locator(".feed-card").filter({ hasText: "A reaction test post" });
   const like = post.getByRole("button", { name: /Like/ });
   const strong = post.getByRole("button", { name: /Strong/ });
   await expect(like).toHaveAttribute("aria-pressed", "false");

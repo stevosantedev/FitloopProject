@@ -300,13 +300,15 @@ test("Community reactions can be selected, changed and toggled off", async ({ pa
   await page.route("**/api/social/posts/post-text-1/reactions", async route => {
     const value = route.request().postDataJSON().value as string;
     selected = selected === value ? null : value;
+    const post = socialPosts.find(item => item.id === "post-text-1");
+    if (post) post.reactions = selected ? [{ userId: "user-1", postId: "post-text-1", value: selected }] : [];
     await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({
       reaction: selected ? { userId: "user-1", postId: "post-text-1", value: selected } : null,
       removed: selected === null
     }) });
   });
   await signInAndOpenWorkouts(page);
-  await page.locator(".mobile-nav").getByRole("button", { name: "Community" }).click();
+  await page.locator(".sidebar-nav").getByRole("button", { name: "Community" }).click();
   await page.getByLabel("Share an update with your friends").fill("A reaction test post");
   await page.getByRole("button", { name: "Share update" }).click();
   const post = page.locator(".feed-post").filter({ hasText: "A reaction test post" });

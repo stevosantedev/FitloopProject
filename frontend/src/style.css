@@ -713,3 +713,22 @@ footer { padding: 22px 0 0; border-top: 1px solid #202c25; }
   box-shadow: inset 0 0 0 1px #82c99a;
 }
 .reaction-count { display: inline-block; min-width: 1.2em; margin-left: 3px; font-variant-numeric: tabular-nums; }
+
+
+/* Community profile previews are deliberately small, private-by-default identity cards. */
+.feed-profile-link { width: auto; margin: 0; padding: 0; border: 0; background: transparent; color: #e4eee5; font: inherit; font-size: .82rem; font-weight: 750; text-align: left; cursor: pointer; }
+.feed-profile-link:hover { color: #c5f28e; text-decoration: underline; }
+.feed-profile-link:focus-visible { outline: 2px solid #c5f28e; outline-offset: 3px; border-radius: 3px; }
+.profile-dialog-backdrop { position: fixed; z-index: 100; inset: 0; display: grid; place-items: center; padding: 20px; background: rgb(3 8 5 / 78%); }
+.profile-dialog { width: min(100%, 480px); max-height: min(80vh, 620px); overflow-y: auto; padding: 22px; border: 1px solid #435747; border-radius: 18px; background: #111b15; box-shadow: 0 24px 80px rgb(0 0 0 / 48%); }
+.profile-dialog-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
+.profile-dialog-heading h2 { margin: 3px 0 0; overflow-wrap: anywhere; }
+.profile-dialog-heading button { width: auto; margin: 0; }
+.profile-dialog-username { color: #a9c18f; font-size: .8rem; }
+.profile-dialog-bio { color: #e1ebe2; line-height: 1.65; white-space: pre-wrap; overflow-wrap: anywhere; }
+.profile-dialog-privacy { margin: 18px 0 0; padding-top: 13px; border-top: 1px solid #2d3b31; color: #829287; font-size: .72rem; line-height: 1.55; }
+@media (max-width: 560px) {
+  .profile-dialog { padding: 17px; }
+  .profile-dialog-backdrop { align-items: end; padding: 10px; }
+  .profile-dialog { border-radius: 18px 18px 10px 10px; }
+}

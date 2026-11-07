@@ -295,6 +295,35 @@ test("the app uses persistent navigation on desktop and a bottom tab bar on mobi
   await expect(page.locator(".app-sidebar")).toBeHidden();
 });
 
+test("Community profile previews respect the profile API response", async ({ page }) => {
+  await mockApplicationApi(page);
+  const socialPosts = await mockApplicationApi(page);
+  socialPosts.push({
+    id: "post-profile-preview", createdAt: "2026-11-06T10:00:00.000Z", text: "A friend's training update",
+    user: { id: "user-2", username: "friend", displayName: "Friend" }, reactions: [], comments: []
+  });
+  let profileRequests = 0;
+  await page.route("http://localhost:4000/api/social/profile/user-2", async route => {
+    profileRequests += 1;
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({
+      profile: { id: "user-2", username: "friend", displayName: "Friend Athlete", bio: "Building strength one session at a time." }
+    }) });
+  });
+  await page.goto("/");
+  await page.getByLabel("Email").fill("tester@example.com");
+  await page.getByLabel("Password").fill("test-password");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.locator(".sidebar-nav").getByRole("button", { name: "Community" }).click();
+  await page.getByRole("button", { name: "Friend" }).first().click();
+  await expect(page.getByRole("dialog")).toContainText("Friend Athlete");
+  await expect(page.getByRole("dialog")).toContainText("@friend");
+  await expect(page.getByRole("dialog")).toContainText("Building strength one session at a time.");
+  await expect(page.getByRole("dialog")).toContainText("Private workout notes and account details are not part");
+  await page.getByRole("dialog").getByRole("button", { name: "Close" }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  expect(profileRequests).toBe(1);
+});
+
 test("Community reactions can be selected, changed and toggled off", async ({ page }) => {
   const socialPosts = await mockApplicationApi(page);
   let selected: string | null = null;

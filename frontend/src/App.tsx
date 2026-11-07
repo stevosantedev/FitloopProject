@@ -58,6 +58,7 @@ type FriendConnection = {
   requester: User;
   addressee: User;
 };
+type CommunityProfile = { id: string; username: string; displayName: string | null; bio: string | null };
 type FeedPost = {
   id: string;
   createdAt: string;
@@ -132,6 +133,9 @@ export default function App() {
   const [selectedSessionId, setSelectedSessionId] = useState("");
   const [connections, setConnections] = useState<FriendConnection[]>([]);
   const [blockedAccounts, setBlockedAccounts] = useState<BlockedAccount[]>([]);
+  const [viewedProfile, setViewedProfile] = useState<CommunityProfile | null>(null);
+  const [profileViewLoading, setProfileViewLoading] = useState(false);
+  const [profileViewError, setProfileViewError] = useState("");
   // Moderator capability is granted by the API's deployment allowlist, never inferred from profile data.
   const [isModerator, setIsModerator] = useState(false);
   const [moderationReports, setModerationReports] = useState<ModerationReport[]>([]);
@@ -357,7 +361,23 @@ export default function App() {
   }
 
 
-  // Moderator queue data is fetched only after the API confirms the signed-in account is allowlisted.
+  // Profile details are requested only when someone opens a profile. The API
+  // decides whether that profile is visible under its privacy and block rules.
+  async function openCommunityProfile(userId: string) {
+    setViewedProfile(null);
+    setProfileViewError("");
+    setProfileViewLoading(true);
+    try {
+      const data = await request("/api/social/profile/" + encodeURIComponent(userId));
+      setViewedProfile(data.profile);
+    } catch (error) {
+      setProfileViewError(error instanceof Error ? error.message : "This profile is unavailable.");
+    } finally {
+      setProfileViewLoading(false);
+    }
+  }
+
+  // Moderator queue data is fetched only after the API confirms this account is allowlisted.
   async function loadModerationReports(status = moderationStatusFilter) {
     setModerationLoading(true);
     setModerationError("");
@@ -1579,7 +1599,7 @@ export default function App() {
               return <li key={connection.id}><strong>{person.displayName || "@" + person.username}</strong><span>@{person.username} · {connection.status === "accepted" ? "Connected" : incoming ? "Waiting for your reply" : "Request sent"}</span>
                 {connection.status === "pending" && incoming && <div className="connection-actions"><button type="button" className="small-button" onClick={() => void acceptFriendRequest(connection.id)}>Accept</button><button type="button" className="small-button secondary" onClick={() => void manageFriendRequest(connection.id, "decline")}>Decline</button></div>}
                 {connection.status === "pending" && !incoming && <button type="button" className="small-button secondary" onClick={() => void manageFriendRequest(connection.id, "cancel")}>Cancel request</button>}
-                {connection.status === "accepted" && <button type="button" className="small-button secondary" onClick={() => void removeFriend(connection.id)}>Remove friend</button>}
+                {connection.status === "accepted" && <div className="connection-actions"><button type="button" className="small-button" onClick={() => void openCommunityProfile(person.id)}>View profile</button><button type="button" className="small-button secondary" onClick={() => void removeFriend(connection.id)}>Remove friend</button></div>}
                 <div className="connection-actions"><button type="button" className="small-button secondary" onClick={() => void reportCommunityTarget("user", person.id)}>Report account</button><button type="button" className="small-button secondary" onClick={() => void blockCommunityUser(person.id)}>Block</button></div>
               </li>;
             })}</ul>}
@@ -1601,7 +1621,7 @@ export default function App() {
           <div className="feed-list">{posts.map(post => {
             const workoutSummary = post.session ? summariseWorkoutPost(post.session) : [];
             return <article className="feed-card" key={post.id}>
-            <div className="feed-heading"><div className="feed-author"><span className="feed-avatar" aria-hidden="true">{(post.user.displayName || post.user.username).slice(0, 1).toUpperCase()}</span><div><strong>{post.user.displayName || "@" + post.user.username}</strong><small>@{post.user.username}</small></div></div><span>{new Date(post.createdAt).toLocaleString()}</span></div>
+            <div className="feed-heading"><div className="feed-author"><span className="feed-avatar" aria-hidden="true">{(post.user.displayName || post.user.username).slice(0, 1).toUpperCase()}</span><div><button type="button" className="feed-profile-link" onClick={() => void openCommunityProfile(post.user.id)}>{post.user.displayName || "@" + post.user.username}</button><small>@{post.user.username}</small></div></div><span>{new Date(post.createdAt).toLocaleString()}</span></div>
             {post.text ? <p className="community-post-text">{post.text}</p> : <p>{post.session?.routine?.name ?? "Completed a workout"}</p>}
             {post.session && <div className="workout-post-summary" aria-label="Workout summary">
               <div className="workout-post-metrics">
@@ -1695,6 +1715,20 @@ export default function App() {
       </section>}
     </section>}
 
+    {(profileViewLoading || profileViewError || viewedProfile) && <div className="profile-dialog-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) { setViewedProfile(null); setProfileViewError(""); } }}>
+      <section className="profile-dialog panel" role="dialog" aria-modal="true" aria-labelledby="community-profile-heading">
+        <div className="profile-dialog-heading"><div><p className="eyebrow">COMMUNITY PROFILE</p><h2 id="community-profile-heading">{profileViewLoading ? "Loading profile…" : viewedProfile?.displayName || (viewedProfile ? "@" + viewedProfile.username : "Profile unavailable")}</h2></div>
+          <button type="button" className="small-button secondary" onClick={() => { setViewedProfile(null); setProfileViewError(""); }}>Close</button>
+        </div>
+        {profileViewLoading && <p role="status" className="muted">Checking profile visibility…</p>}
+        {profileViewError && <p role="alert" className="load-error">{profileViewError}</p>}
+        {viewedProfile && <>
+          <p className="profile-dialog-username">@{viewedProfile.username}</p>
+          <p className="profile-dialog-bio">{viewedProfile.bio || "This member hasn't added a bio yet."}</p>
+          <p className="profile-dialog-privacy">Only profile information allowed by this member's privacy settings is shown. Private workout notes and account details are not part of a community profile.</p>
+        </>}
+      </section>
+    </div>}
     {notice && <p role="status" className="notice">{notice}</p>}
     <footer>Small steps count. FitLoop is a habit tracker, not medical advice.</footer>
     </div>

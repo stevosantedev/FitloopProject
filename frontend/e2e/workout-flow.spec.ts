@@ -846,12 +846,12 @@ test("Community comment pagination offers a retry without losing loaded comments
   await page.getByRole("button", { name: "Sign in" }).click();
   await page.locator(".sidebar-nav").getByRole("button", { name: "Community" }).click();
   const card = page.locator(".feed-card").filter({ hasText: "A post with many comments" });
-  await expect(card.getByText("Comment 1", { exact: true })).toBeVisible();
+  await expect(card.locator(".comment").first()).toContainText("Comment 1");
   await card.getByRole("button", { name: "Load older comments" }).click();
   await expect(card.getByRole("alert").filter({ hasText: "Temporary comment failure." })).toBeVisible();
   await card.getByRole("alert").getByRole("button", { name: "Try again" }).click();
-  await expect(card.getByText("Comment 21", { exact: true })).toBeVisible();
-  await expect(card.getByText("Comment 1", { exact: true })).toBeVisible();
+  await expect(card.locator(".comment").last()).toContainText("Comment 21");
+  await expect(card.locator(".comment").first()).toContainText("Comment 1");
   await expect(card.getByRole("button", { name: "Load older comments" })).toHaveCount(0);
   expect(olderCommentRequests).toBe(2);
 });

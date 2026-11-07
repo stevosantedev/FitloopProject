@@ -849,11 +849,11 @@ test("Community posts can load older comments without replacing the first page",
   await page.getByRole("button", { name: "Sign in" }).click();
   await page.locator(".sidebar-nav").getByRole("button", { name: "Community" }).click();
   const post = page.locator(".feed-card").filter({ hasText: "A busy discussion" });
-  await expect(post.getByText("Comment number 1")).toBeVisible();
-  await expect(post.getByText("Comment number 20")).toBeVisible();
+  await expect(post.getByText("Comment number 1", { exact: true })).toBeVisible();
+  await expect(post.getByText("Comment number 20", { exact: true })).toBeVisible();
   await post.getByRole("button", { name: "Load older comments" }).click();
-  await expect(post.getByText("Comment number 21")).toBeVisible();
-  await expect(post.getByText("Comment number 22")).toBeVisible();
+  await expect(post.getByText("Comment number 21", { exact: true })).toBeVisible();
+  await expect(post.getByText("Comment number 22", { exact: true })).toBeVisible();
   await expect(post.getByText("Comment number 1")).toBeVisible();
   await expect(post.getByRole("button", { name: "Load older comments" })).toHaveCount(0);
 });

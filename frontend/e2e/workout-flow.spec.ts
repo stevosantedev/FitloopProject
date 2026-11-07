@@ -140,6 +140,7 @@ async function mockApplicationApi(page: Page, onSessionSave?: (body: any) => voi
 
     await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
   });
+  return socialPosts;
 }
 
 async function signInAndOpenWorkouts(page: Page) {
@@ -295,7 +296,7 @@ test("the app uses persistent navigation on desktop and a bottom tab bar on mobi
 });
 
 test("Community reactions can be selected, changed and toggled off", async ({ page }) => {
-  await mockApplicationApi(page);
+  const socialPosts = await mockApplicationApi(page);
   let selected: string | null = null;
   await page.route("**/api/social/posts/post-text-1/reactions", async route => {
     const value = route.request().postDataJSON().value as string;

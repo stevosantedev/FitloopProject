@@ -26,6 +26,10 @@ export function buildProgressionSuggestions(sets) {
     if (latest.weightKg != null && previous.weightKg != null && latest.weightKg > previous.weightKg && latest.reps >= previous.reps) {
       recommendation = "maintain";
       reason = "You used a heavier load while matching or exceeding your previous reps. Repeat it with controlled technique before increasing again.";
+    } else if (latest.weightKg == null && previous.weightKg == null && latest.reps >= previous.reps + 2) {
+      // Bodyweight progress is better expressed as controlled rep development, not an assumed load increase.
+      recommendation = "maintain";
+      reason = "You completed at least two more bodyweight reps. Keep building controlled reps or use a harder variation when the movement feels consistently manageable; no external load increase is implied.";
     } else if (latest.weightKg === previous.weightKg && latest.reps >= previous.reps + 2) {
       recommendation = "consider_small_increase";
       reason = "You completed at least two more reps at the same load. If the sets felt controlled, consider the smallest available load increase next time.";

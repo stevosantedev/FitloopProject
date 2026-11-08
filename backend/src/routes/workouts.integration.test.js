@@ -627,6 +627,16 @@ test("progression suggestions compare recent completed sessions and ignore incom
   assert.deepEqual(suggestions[0].recentSessions.map(session => session.reps), [10, 8, 12]);
 });
 
+test("bodyweight progression encourages controlled reps without suggesting an external load increase", () => {
+  const suggestions = buildProgressionSuggestions([
+    { completed: true, reps: 12, weightKg: null, exercise: { id: "push", name: "Push-up" }, session: { id: "new", startedAt: new Date("2026-11-08T10:00:00Z") } },
+    { completed: true, reps: 10, weightKg: null, exercise: { id: "push", name: "Push-up" }, session: { id: "old", startedAt: new Date("2026-11-06T10:00:00Z") } }
+  ]);
+  assert.equal(suggestions[0].recommendation, "maintain");
+  assert.match(suggestions[0].reason, /bodyweight reps/i);
+  assert.match(suggestions[0].reason, /no external load increase/i);
+});
+
 test("progression suggestions omit exercises without two completed sessions", () => {
   assert.deepEqual(buildProgressionSuggestions([
     { completed: true, reps: 8, weightKg: null, exercise: { id: "push", name: "Push-up" }, session: { id: "only", startedAt: new Date("2026-11-08T10:00:00Z") } }

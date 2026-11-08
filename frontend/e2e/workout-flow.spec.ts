@@ -1,4 +1,5 @@
 
+// Verify the install metadata and worker entry points are served, while API routes remain outside the shell cache.
 test("app publishes an installable manifest and offline worker assets", async ({ page }) => {
   const manifestResponse = await page.request.get("/manifest.webmanifest");
   expect(manifestResponse.ok()).toBeTruthy();
@@ -208,6 +209,7 @@ async function signInAndOpenWorkouts(page: Page) {
   await page.locator(".exercise-choice").filter({ hasText: "Goblet squat" }).locator("input").check();
 }
 
+// The UI should show only record values derived from completed, valid sets.
 test("personal records show the best completed load, reps and set volume", async ({ page }) => {
   await mockApplicationApi(page);
   await signInAndOpenWorkouts(page);
@@ -219,6 +221,7 @@ test("personal records show the best completed load, reps and set volume", async
   await expect(record.getByText("320 kg")).toBeVisible();
 });
 
+// Editing and deletion must preserve the selected routine identity and leave the builder usable.
 test("saved routines can be edited and deleted without losing the workout builder", async ({ page }) => {
   await mockApplicationApi(page);
   await signInAndOpenWorkouts(page);
@@ -241,6 +244,7 @@ test("saved routines can be edited and deleted without losing the workout builde
   await expect(page.getByText("No routines yet.")).toBeVisible();
 });
 
+// Only sets the user actually performs should contribute to the saved session.
 test("guided sets mark only performed rows complete before saving", async ({ page }) => {
   let savedSession: any;
   await mockApplicationApi(page, body => { savedSession = body; });
@@ -261,6 +265,7 @@ test("guided sets mark only performed rows complete before saving", async ({ pag
   expect(savedSession.sets.map((set: any) => set.completed)).toEqual([true, true, false]);
 });
 
+// Prevent an empty or entirely skipped session from appearing as a completed workout.
 test("the workout cannot be saved until at least one set is completed", async ({ page }) => {
   await mockApplicationApi(page);
   await signInAndOpenWorkouts(page);
@@ -269,6 +274,7 @@ test("the workout cannot be saved until at least one set is completed", async ({
   await expect(page.getByRole("status").filter({ hasText: "Complete at least one set before saving" })).toBeVisible();
 });
 
+// An offline save should be durable locally and reach the API once the connection returns.
 test("completed workouts queue offline and sync once connectivity returns", async ({ page, context }) => {
   let savedSession: any;
   await mockApplicationApi(page, body => { savedSession = body; });
@@ -291,6 +297,7 @@ test("completed workouts queue offline and sync once connectivity returns", asyn
   expect(savedSession.clientRequestId).toMatch(/^[0-9a-f-]{36}$/i);
 });
 
+// Exercise timer controls must keep the countdown state consistent across pause and skip actions.
 test("the guided rest timer can pause, resume and skip its countdown", async ({ page }) => {
   await mockApplicationApi(page);
   await signInAndOpenWorkouts(page);
@@ -305,6 +312,7 @@ test("the guided rest timer can pause, resume and skip its countdown", async ({ 
   await expect(page.getByText("Next set: Goblet squat · Set 2")).toBeVisible();
 });
 
+// The final set still needs its configured recovery interval before the workout is marked finished.
 test("the final performed set receives its configured rest period", async ({ page }) => {
   await mockApplicationApi(page);
   await signInAndOpenWorkouts(page);
@@ -321,6 +329,7 @@ test("the final performed set receives its configured rest period", async ({ pag
   await expect(page.getByRole("status").filter({ hasText: "All guided sets are complete." })).toBeVisible({ timeout: 3_000 });
 });
 
+// Navigation should match the available screen space instead of behaving like a responsive marketing site.
 test("the app uses persistent navigation on desktop and a bottom tab bar on mobile", async ({ page }) => {
   await mockApplicationApi(page);
   await page.goto("/");
@@ -348,6 +357,7 @@ test("the app uses persistent navigation on desktop and a bottom tab bar on mobi
   await expect(page.locator(".app-sidebar")).toBeHidden();
 });
 
+// Render the profile fields returned by the API without exposing fields the response omits.
 test("Community profile previews respect the profile API response", async ({ page }) => {
   const socialPosts = await mockApplicationApi(page);
   socialPosts.push({
@@ -391,6 +401,7 @@ test("Community profile previews respect the profile API response", async ({ pag
 });
 
 
+// Private and missing profiles should produce a safe state rather than stale or guessed details.
 test("Community profile previews handle private or unavailable profiles safely", async ({ page }) => {
   const socialPosts = await mockApplicationApi(page);
   socialPosts.push({
@@ -428,6 +439,7 @@ test("Community profile previews handle private or unavailable profiles safely",
 });
 
 
+// Ignore a response that arrives after the user has dismissed the profile preview.
 test("closing a loading Community profile prevents a late response from reopening it", async ({ page }) => {
   const socialPosts = await mockApplicationApi(page);
   socialPosts.push({
@@ -457,6 +469,7 @@ test("closing a loading Community profile prevents a late response from reopenin
   await expect(trigger).toBeFocused();
 });
 
+// Reaction state should support create, change and remove without duplicating a user's reaction.
 test("Community reactions can be selected, changed and toggled off", async ({ page }) => {
   const socialPosts = await mockApplicationApi(page);
   let selected: string | null = null;
@@ -487,6 +500,7 @@ test("Community reactions can be selected, changed and toggled off", async ({ pa
   await expect(strong).toHaveAttribute("aria-pressed", "false");
 });
 
+// The exercise guide must expose the curated instruction and muscle relationships used by the catalogue.
 test("exercise guide opens technique, coaching and muscle information", async ({ page }) => {
   await mockApplicationApi(page);
   await signInAndOpenWorkouts(page);
@@ -506,6 +520,7 @@ test("exercise guide opens technique, coaching and muscle information", async ({
   await page.getByPlaceholder("Search exercises, technique or equipment").fill("");
 });
 
+// The named controls provide an accessible alternative to selecting shapes in the decorative SVG.
 test("muscle map controls expose muscle names and training totals to assistive technology", async ({ page }) => {
   await mockApplicationApi(page, undefined, 200, [{
     id: "muscle-1",
@@ -529,6 +544,7 @@ test("muscle map controls expose muscle names and training totals to assistive t
   await expect(page.locator(".muscle-detail")).toContainText("4 weighted sets");
 });
 
+// Filtering the catalogue must not silently remove or misrepresent the movements already selected.
 test("exercise filters and the selected-movement tray stay in sync", async ({ page }) => {
   await mockApplicationApi(page);
   await signInAndOpenWorkouts(page);
@@ -554,6 +570,7 @@ test("exercise filters and the selected-movement tray stay in sync", async ({ pa
 });
 
 
+// The active screen should reflect performed sets and present a clear end-of-session summary.
 test("active workout mode shows live progress and a completion summary", async ({ page }) => {
   await mockApplicationApi(page);
   await signInAndOpenWorkouts(page);
@@ -576,6 +593,7 @@ test("active workout mode shows live progress and a completion summary", async (
 });
 
 
+// Progress comparisons must use completed sessions for the same movement, not unrelated set history.
 test("movement progress compares the latest completed load with the previous session", async ({ page }) => {
   await mockApplicationApi(page);
   await page.route("http://localhost:4000/api/workouts/sessions", async route => {
@@ -603,6 +621,7 @@ test("movement progress compares the latest completed load with the previous ses
 });
 
 
+// A historical session should preserve the detail needed to review each logged set.
 test("workout history opens a session with its individual set results", async ({ page }) => {
   await mockApplicationApi(page);
   await page.route("http://localhost:4000/api/workouts/sessions", async route => {
@@ -643,6 +662,7 @@ test("workout history opens a session with its individual set results", async ({
 });
 
 
+// Local queued workouts must never be replayed under a different signed-in account.
 test("offline workout storage stays account-scoped and supports safe cleanup", async ({ page }) => {
   await page.goto("/");
   const result = await page.evaluate(async () => {
@@ -671,6 +691,7 @@ test("offline workout storage stays account-scoped and supports safe cleanup", a
   expect(result.afterCleanupB).toEqual([result.retainedAccountBId]);
 });
 
+// Reload and sign-out must not destroy a queue that belongs to the same account returning later.
 test("offline workouts survive a reload and sign-out, then sync for the same account", async ({ page }) => {
   let syncCount = 0;
   await page.addInitScript(() => {
@@ -709,6 +730,7 @@ test("offline workouts survive a reload and sign-out, then sync for the same acc
   expect(syncCount).toBe(1);
 });
 
+// A bad payload should be discarded so it cannot prevent valid later workouts from syncing.
 test("a permanently invalid queued workout is removed without blocking the remaining queue", async ({ page, context }) => {
   await mockApplicationApi(page, undefined, 400);
   await signInAndOpenWorkouts(page);
@@ -727,6 +749,7 @@ test("a permanently invalid queued workout is removed without blocking the remai
   await expect(page.locator(".offline-queue-status")).toHaveCount(0);
 });
 
+// Authentication expiry is temporary; preserve the owner's unsynced workout for their next sign-in.
 test("an expired session keeps queued workouts until the owner signs in again", async ({ page, context }) => {
   let saveAttempts = 0;
   await mockApplicationApi(page, () => { saveAttempts += 1; }, () => saveAttempts === 1 ? 401 : 200);
@@ -755,6 +778,7 @@ test("an expired session keeps queued workouts until the owner signs in again", 
   expect(saveAttempts).toBe(2);
 });
 
+// Explain the limitation instead of promising offline recovery when browser storage cannot be used.
 test("workout saving explains when browser offline storage is unavailable", async ({ page }) => {
   await page.addInitScript(() => {
     Object.defineProperty(window.indexedDB, "open", {
@@ -776,6 +800,7 @@ test("workout saving explains when browser offline storage is unavailable", asyn
   expect(savedSession).toBeUndefined();
 });
 
+// Keyboard users need a visible focus location and a complete path through the sign-in form.
 test("sign-in remains usable with keyboard-only navigation and visible focus", async ({ page }) => {
   await mockApplicationApi(page);
   await page.goto("/");
@@ -800,6 +825,7 @@ test("sign-in remains usable with keyboard-only navigation and visible focus", a
 });
 
 
+// Screen readers should receive the loading status while the catalogue request is still pending.
 test("workout loading state is announced before the exercise library arrives", async ({ page }) => {
   await mockApplicationApi(page);
   await page.route("http://localhost:4000/api/workouts/exercises", async route => {
@@ -816,6 +842,7 @@ test("workout loading state is announced before the exercise library arrives", a
   await expect(page.getByRole("status").filter({ hasText: "Loading your training data" })).toHaveCount(0);
 });
 
+// A network error must not look like a genuinely empty exercise catalogue.
 test("a failed exercise-library request shows an explicit retry instead of an empty state", async ({ page }) => {
   await mockApplicationApi(page);
   let attempts = 0;
@@ -841,6 +868,7 @@ test("a failed exercise-library request shows an explicit retry instead of an em
   expect(attempts).toBe(2);
 });
 
+// Confirm the app-shell Coach flow can create a private thread and render its non-AI fallback.
 test("dedicated coach workspace creates a conversation and displays a guided reply", async ({ page }) => {
   await mockApplicationApi(page);
   await page.goto("/");
@@ -862,6 +890,7 @@ test("dedicated coach workspace creates a conversation and displays a guided rep
   await expect(contextDisclosure).toContainText("Private session notes, daily wellbeing logs and account identifiers are excluded.");
 });
 
+// Post editing is limited to the author and should update the visible feed entry.
 test("authors can edit their own Community text updates", async ({ page }) => {
   await mockApplicationApi(page);
   let postText = "The original training update";
@@ -900,6 +929,7 @@ test("authors can edit their own Community text updates", async ({ page }) => {
   expect(patchCalls).toBe(1);
 });
 
+// New text updates should use the intended friends-only audience by default.
 test("community users can share a friends-only text update", async ({ page }) => {
   await mockApplicationApi(page);
   await page.goto("/");
@@ -915,6 +945,7 @@ test("community users can share a friends-only text update", async ({ page }) =>
 });
 
 
+// Distinguish a successful empty feed from a failed request, and allow the user to retry.
 test("Community feed retries an initial failure and then shows a genuine empty state", async ({ page }) => {
   await mockApplicationApi(page);
   let feedRequests = 0;
@@ -946,6 +977,7 @@ test("Community feed retries an initial failure and then shows a genuine empty s
   expect(feedRequests).toBe(2);
 });
 
+// The moderation controls must submit the selected target to the server rather than only changing local UI.
 test("community block and report controls call the moderation API", async ({ page }) => {
   await mockApplicationApi(page);
   const calls: Array<{ path: string; method: string }> = [];
@@ -987,6 +1019,7 @@ test("community block and report controls call the moderation API", async ({ pag
 });
 
 
+// Keep already loaded posts visible when a background refresh cannot reach the API.
 test("Community feed refreshes the first page and preserves posts when refresh fails", async ({ page }) => {
   await mockApplicationApi(page);
   let feedRequests = 0;
@@ -1038,6 +1071,7 @@ test("Community feed refreshes the first page and preserves posts when refresh f
   expect(feedRequests).toBe(3);
 });
 
+// Cursor pagination should append older posts while retaining the current page.
 test("community feed loads older posts without replacing the first page", async ({ page }) => {
   await mockApplicationApi(page);
   let feedRequests = 0;
@@ -1070,6 +1104,7 @@ test("community feed loads older posts without replacing the first page", async 
   expect(feedRequests).toBe(2);
 });
 
+// A failed older-page request should be recoverable without discarding posts already displayed.
 test("Community feed pagination offers a retry after a temporary failure", async ({ page }) => {
   await mockApplicationApi(page);
   let olderPageRequests = 0;
@@ -1107,6 +1142,7 @@ test("Community feed pagination offers a retry after a temporary failure", async
   expect(olderPageRequests).toBe(2);
 });
 
+// Comment pagination should retain existing discussion when loading the next page fails.
 test("Community comment pagination offers a retry without losing loaded comments", async ({ page }) => {
   const socialPosts = await mockApplicationApi(page);
   const comments = Array.from({ length: 20 }, (_, index) => ({
@@ -1144,6 +1180,7 @@ test("Community comment pagination offers a retry without losing loaded comments
   expect(olderCommentRequests).toBe(2);
 });
 
+// Only server-allowlisted moderators should see the private review queue and record a decision.
 test("allowlisted moderators can review and resolve private community reports", async ({ page }) => {
   let reportOpen = true;
   const report = {
@@ -1182,6 +1219,7 @@ test("allowlisted moderators can review and resolve private community reports", 
   expect(calls.some(call => call.path === "/api/social/moderation/reports/report-1" && call.method === "PATCH" && call.body.status === "resolved" && call.body.resolutionNote === "Reviewed and action taken.")).toBeTruthy();
 });
 
+// Shared workout summaries should count completed work without presenting skipped sets as training.
 test("Community workout cards summarise completed sets by movement", async ({ page }) => {
   const socialPosts = await mockApplicationApi(page);
   socialPosts.push({
@@ -1215,6 +1253,7 @@ test("Community workout cards summarise completed sets by movement", async ({ pa
   await expect(card.getByText("This private session note must not appear in the feed.")).toHaveCount(0);
 });
 
+// Older comments should be appended in chronological context rather than replacing the current discussion.
 test("Community posts can load older comments without replacing the first page", async ({ page }) => {
   const socialPosts = await mockApplicationApi(page);
   const firstPage = Array.from({ length: 20 }, (_, index) => ({
@@ -1256,6 +1295,7 @@ test("Community posts can load older comments without replacing the first page",
   await expect(post.getByRole("button", { name: "Load older comments" })).toHaveCount(0);
 });
 
+// Comment mutation controls must enforce author ownership for both edit and delete.
 test("Community comment authors can edit and delete only their own comments", async ({ page }) => {
   const calls: Array<{ method: string; path: string; body?: any }> = [];
   const comments = [{ id: "comment-own", text: "Great session", user: { id: "user-1", username: "tester" } }];
@@ -1297,6 +1337,7 @@ test("Community comment authors can edit and delete only their own comments", as
 
 
 
+// Programme generation stays review-first and saved days must use the normal workout start flow.
 test("Coach builds a weekly programme, saves it only after review and starts a saved day", async ({ page }) => {
   const saveCalls: any[] = [];
   const movements = [
@@ -1349,6 +1390,7 @@ test("Coach builds a weekly programme, saves it only after review and starts a s
   await expect(page.locator(".exercise-picker input:checked")).toHaveCount(5);
 });
 
+// Editing should rebuild a draft for review instead of silently replacing the saved schedule.
 test("Coach lets users edit a saved weekly programme and keeps the changes review-first", async ({ page }) => {
   const updateCalls: any[] = [];
   const movements = [
@@ -1387,6 +1429,7 @@ test("Coach lets users edit a saved weekly programme and keeps the changes revie
 
 
 
+// The weekly view should show training and recovery days across the full calendar week.
 test("Coach shows a seven-day recovery-aware layout for saved weekly programmes", async ({ page }) => {
   const movements = [
     { ...exercise, id: "draft-squat", name: "Goblet squat", equipment: "Dumbbell", movementPattern: "Squat", difficulty: "Beginner" },
@@ -1415,6 +1458,7 @@ test("Coach shows a seven-day recovery-aware layout for saved weekly programmes"
 });
 
 
+// Progression advice should expose the recent measurements and rationale behind its suggestion.
 test("Coach displays evidence and explanation for workout progression guidance", async ({ page }) => {
   await mockApplicationApi(page);
   await page.goto("/");
@@ -1430,6 +1474,7 @@ test("Coach displays evidence and explanation for workout progression guidance",
   await expect(panel.getByText(/Latest: 10 reps at 20 kg · Previous: 8 reps at 20 kg/)).toBeVisible();
 });
 
+// Users should be able to distinguish deterministic guidance from an AI-generated response.
 test("Coach identifies when a reply uses the guided fallback", async ({ page }) => {
   await mockApplicationApi(page);
   await page.goto("/");
@@ -1444,6 +1489,7 @@ test("Coach identifies when a reply uses the guided fallback", async ({ page }) 
   await expect(page.getByText(/also happens when AI is off or the provider is unavailable/i)).toBeVisible();
 });
 
+// AI processing must be disclosed and remain disabled until the account owner explicitly opts in.
 test("Coach settings disclose optional AI processing and keep consent off by default", async ({ page }) => {
   await mockApplicationApi(page);
   await page.goto("/");

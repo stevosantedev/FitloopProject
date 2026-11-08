@@ -198,7 +198,6 @@ export default function CoachRoutineDraft({ exercises, plans, plansLoading, savi
     };
     // Keep the review on screen after an error; losing a hand-edited plan would be frustrating and unsafe.
     try {
-      if (editingPlanId)    try {
       if (editingPlanId) await onUpdatePlan(editingPlanId, input);
       else await onSavePlan(input);
       setGenerated(false);

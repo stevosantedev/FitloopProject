@@ -114,7 +114,7 @@ const messageInput = z.object({ message: z.string().trim().min(1).max(2000) });
 router.get("/preferences", async (req, res, next) => {
   try {
     const preference = await prismaClient.coachPreference.findUnique({ where: { userId: req.userId } });
-    return res.json({ preference: preference ?? { style: "gentle", focus: "energy" } });
+    return res.json({ preference: preference ?? { style: "gentle", focus: "energy", aiEnabled: false } });
   } catch (error) {
     return next(error);
   }

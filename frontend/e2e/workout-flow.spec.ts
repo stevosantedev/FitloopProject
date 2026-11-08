@@ -94,6 +94,19 @@ async function mockApplicationApi(page: Page, onSessionSave?: (body: any) => voi
       };
       trainingPlans.unshift(plan);
       body = { plan };
+    } else if (url.pathname === "/api/workouts/training-plans/plan-1" && method === "PUT") {
+      const input = request.postDataJSON();
+      const plan = {
+        id: "plan-1", name: input.name, goal: input.goal, daysPerWeek: input.daysPerWeek,
+        experience: input.experience, equipment: input.equipment,
+        days: input.days.map((day: any, index: number) => ({
+          id: "plan-day-" + (index + 1), dayNumber: day.dayNumber, label: day.label,
+          routine: { id: "updated-routine-" + (index + 1), name: day.routineName,
+            exercises: day.exercises.map((item: any) => ({ exercise: catalogueExercises.find(candidate => candidate.id === item.exerciseId) })) }
+        }))
+      };
+      trainingPlans.splice(0, trainingPlans.length, plan);
+      body = { plan };
     } else if (url.pathname === "/api/workouts/training-plans/plan-1" && method === "DELETE") {
       trainingPlans.splice(0, trainingPlans.length);
       body = { deleted: true };
@@ -1304,3 +1317,40 @@ test("Coach builds a weekly programme, saves it only after review and starts a s
   await expect(page.getByRole("heading", { name: "Build a workout" })).toBeVisible();
   await expect(page.locator(".exercise-picker input:checked")).toHaveCount(5);
 });
+
+test("Coach lets users edit a saved weekly programme and keeps the changes review-first", async ({ page }) => {
+  const updateCalls: any[] = [];
+  const movements = [
+    { ...exercise, id: "draft-squat", name: "Goblet squat", equipment: "Dumbbell", movementPattern: "Squat", difficulty: "Beginner" },
+    { ...exercise, id: "draft-hinge", name: "Romanian deadlift", equipment: "Dumbbell", movementPattern: "Hip hinge", difficulty: "Intermediate" },
+    { ...exercise, id: "draft-push", name: "Push-up", equipment: "Bodyweight", movementPattern: "Horizontal push", difficulty: "Beginner" },
+    { ...exercise, id: "draft-pull", name: "Single-arm dumbbell row", equipment: "Dumbbell", movementPattern: "Horizontal pull", difficulty: "Beginner" },
+    { ...exercise, id: "draft-core", name: "Dead bug", equipment: "Bodyweight", movementPattern: "Anti-extension", difficulty: "Beginner" }
+  ];
+  await mockApplicationApi(page, undefined, 200, [], movements);
+  await page.route("http://localhost:4000/api/workouts/training-plans/plan-1", async route => {
+    if (route.request().method() === "PUT") updateCalls.push(route.request().postDataJSON());
+    await route.fallback();
+  });
+  await page.goto("/");
+  await page.getByLabel("Email").fill("tester@example.com");
+  await page.getByLabel("Password").fill("test-password");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.locator(".sidebar-nav").getByRole("button", { name: "Coach" }).click();
+  await page.getByLabel("Days available each week").selectOption("2");
+  await page.getByLabel("Available equipment").selectOption("dumbbells");
+  await page.getByRole("button", { name: "Generate weekly programme" }).click();
+  await page.getByRole("button", { name: "Save weekly programme" }).click();
+  await expect(page.getByRole("heading", { name: /Coach · General fitness · 2-day programme/ })).toBeVisible();
+  await page.getByRole("button", { name: "Edit", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Edit your saved programme" })).toBeVisible();
+  await page.getByLabel("Programme name").fill("My updated training week");
+  expect(updateCalls).toHaveLength(0);
+  await page.getByRole("button", { name: "Save programme changes" }).click();
+  await expect(page.getByRole("heading", { name: "My updated training week" })).toBeVisible();
+  expect(updateCalls).toHaveLength(1);
+  expect(updateCalls[0].name).toBe("My updated training week");
+  expect(updateCalls[0].days).toHaveLength(2);
+  expect(updateCalls[0].days.every((day: any) => day.exercises.length >= 2)).toBeTruthy();
+});
+

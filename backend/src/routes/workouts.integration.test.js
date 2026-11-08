@@ -46,6 +46,7 @@ function makePrisma(overrides = {}) {
   };
 }
 
+// Catalogue responses must include the authored guidance and canonical muscle relationships used by the app.
 test("GET exercises returns technique and coaching fields with muscle links", async () => {
   let query;
   const prisma = makePrisma({
@@ -81,6 +82,7 @@ test("GET exercises returns technique and coaching fields with muscle links", as
   assert.deepEqual(query.orderBy, [{ muscleGroup: "asc" }, { name: "asc" }]);
 });
 
+// Personal records must never aggregate workout sets belonging to another user.
 test("GET personal records scopes completed sets to the authenticated account", async () => {
   let query;
   const prisma = makePrisma({
@@ -110,6 +112,7 @@ test("GET personal records scopes completed sets to the authenticated account", 
   assert.deepEqual(query.include.exercise.select, { id: true, name: true });
 });
 
+// Routine listing is owner-scoped at query time, not filtered after records are loaded.
 test("GET routines scopes the database query to the authenticated account", async () => {
   let query;
   const prisma = makePrisma({
@@ -125,6 +128,7 @@ test("GET routines scopes the database query to the authenticated account", asyn
   assert.equal(query.where.userId, "user-a");
 });
 
+// Updates preserve the routine owner and replace exercise ordering as one coherent change.
 test("PUT routines updates only an owned routine and replaces its ordered exercises", async () => {
   let updateArgs;
   let lookupArgs;
@@ -151,6 +155,7 @@ test("PUT routines updates only an owned routine and replaces its ordered exerci
   assert.deepEqual(updateArgs.data.exercises.deleteMany, {});
 });
 
+// Unowned routines are indistinguishable from missing routines to prevent ID probing.
 test("PUT routines returns not found for a routine owned by another account", async () => {
   let exerciseLookups = 0;
   const prisma = makePrisma({
@@ -169,6 +174,7 @@ test("PUT routines returns not found for a routine owned by another account", as
   assert.equal(exerciseLookups, 0);
 });
 
+// Deletion must include the authenticated owner in the database condition.
 test("DELETE routines scopes deletion to the authenticated account", async () => {
   let deleteArgs;
   const prisma = makePrisma({
@@ -183,6 +189,7 @@ test("DELETE routines scopes deletion to the authenticated account", async () =>
   assert.deepEqual(deleteArgs.where, { id: "routine-a", userId: "user-a" });
 });
 
+// A valid ID is not enough to delete a routine that belongs to another account.
 test("DELETE routines returns not found when no owned routine matches", async () => {
   const prisma = makePrisma({ workoutRoutine: { deleteMany: async () => ({ count: 0 }) } });
   await withWorkoutApi(prisma, async baseUrl => {
@@ -191,6 +198,7 @@ test("DELETE routines returns not found when no owned routine matches", async ()
   });
 });
 
+// The saved session and its optional social summary must use the verified account identity.
 test("POST sessions creates a session and feed post for the authenticated account", async () => {
   let createArgs;
   const prisma = makePrisma({
@@ -220,6 +228,7 @@ test("POST sessions creates a session and feed post for the authenticated accoun
   assert.deepEqual(createArgs.data.post.create, { userId: "user-a", type: "workout" });
 });
 
+// Ambiguous set numbering is rejected before the route performs database work.
 test("POST sessions rejects duplicate set numbers before querying or writing", async () => {
   let exerciseLookups = 0;
   let sessionWrites = 0;
@@ -244,6 +253,7 @@ test("POST sessions rejects duplicate set numbers before querying or writing", a
   assert.equal(sessionWrites, 0);
 });
 
+// Every submitted set must reference a real exercise before a session is created.
 test("POST sessions rejects exercise IDs absent from the catalogue", async () => {
   let sessionWrites = 0;
   const prisma = makePrisma({
@@ -264,6 +274,7 @@ test("POST sessions rejects exercise IDs absent from the catalogue", async () =>
   assert.equal(sessionWrites, 0);
 });
 
+// A caller cannot attach another user's routine to their workout history.
 test("POST sessions rejects a routine owned by another account", async () => {
   let exerciseLookups = 0;
   const prisma = makePrisma({
@@ -284,6 +295,7 @@ test("POST sessions rejects a routine owned by another account", async () => {
 });
 
 
+// Private custom exercises are available only to their owner, even when an ID is guessed.
 test("POST sessions cannot use another account's private custom exercise", async () => {
   let lookup;
   let sessionWrites = 0;
@@ -305,6 +317,7 @@ test("POST sessions cannot use another account's private custom exercise", async
   assert.equal(sessionWrites, 0);
 });
 
+// Routine creation applies the same custom-exercise ownership rule as session creation.
 test("POST routines cannot link another account's private custom exercise", async () => {
   let lookup;
   let routineWrites = 0;
@@ -327,6 +340,7 @@ test("POST routines cannot link another account's private custom exercise", asyn
 });
 
 
+// Duplicate movement IDs or ordering positions make a routine ambiguous and should fail early.
 test("POST routines rejects duplicate exercises and positions before database access", async () => {
   let exerciseLookups = 0;
   let routineWrites = 0;
@@ -352,6 +366,7 @@ test("POST routines rejects duplicate exercises and positions before database ac
 });
 
 
+// Each routine position must be unique so saved ordering is deterministic.
 test("POST routines rejects repeated explicit positions", async () => {
   let exerciseLookups = 0;
   const prisma = makePrisma({
@@ -374,6 +389,7 @@ test("POST routines rejects repeated explicit positions", async () => {
 });
 
 
+// A retry with the same client key returns the first saved session instead of duplicating it.
 test("POST sessions returns the original session when an offline request is retried", async () => {
   let savedSession = null;
   let writes = 0;
@@ -410,6 +426,7 @@ test("POST sessions returns the original session when an offline request is retr
   assert.equal(savedSession.clientRequestId, requestId);
 });
 
+// The database uniqueness constraint resolves the race when two requests arrive together.
 test("POST sessions handles simultaneous offline retries with the unique database key", async () => {
   let lookupCount = 0;
   let savedSession;
@@ -445,6 +462,7 @@ test("POST sessions handles simultaneous offline retries with the unique databas
   assert.equal(lookupCount, 2);
 });
 
+// Weekly plans are private account data and the query must enforce that boundary.
 test("GET training plans returns only the authenticated account's programmes", async () => {
   let query;
   const prisma = makePrisma({ trainingPlan: { findMany: async args => { query = args; return [{ id: "plan-a", days: [] }]; } } });
@@ -457,6 +475,7 @@ test("GET training plans returns only the authenticated account's programmes", a
   assert.ok(query.include.days.include.routine.include.exercises);
 });
 
+// Each day must point to a routine the caller owns, with its intended day number preserved.
 test("POST training plans creates ordered days from routines owned by the caller", async () => {
   let routineLookup; let createArgs;
   const prisma = makePrisma({
@@ -476,6 +495,7 @@ test("POST training plans creates ordered days from routines owned by the caller
   assert.deepEqual(createArgs.data.days.create.map(day => day.dayNumber), [1, 2]);
 });
 
+// Inline plan creation must create its routines and day links together or leave no partial plan.
 test("POST training plans atomically creates each day routine from owned catalogue exercises", async () => {
   let exerciseLookup; let createArgs;
   const prisma = makePrisma({
@@ -502,6 +522,7 @@ test("POST training plans atomically creates each day routine from owned catalog
   assert.equal(createArgs.data.days.create[0].routine.create.exercises.create[0].exercise.connect.id, "bench");
 });
 
+// Plan generation cannot bypass the private custom-exercise ownership check.
 test("POST training plans rejects private exercises owned by another account", async () => {
   let writes = 0;
   const prisma = makePrisma({ exercise: { findMany: async () => [] }, trainingPlan: { create: async () => { writes += 1; return {}; } } });
@@ -521,6 +542,7 @@ test("POST training plans rejects private exercises owned by another account", a
   assert.equal(writes, 0);
 });
 
+// A plan cannot be built from a routine that the caller does not own.
 test("POST training plans rejects routines owned by another account", async () => {
   let writes = 0;
   const prisma = makePrisma({
@@ -536,6 +558,7 @@ test("POST training plans rejects routines owned by another account", async () =
   assert.equal(writes, 0);
 });
 
+// Validate the complete weekly structure before querying or creating any routines.
 test("POST training plans rejects a mismatch between available days and plan days", async () => {
   let lookups = 0;
   const prisma = makePrisma({ workoutRoutine: { findMany: async () => { lookups += 1; return []; } } });
@@ -548,6 +571,7 @@ test("POST training plans rejects a mismatch between available days and plan day
   assert.equal(lookups, 0);
 });
 
+// Plan updates are owner-scoped and replace the schedule as a single coherent operation.
 test("PUT training plans updates only an owned plan and replaces its days", async () => {
   let lookup; let update;
   const prisma = makePrisma({
@@ -565,6 +589,7 @@ test("PUT training plans updates only an owned plan and replaces its days", asyn
   assert.equal(update.data.days.create.length, 2);
 });
 
+// The route returns not found before looking up submitted routines for an unowned plan.
 test("PUT training plans does not disclose a plan owned by another account", async () => {
   let routineLookups = 0;
   const prisma = makePrisma({ trainingPlan: { findFirst: async () => null }, workoutRoutine: { findMany: async () => { routineLookups += 1; return []; } } });
@@ -577,6 +602,7 @@ test("PUT training plans does not disclose a plan owned by another account", asy
   assert.equal(routineLookups, 0);
 });
 
+// A plan ID alone must not authorize deletion outside the current account.
 test("DELETE training plans scopes deletion to the authenticated account", async () => {
   let deletion;
   const prisma = makePrisma({ trainingPlan: { deleteMany: async args => { deletion = args; return { count: 1 }; } } });
@@ -587,6 +613,7 @@ test("DELETE training plans scopes deletion to the authenticated account", async
   assert.deepEqual(deletion.where, { id: "plan-a", userId: "user-a" });
 });
 
+// Missing and unowned plans share the same response to avoid revealing another user's schedule.
 test("DELETE training plans returns not found for an unowned plan", async () => {
   const prisma = makePrisma({ trainingPlan: { deleteMany: async () => ({ count: 0 }) } });
   await withWorkoutApi(prisma, async baseUrl => {
@@ -595,6 +622,7 @@ test("DELETE training plans returns not found for an unowned plan", async () => 
   });
 });
 
+// A routine still used by a saved programme cannot be deleted out from under that schedule.
 test("DELETE routines prevents removing a routine referenced by the caller's plan", async () => {
   let routineDeletes = 0;
   const prisma = makePrisma({
@@ -612,6 +640,7 @@ test("DELETE routines prevents removing a routine referenced by the caller's pla
 });
 
 
+// Progression compares completed sessions only and ignores skipped or unfinished work.
 test("progression suggestions compare recent completed sessions and ignore incomplete sets", () => {
   const suggestions = buildProgressionSuggestions([
     { completed: true, reps: 10, weightKg: 20, exercise: { id: "squat", name: "Goblet squat" }, session: { id: "s3", startedAt: new Date("2026-11-08T10:00:00Z") } },
@@ -627,6 +656,7 @@ test("progression suggestions compare recent completed sessions and ignore incom
   assert.deepEqual(suggestions[0].recentSessions.map(session => session.reps), [10, 8, 12]);
 });
 
+// More bodyweight reps should not be translated into an invented external weight recommendation.
 test("bodyweight progression encourages controlled reps without suggesting an external load increase", () => {
   const suggestions = buildProgressionSuggestions([
     { completed: true, reps: 12, weightKg: null, exercise: { id: "push", name: "Push-up" }, session: { id: "new", startedAt: new Date("2026-11-08T10:00:00Z") } },
@@ -637,12 +667,14 @@ test("bodyweight progression encourages controlled reps without suggesting an ex
   assert.match(suggestions[0].reason, /no external load increase/i);
 });
 
+// A comparison needs two completed observations; one session is not enough evidence for progression.
 test("progression suggestions omit exercises without two completed sessions", () => {
   assert.deepEqual(buildProgressionSuggestions([
     { completed: true, reps: 8, weightKg: null, exercise: { id: "push", name: "Push-up" }, session: { id: "only", startedAt: new Date("2026-11-08T10:00:00Z") } }
   ]), []);
 });
 
+// The endpoint must apply account ownership before calculating recommendations.
 test("GET progression suggestions scopes completed sets to the authenticated account", async () => {
   let query;
   const prisma = makePrisma({ workoutSet: { findMany: async args => { query = args; return []; } } });

@@ -189,7 +189,7 @@ def conversation(payload: ConversationRequest):
 
     # A model is used only when the account owner has opted in and an operator has
     # configured a provider key. Safety routes above always remain rule-guided.
-    if payload.aiEnabled and os.getenv("AI_COACH_API_KEY"):
+    if payload.aiEnabled and os.getenv("AI_COACH_API_KEY") and not any(term in lowered for term in urgent_terms + injury_terms):
         try:
             generated = generate_ai_reply(payload)
             if generated:

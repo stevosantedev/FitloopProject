@@ -60,6 +60,7 @@ type FriendConnection = {
   addressee: User;
 };
 type CommunityProfile = { id: string; username: string; displayName: string | null; bio: string | null };
+type FriendSearchResult = { id: string; username: string; displayName: string | null };
 type FeedPost = {
   id: string;
   createdAt: string;
@@ -207,6 +208,10 @@ export default function App() {
     };
   }
   const [friendUsername, setFriendUsername] = useState("");
+  // Search results are temporary discovery data, not accepted friendships or profile records.
+  const [friendSearchResults, setFriendSearchResults] = useState<FriendSearchResult[]>([]);
+  const [friendSearchLoading, setFriendSearchLoading] = useState(false);
+  const [friendSearchError, setFriendSearchError] = useState("");
   const [profileNameDraft, setProfileNameDraft] = useState("");
   const [profileBioDraft, setProfileBioDraft] = useState("");
   const [profileSaving, setProfileSaving] = useState(false);
@@ -956,16 +961,38 @@ async function recordWorkout(event: React.FormEvent) {
     }
   }
 
-  // Friend requests are addressed by username; the API resolves that name and
-  // prevents self-requests or duplicate pending connections.
-  async function sendFriendRequest(event: React.FormEvent) {
+  // Search is explicit rather than firing on every keystroke, avoiding unnecessary account lookups.
+  async function searchFriends(event: React.FormEvent) {
     event.preventDefault();
+    const query = friendUsername.trim();
+    if (query.length < 3) {
+      setFriendSearchResults([]);
+      setFriendSearchError("Enter at least three characters to search.");
+      return;
+    }
+
+    setFriendSearchLoading(true);
+    setFriendSearchError("");
+    setFriendSearchResults([]);
+    try {
+      const data = await request("/api/social/friends/discover?q=" + encodeURIComponent(query));
+      setFriendSearchResults(data.people);
+      if (data.people.length === 0) setFriendSearchError("No matching accounts were found.");
+    } catch (error) {
+      setFriendSearchError(error instanceof Error ? error.message : "Could not search for people.");
+    } finally {
+      setFriendSearchLoading(false);
+    }
+  }
+
+  // The API resolves each username again and remains responsible for duplicate, self and block checks.
+  async function sendFriendRequest(username: string) {
     try {
       await request("/api/social/friends/request", {
         method: "POST",
-        body: JSON.stringify({ username: friendUsername.trim() })
+        body: JSON.stringify({ username })
       });
-      setFriendUsername("");
+      setFriendSearchResults(current => current.filter(person => person.username !== username));
       setNotice("Friend request sent.");
       await loadCommunity();
     } catch (error) {
@@ -1866,11 +1893,28 @@ function signOut() {
         <div className="composer-footer"><small>{profileBioDraft.length}/160 · Visible to accepted friends</small><button disabled={profileSaving}>{profileSaving ? "Saving…" : "Save profile"}</button></div>
       </form>
       <div className="content-grid">
-        <form className="panel" onSubmit={sendFriendRequest}>
-          <p className="eyebrow">FIND YOUR PEOPLE</p><h2>Add a friend</h2>
-          <label>FitLoop username<input required minLength={3} value={friendUsername} onChange={event => setFriendUsername(event.target.value)} placeholder="Enter their username" /></label>
-          <button>Send friend request</button>
-        </form>
+        <section className="panel">
+          <p className="eyebrow">FIND YOUR PEOPLE</p><h2>Discover people</h2>
+          <form onSubmit={searchFriends}>
+            <label>Search by username or display name
+              <input required minLength={3} maxLength={24} value={friendUsername}
+                onChange={event => { setFriendUsername(event.target.value); setFriendSearchResults([]); setFriendSearchError(""); }}
+                placeholder="Try a username or name" />
+            </label>
+            <button type="submit" disabled={friendSearchLoading || friendUsername.trim().length < 3}>
+              {friendSearchLoading ? "Searching…" : "Search people"}
+            </button>
+          </form>
+          {friendSearchLoading && <p className="muted" role="status">Searching for people…</p>}
+          {friendSearchError && <p className="muted" role="status">{friendSearchError}</p>}
+          {friendSearchResults.length > 0 && <ul className="log-list" aria-label="People you can connect with">
+            {friendSearchResults.map(person => <li key={person.id}>
+              <strong>{person.displayName || "@" + person.username}</strong>
+              <span>@{person.username}</span>
+              <button type="button" className="small-button" onClick={() => void sendFriendRequest(person.username)}>Add friend</button>
+            </li>)}
+          </ul>}
+        </section>
         <section className="panel">
           <p className="eyebrow">YOUR CONNECTIONS</p><h2>Friends and requests</h2>
           {connections.length === 0 && communityLoading ? <p className="muted" role="status">Loading friends and requests…</p> : connections.length === 0 && communityError ? <p className="muted">Connections are unavailable until the community can be refreshed.</p> : connections.length === 0 ? <p className="muted">Your accepted friends and incoming requests will appear here.</p> :

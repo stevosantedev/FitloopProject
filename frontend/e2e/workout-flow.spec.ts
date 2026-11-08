@@ -175,6 +175,10 @@ async function mockApplicationApi(page: Page, onSessionSave?: (body: any) => voi
       }] };
     } else if (url.pathname === "/api/workouts/muscle-stats") {
       body = { muscles: muscleStats };
+    } else if (url.pathname === "/api/social/friends/discover") {
+      body = { people: [{ id: "friend-candidate", username: "runnercandidate", displayName: "Runner Candidate" }] };
+    } else if (url.pathname === "/api/social/friends/request" && method === "POST") {
+      body = { connection: { id: "request-candidate", status: "pending" } };
     } else if (url.pathname === "/api/social/friends") {
       body = { connections: [] };
     } else if (url.pathname === "/api/social/blocks" && method === "GET") {
@@ -1065,6 +1069,53 @@ test("community block and report controls call the moderation API", async ({ pag
   expect(calls.some(call => call.path === "/api/social/blocks/user-2" && call.method === "POST")).toBeTruthy();
 });
 
+
+// Search runs on demand and a selected result becomes a normal username-based friend request.
+test("Community members can search for people and send a friend request from a result", async ({ page }) => {
+  const calls: Array<{ path: string; method: string; body?: any }> = [];
+  await page.route("http://localhost:4000/api/social/**", async route => {
+    const request = route.request();
+    const url = new URL(request.url());
+    const method = request.method();
+    const body = method === "POST" ? request.postDataJSON() : undefined;
+    calls.push({ path: url.pathname, method, body });
+
+    if (url.pathname === "/api/social/friends/discover") {
+      expect(url.searchParams.get("q")).toBe("runner");
+      await route.fulfill({ status: 200, contentType: "application/json",
+        body: JSON.stringify({ people: [{ id: "candidate-1", username: "runnercandidate", displayName: "Runner Candidate" }] }) });
+      return;
+    }
+    if (url.pathname === "/api/social/friends" || url.pathname === "/api/social/blocks") {
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ connections: [], blocks: [] }) });
+      return;
+    }
+    if (url.pathname === "/api/social/feed") {
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ posts: [] }) });
+      return;
+    }
+    if (url.pathname === "/api/social/friends/request") {
+      await route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify({ connection: { id: "request-1" } }) });
+      return;
+    }
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({}) });
+  });
+
+  await page.goto("/");
+  await page.getByLabel("Email").fill("tester@example.com");
+  await page.getByLabel("Password").fill("test-password");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.locator(".sidebar-nav").getByRole("button", { name: "Community" }).click();
+
+  await page.getByLabel("Search by username or display name").fill("runner");
+  await page.getByRole("button", { name: "Search people" }).click();
+  await expect(page.getByRole("list", { name: "People you can connect with" }).getByText("Runner Candidate")).toBeVisible();
+  await page.getByRole("button", { name: "Add friend" }).click();
+
+  await expect(page.locator(".notice")).toContainText("Friend request sent");
+  expect(calls.some(call => call.path === "/api/social/friends/discover" && call.method === "GET")).toBeTruthy();
+  expect(calls.find(call => call.path === "/api/social/friends/request" && call.method === "POST")?.body).toEqual({ username: "runnercandidate" });
+});
 
 // Keep already loaded posts visible when a background refresh cannot reach the API.
 test("Community feed refreshes the first page and preserves posts when refresh fails", async ({ page }) => {

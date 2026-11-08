@@ -420,6 +420,49 @@ test("friend discovery feed excludes accounts blocked in either direction", asyn
   assert.deepEqual(feedQuery.where, { userId: { in: ["user-a", "user-c"] } });
 });
 
+// Discovery must not suggest the signed-in user, existing connections or accounts blocked in either direction.
+test("friend discovery returns a bounded identity-only list excluding relationships and blocks", async () => {
+  let searchQuery;
+  const prisma = {
+    friendConnection: { findMany: async () => [
+      { requesterId: "user-a", addresseeId: "friend-a" },
+      { requesterId: "friend-b", addresseeId: "user-a" }
+    ] },
+    userBlock: { findMany: async () => [{ blockerId: "blocked-user", blockedUserId: "user-a" }] },
+    user: { findMany: async args => {
+      searchQuery = args;
+      return [{ id: "new-user", username: "runner-new", displayName: "New Runner" }];
+    } }
+  };
+  await withSocialApi(prisma, async base => {
+    const response = await fetch(base + "/api/social/friends/discover?q=run");
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { people: [{ id: "new-user", username: "runner-new", displayName: "New Runner" }] });
+  });
+  assert.deepEqual(searchQuery.where.id.notIn, ["user-a", "friend-a", "friend-b", "blocked-user"]);
+  assert.deepEqual(searchQuery.where.OR, [
+    { username: { startsWith: "run", mode: "insensitive" } },
+    { displayName: { contains: "run", mode: "insensitive" } }
+  ]);
+  assert.deepEqual(searchQuery.select, { id: true, username: true, displayName: true });
+  assert.equal(searchQuery.take, 10);
+});
+
+test("friend discovery rejects short search terms before reading account relationships", async () => {
+  let reads = 0;
+  const prisma = {
+    friendConnection: { findMany: async () => { reads += 1; return []; } },
+    userBlock: { findMany: async () => { reads += 1; return []; } },
+    user: { findMany: async () => { reads += 1; return []; } }
+  };
+  await withSocialApi(prisma, async base => {
+    const response = await fetch(base + "/api/social/friends/discover?q=ab");
+    assert.equal(response.status, 400);
+    assert.deepEqual(await response.json(), { error: "Invalid request." });
+  });
+  assert.equal(reads, 0);
+});
+
 // Blocking prevents new requests even when the requester is not the blocker.
 test("friend requests are not created when either account has blocked the other", async () => {
   let writes = 0;

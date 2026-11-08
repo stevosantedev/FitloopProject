@@ -107,6 +107,47 @@ async function friendIds(userId) {
   return connections.map(item => item.requesterId === userId ? item.addresseeId : item.requesterId).filter(id => !blocked.has(id));
 }
 
+// Search returns only identity fields; private profile details remain behind the existing profile route.
+router.get("/friends/discover", async (req, res, next) => {
+  try {
+    const input = z.object({ q: z.string().trim().min(3).max(24) }).parse(req.query);
+
+    // Exclude the signed-in user, existing relationships in either direction and accounts blocked by either member.
+    const [connections, blocks] = await Promise.all([
+      prismaClient.friendConnection.findMany({
+        where: { OR: [{ requesterId: req.userId }, { addresseeId: req.userId }] },
+        select: { requesterId: true, addresseeId: true }
+      }),
+      prismaClient.userBlock.findMany({
+        where: { OR: [{ blockerId: req.userId }, { blockedUserId: req.userId }] },
+        select: { blockerId: true, blockedUserId: true }
+      })
+    ]);
+    const excludedIds = new Set([
+      req.userId,
+      ...connections.map(item => item.requesterId === req.userId ? item.addresseeId : item.requesterId),
+      ...blocks.map(item => item.blockerId === req.userId ? item.blockedUserId : item.blockerId)
+    ]);
+
+    // Keep discovery useful without turning it into an unrestricted account directory.
+    const people = await prismaClient.user.findMany({
+      where: {
+        id: { notIn: [...excludedIds] },
+        OR: [
+          { username: { startsWith: input.q, mode: "insensitive" } },
+          { displayName: { contains: input.q, mode: "insensitive" } }
+        ]
+      },
+      select: { id: true, username: true, displayName: true },
+      orderBy: { username: "asc" },
+      take: 10
+    });
+    return res.json({ people });
+  } catch (error) {
+    return next(error);
+  }
+});
+
 router.get("/friends", async (req, res, next) => {
   try {
     const connections = await prismaClient.friendConnection.findMany({

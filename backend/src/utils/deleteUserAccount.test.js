@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { deleteUserAccount } from "./deleteUserAccount.js";
 
+// This order mirrors the foreign-key restriction: session history must be removed before private exercises.
 test("account deletion removes restricted training dependants before custom exercises", async () => {
   const calls = [];
   let transactionCount = 0;
@@ -29,6 +30,7 @@ test("account deletion removes restricted training dependants before custom exer
   ]);
 });
 
+// A failed database operation must stop later deletes so the surrounding transaction can roll back.
 test("account deletion propagates failures so the transaction can roll back", async () => {
   const failure = new Error("database unavailable");
   const prisma = {

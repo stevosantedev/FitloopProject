@@ -4,6 +4,7 @@ import { calculateMuscleVolume } from "./muscleVolume.js";
 
 const muscle = slug => ({ slug, name: slug });
 
+// Keep the weighting rule visible: prime movers count fully, supporting muscles count as a half-set.
 test("primary and secondary muscle links receive different set weights", () => {
   const chest = muscle("chest");
   const triceps = muscle("triceps");
@@ -21,6 +22,7 @@ test("primary and secondary muscle links receive different set weights", () => {
   assert.equal(totals.get("triceps").secondarySets, 1);
 });
 
+// Out-of-order input dates ensure the summary tracks the latest session rather than the final array item.
 test("multiple sets accumulate and retain the latest training date", () => {
   const back = muscle("back");
   const totals = calculateMuscleVolume([
@@ -35,6 +37,7 @@ test("multiple sets accumulate and retain the latest training date", () => {
   assert.equal(totals.get("back").lastTrainedAt.toISOString(), "2026-11-03T10:00:00.000Z");
 });
 
+// Empty history should remain an empty result instead of creating zero-value muscle rows.
 test("an empty workout produces no muscle totals", () => {
   assert.equal(calculateMuscleVolume([]).size, 0);
 });

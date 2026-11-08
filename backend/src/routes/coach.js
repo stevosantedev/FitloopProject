@@ -86,7 +86,7 @@ const messageInput = z.object({ message: z.string().trim().min(1).max(2000) });
          sets: { where: { completed: true }, select: { reps: true, weightKg: true, exercise: { select: { name: true } } } } }
      });
      // Consent is read from the server-side account preference; changing the message body cannot enable AI.
-     const preference = await prismaClient.coachPreference.findUnique     const preference = await prismaClient.coachPreference.findUnique({ where: { userId: req.userId } });
+     const preference = await prismaClient.coachPreference.findUnique({ where: { userId: req.userId } });
      const response = await fetchImpl(config.COACH_SERVICE_URL + "/coach/conversation", {
        method: "POST", headers: { "content-type": "application/json" },
        body: JSON.stringify({ message: input.message, style: preference?.style ?? "gentle",
@@ -97,7 +97,7 @@ const messageInput = z.object({ message: z.string().trim().min(1).max(2000) });
      });
      // Do not save the user's message if the service failed; otherwise the chat would look complete
      // even though no assistant reply exists. The user can safely retry the prompt.
-     if (!response.ok) return res.status(503)     if (!response.ok) return res.status(503).json({ error: "The coach is temporarily unavailable. Your message was not saved; please try again." });
+     if (!response.ok) return res.status(503).json({ error: "The coach is temporarily unavailable. Your message was not saved; please try again." });
      const result = await response.json();
      if (typeof result.message !== "string" || !result.message.trim())
        return res.status(503).json({ error: "The coach returned an incomplete response. Please try again." });
@@ -201,7 +201,7 @@ router.post("/check-in", async (req, res, next) => {
 
     // Persist the rule and explanation shown to the user so the advice can be evaluated later.
     // Persist the exact rule, wording and explanation shown to the user for later review.
-    const events = await prismaClient.$transaction(result.messages.map    const events = await prismaClient.$transaction(result.messages.map((message) =>
+    const events = await prismaClient.$transaction(result.messages.map((message) =>
       prismaClient.coachEvent.create({
         data: {
           userId: req.userId,

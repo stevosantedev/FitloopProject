@@ -215,7 +215,7 @@ def conversation(payload: ConversationRequest):
     # configured a provider key. Safety routes above always remain rule-guided.
     # Keep the guided reply ready as a fallback. Only non-safety requests with explicit
     # account consent and a configured server key are eligible for model processing.
-    if payload.aiEnabled and os.getenv("AI_COACH_API_KEY")    if payload.aiEnabled and os.getenv("AI_COACH_API_KEY") and not any(term in lowered for term in urgent_terms + injury_terms):
+    if payload.aiEnabled and os.getenv("AI_COACH_API_KEY") and not any(term in lowered for term in urgent_terms + injury_terms):
         try:
             generated = generate_ai_reply(payload)
             if generated:

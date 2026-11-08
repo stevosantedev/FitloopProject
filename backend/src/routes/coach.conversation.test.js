@@ -33,9 +33,21 @@ test("POST message persists a user and guided coach reply in an owned conversati
     workoutSession: {
       findMany: async args => {
         assert.equal(args.where.userId, "user-a");
+        assert.equal(args.take, 5);
+        assert.deepEqual(args.orderBy, { startedAt: "desc" });
+        assert.deepEqual(args.select, {
+          startedAt: true,
+          routine: { select: { name: true } },
+          sets: { where: { completed: true }, select: {
+            reps: true, weightKg: true, exercise: { select: { name: true } }
+          } }
+        });
         return [{
+          userId: "user-a",
           startedAt: new Date("2026-11-01T10:00:00Z"),
           routine: { name: "Upper body" },
+          notes: "PRIVATE SESSION NOTE",
+          dailyLog: { note: "PRIVATE WELLBEING ENTRY" },
           sets: [{ reps: 8, weightKg: 60, exercise: { name: "Bench press" } }]
         }];
       }
@@ -68,6 +80,10 @@ test("POST message persists a user and guided coach reply in an owned conversati
   assert.equal(servicePayload.style, "direct");
   assert.equal(servicePayload.context.recentSessions[0].exercises[0].name, "Bench press");
   assert.equal("userId" in servicePayload, false);
+  const serializedPayload = JSON.stringify(servicePayload);
+  assert.equal(serializedPayload.includes("user-a"), false);
+  assert.equal(serializedPayload.includes("PRIVATE SESSION NOTE"), false);
+  assert.equal(serializedPayload.includes("PRIVATE WELLBEING ENTRY"), false);
   assert.equal(writes.filter(item => item.type === "message").length, 2);
   assert.equal(writes.find(item => item.type === "conversation").args.data.title, "Can you review my progress?");
 });

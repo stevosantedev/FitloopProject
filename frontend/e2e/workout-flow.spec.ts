@@ -833,14 +833,14 @@ test("authors can edit their own Community text updates", async ({ page }) => {
   await page.getByLabel("Password").fill("test-password");
   await page.getByRole("button", { name: "Sign in" }).click();
   await page.locator(".sidebar-nav").getByRole("button", { name: "Community" }).click();
-  const card = page.locator(".feed-card").filter({ hasText: "The original training update" });
-  await expect(card).toBeVisible();
+  const card = page.locator(".feed-card").first();
+  await expect(card).toContainText("The original training update");
   await card.getByRole("button", { name: "Edit post" }).click();
   await card.getByLabel("Edit your update").fill("A corrected training update");
   await card.getByRole("button", { name: "Save edit" }).click();
   await expect(page.locator(".feed-card")).toContainText("A corrected training update");
   await expect(page.getByText("The original training update")).toHaveCount(0);
-  await expect(page.getByRole("status")).toContainText("Your update has been edited.");
+  await expect(page.locator(".notice")).toContainText("Your update has been edited.");
   expect(patchCalls).toBe(1);
 });
 

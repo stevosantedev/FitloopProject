@@ -7,7 +7,7 @@ export function createSocialRouter(prismaClient = prisma, moderatorIds = (proces
 const router = Router();
 const configuredModeratorIds = moderatorIds instanceof Set ? moderatorIds : new Set(moderatorIds);
 const commentInput = z.object({ text: z.string().trim().min(1).max(500) });
-const postInput = z.object({ text: z.string().trim().min(1).max(500) });
+const postInput = z.object({ text: z.string().trim().min(1).max(500) }).strict();
 const reactionInput = z.object({ value: z.enum(["like", "strong", "clap"]).default("like") });
 const reportLimiter = rateLimit({ windowMs: 60 * 60 * 1000, limit: 5, standardHeaders: true, legacyHeaders: false, keyGenerator: req => req.userId });
 const reportInput = z.object({

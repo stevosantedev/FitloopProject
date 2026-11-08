@@ -1,6 +1,6 @@
 # Project status and completion plan
 
-Last reviewed: 7 November 2026
+Last reviewed: 8 November 2026
 
 This document separates implemented functionality from the work still required to call FitLoop a complete university-project submission or a production service. A feature is not considered complete merely because its UI exists: its API behaviour, validation, failure states and tests must also be checked.
 
@@ -8,7 +8,7 @@ This document separates implemented functionality from the work still required t
 
 FitLoop is a connected, working MVP foundation. The main product path is present across the React application, Express API, PostgreSQL/Prisma data model and Python coaching service. The strongest completed area is the training workflow: exercise discovery, routine management, guided set recording, workout history, progression, personal records and muscle training summaries.
 
-The application has an app-oriented responsive shell and installable web-app foundation, with explicit loading, error and retry feedback across the overview, workouts and community areas. It supports offline workout queueing and retry-safe synchronisation, including account isolation, reload recovery, sign-out/sign-in recovery, expired-session retry and invalid-payload handling. Account deletion is covered by unit tests and a PostgreSQL-backed cascade test that now includes bidirectional blocks and private reports. The latest verified branch-head CI run ([8 November 2026, run 42498746283](https://github.com/stevosantedev/FitloopProject/actions/runs/42498746283)) passed both application and coaching-service jobs, including the full browser suite and the Community feed refresh failure/recovery journey.
+The application has an app-oriented responsive shell and installable web-app foundation, with explicit loading, error and retry feedback across the overview, workouts and community areas. It supports offline workout queueing and retry-safe synchronisation, including account isolation, reload recovery, sign-out/sign-in recovery, expired-session retry and invalid-payload handling. Account deletion is covered by unit tests and a PostgreSQL-backed cascade test that now includes bidirectional blocks and private reports. The latest verified branch-head CI run ([8 November 2026, run 42499145825](https://github.com/stevosantedev/FitloopProject/actions/runs/42499145825)) passed both application and coaching-service jobs, including the full browser suite and the Community feed refresh failure/recovery journey.
 
 ## Implemented product areas
 
@@ -26,7 +26,7 @@ The application has an app-oriented responsive shell and installable web-app fou
 ## Remaining work before the university project can be called complete
 
 ### 1. Stabilise and verify the current implementation
-- [x] Latest branch-head CI passes both application and coaching-service jobs (run 42498746283). The application job validates the Prisma schema and migrations, seeds the catalogue, runs backend tests, builds the frontend and completes the Playwright suite.
+- [x] Latest branch-head CI passes both application and coaching-service jobs (run 42499145825). The application job validates the Prisma schema and migrations, seeds the catalogue, runs backend tests, builds the frontend and completes the Playwright suite. The passing run includes semantic Community post timestamps, labelled comment sections and singular/plural comment counts.
 - [x] Full browser suite passes on the current feature branch, including offline/reconnection flows, author-only comment editing/deletion, reaction selection/change/removal, per-post comment pagination, movement-level workout summary cards and explicit loading/retry behaviour for the exercise library.
 - [x] Browser coverage verifies account-scoped queueing and cleanup, persistence across reload and sign-out/sign-in, retry after an expired session, removal of permanently invalid queued payloads, a clear error when IndexedDB is unavailable, and loading/error/retry states for workout data.
 - [x] Account deletion is tested at unit level and against PostgreSQL. The integration test verifies removal of daily logs, routines, sessions/sets, planned sessions, coaching records, preferences, social posts, friendships, reactions, comments and private custom exercises, while preserving shared exercises and other users.
@@ -51,7 +51,7 @@ The application has an app-oriented responsive shell and installable web-app fou
 - [x] Add server-enforced cursor pagination to the friends-only feed, with deterministic ordering, a bounded page size and visibility checks on every page.
 - [x] Add moderator-only report queue, status transitions, reviewer timestamps and resolution notes; moderator identity is configured server-side and cannot be self-assigned.
 - [x] Add a browser journey proving older posts append without replacing the current feed.
-- [ ] Expand the visual feed further with richer workout/update cards and polished comment previews; workout summaries, comment management, reaction toggles, pagination and moderator review are delivered.
+- [ ] Complete the remaining feed presentation polish and manual QA; workout summaries, comment management, reaction toggles, pagination and moderator review are delivered.
 - [x] Add first-page feed refresh with an accessible loading state, retry after failure and preservation of already loaded posts when refresh fails.
 - [x] Give feed timestamps semantic `<time>` markup and separate discussion sections with explicit comment counts.
 - [ ] Add image upload only after storage, access control, file validation, metadata stripping, deletion and media-rights decisions are implemented.

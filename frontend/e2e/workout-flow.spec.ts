@@ -862,10 +862,15 @@ test("community block and report controls call the moderation API", async ({ pag
 test("Community feed refreshes the first page and preserves posts when refresh fails", async ({ page }) => {
   await mockApplicationApi(page);
   let feedRequests = 0;
-  const makePost = (id: string, text: string) => ({
+  const makePost = (id: string, text: string, comments: Array<{ id: string; text: string }> = []) => ({
     id, createdAt: "2026-11-08T10:00:00.000Z", text, type: "update",
     user: { id: "user-2", username: "friend", displayName: "Friend" },
-    reactions: [], comments: []
+    reactions: [],
+    comments: comments.map(comment => ({
+      ...comment, createdAt: "2026-11-08T10:01:00.000Z",
+      user: { id: "user-2", username: "friend", displayName: "Friend" }
+    })),
+    _count: { comments: comments.length }
   });
   await page.route("http://localhost:4000/api/social/feed", async route => {
     feedRequests += 1;
@@ -873,7 +878,14 @@ test("Community feed refreshes the first page and preserves posts when refresh f
       return route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ error: "Feed refresh temporarily unavailable." }) });
     }
     const posts = feedRequests === 1
-      ? [makePost("post-initial", "The activity already on screen")]
+      ? [
+          makePost("post-initial", "The activity already on screen"),
+          makePost("post-single-comment", "A post with one comment", [{ id: "comment-one", text: "Good work" }]),
+          makePost("post-multiple-comments", "A post with multiple comments", [
+            { id: "comment-two", text: "First reply" },
+            { id: "comment-three", text: "Second reply" }
+          ])
+        ]
       : [makePost("post-refreshed", "A newly shared training update")];
     await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({
       posts, hasMore: false, nextCursor: null
@@ -886,7 +898,9 @@ test("Community feed refreshes the first page and preserves posts when refresh f
   await page.locator(".sidebar-nav").getByRole("button", { name: "Community" }).click();
   await expect(page.getByText("The activity already on screen")).toBeVisible();
   await expect(page.locator(".feed-card time")).toHaveAttribute("datetime", "2026-11-08T10:00:00.000Z");
-  await expect(page.locator(".feed-comments-heading")).toContainText("0 comments");
+  await expect(page.locator(".feed-card").filter({ hasText: "The activity already on screen" }).locator(".feed-comments-heading")).toContainText("0 comments");
+  await expect(page.locator(".feed-card").filter({ hasText: "A post with one comment" }).locator(".feed-comments-heading")).toContainText("1 comment");
+  await expect(page.locator(".feed-card").filter({ hasText: "A post with multiple comments" }).locator(".feed-comments-heading")).toContainText("2 comments");
   await page.getByRole("button", { name: "Refresh feed" }).click();
   await expect(page.getByRole("alert")).toContainText("Feed refresh temporarily unavailable.");
   await expect(page.getByText("The activity already on screen")).toBeVisible();

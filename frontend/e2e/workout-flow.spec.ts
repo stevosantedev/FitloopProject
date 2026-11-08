@@ -1354,3 +1354,31 @@ test("Coach lets users edit a saved weekly programme and keeps the changes revie
   expect(updateCalls[0].days.every((day: any) => day.exercises.length >= 2)).toBeTruthy();
 });
 
+
+
+test("Coach shows a seven-day recovery-aware layout for saved weekly programmes", async ({ page }) => {
+  const movements = [
+    { ...exercise, id: "draft-squat", name: "Goblet squat", equipment: "Dumbbell", movementPattern: "Squat", difficulty: "Beginner" },
+    { ...exercise, id: "draft-hinge", name: "Romanian deadlift", equipment: "Dumbbell", movementPattern: "Hip hinge", difficulty: "Intermediate" },
+    { ...exercise, id: "draft-push", name: "Push-up", equipment: "Bodyweight", movementPattern: "Horizontal push", difficulty: "Beginner" },
+    { ...exercise, id: "draft-pull", name: "Single-arm dumbbell row", equipment: "Dumbbell", movementPattern: "Horizontal pull", difficulty: "Beginner" },
+    { ...exercise, id: "draft-core", name: "Dead bug", equipment: "Bodyweight", movementPattern: "Anti-extension", difficulty: "Beginner" }
+  ];
+  await mockApplicationApi(page, undefined, 200, [], movements);
+  await page.goto("/");
+  await page.getByLabel("Email").fill("tester@example.com");
+  await page.getByLabel("Password").fill("test-password");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.locator(".sidebar-nav").getByRole("button", { name: "Coach" }).click();
+  await page.getByLabel("Days available each week").selectOption("2");
+  await page.getByLabel("Available equipment").selectOption("dumbbells");
+  await page.getByRole("button", { name: "Generate weekly programme" }).click();
+  await page.getByRole("button", { name: "Save weekly programme" }).click();
+  const schedule = page.getByLabel(/weekly schedule/);
+  await expect(schedule).toBeVisible();
+  await expect(schedule.locator(".coach-week-cell")).toHaveCount(7);
+  await expect(schedule.locator(".coach-week-cell").nth(0)).toContainText("Day 1");
+  await expect(schedule.locator(".coach-week-cell").nth(3)).toContainText("Day 2");
+  await expect(schedule.locator(".coach-week-cell").nth(1)).toContainText("Rest");
+  await expect(schedule.locator(".coach-week-cell").nth(6)).toContainText("Rest");
+});

@@ -781,3 +781,24 @@ footer { padding: 22px 0 0; border-top: 1px solid #202c25; }
 @media (max-width: 420px) {
   .coach-routine-fields { grid-template-columns: 1fr; }
 }
+
+
+/* Give each saved programme a compact seven-day overview without implying fixed appointments. */
+.coach-week-schedule { display: grid; gap: 9px; margin: 12px 0; padding: 13px; border: 1px solid #304337; border-radius: 12px; background: #121c16; }
+.coach-week-schedule-heading { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; color: #e1ebe2; font-size: .8rem; }
+.coach-week-schedule-heading span, .coach-week-note { color: #91a194; font-size: .72rem; }
+.coach-week-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.coach-week-cell { display: grid; align-content: start; gap: 5px; min-width: 0; min-height: 76px; padding: 8px 5px; border: 1px solid #34463a; border-radius: 9px; background: #18251c; text-align: center; }
+.coach-week-cell > span { color: #a8b8aa; font-size: .68rem; font-weight: 700; }
+.coach-week-cell strong { color: #d9f2bd; font-size: .72rem; }
+.coach-week-cell small { color: #a0b19f; font-size: .64rem; overflow-wrap: anywhere; }
+.coach-week-cell.is-rest { background: #141c17; }
+.coach-week-cell.is-rest small { color: #7e8d81; }
+.coach-week-note { margin: 0; line-height: 1.5; }
+@media (max-width: 560px) {
+  .coach-week-grid { gap: 3px; }
+  .coach-week-cell { min-height: 70px; padding: 7px 2px; }
+  .coach-week-cell > span { font-size: .62rem; }
+  .coach-week-cell strong { font-size: .65rem; }
+  .coach-week-cell small { font-size: .58rem; }
+}

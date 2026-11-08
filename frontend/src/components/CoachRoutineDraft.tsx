@@ -277,6 +277,25 @@ export default function CoachRoutineDraft({ exercises, plans, plansLoading, savi
         <div className="section-heading-row"><h3>Your programmes</h3><span>{plans.length} saved</span></div>
         {plansLoading ? <p className="muted" role="status">Loading your programmes…</p> : plans.length === 0 ? <p className="muted">Your saved weekly programmes will appear here.</p> : plans.map(plan => <article className="coach-saved-plan" key={plan.id}>
           <div className="section-heading-row"><div><h4>{plan.name}</h4><p className="muted">{plan.daysPerWeek} days · {plan.goal} · {plan.experience}</p></div><div className="button-row"><button type="button" className="small-button secondary" onClick={() => editSavedPlan(plan)}>Edit</button><button type="button" className="small-button" onClick={() => onDeletePlan(plan.id)}>Delete</button></div></div>
+          <div className="coach-week-schedule" aria-label={plan.name + " weekly schedule"}>
+            <div className="coach-week-schedule-heading"><strong>Suggested weekly layout</strong><span>Move sessions to suit your week</span></div>
+            <div className="coach-week-grid">
+              {(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"] as const).map((weekday, index) => {
+                const trainingDayIndexes: Record<number, number[]> = {
+                  2: [0, 3], 3: [0, 2, 4], 4: [0, 1, 3, 5],
+                  5: [0, 1, 2, 4, 5], 6: [0, 1, 2, 3, 4, 5]
+                };
+                const dayIndex = trainingDayIndexes[plan.daysPerWeek]?.indexOf(index) ?? -1;
+                const scheduledDay = dayIndex >= 0 ? plan.days[dayIndex] : undefined;
+                return <div className={"coach-week-cell " + (scheduledDay ? "has-session" : "is-rest")} key={weekday}>
+                  <span>{weekday.slice(0, 3)}</span>
+                  {scheduledDay ? <strong>Day {scheduledDay.dayNumber}</strong> : <small>Rest</small>}
+                  {scheduledDay && <small>{scheduledDay.label}</small>}
+                </div>;
+              })}
+            </div>
+            <p className="coach-week-note">This is a suggested spread, not a fixed calendar. Leave recovery time between demanding sessions and adjust the days around your commitments.</p>
+          </div>
           <div className="coach-saved-plan-days">{plan.days.map(day => <div key={day.id}>
             <div><strong>Day {day.dayNumber} · {day.label}</strong><small>{day.routine.exercises.length} movements</small></div>
             <button type="button" className="secondary small-button" onClick={() => onStartDay(day.routine)}>Start {day.label}</button>

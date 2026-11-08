@@ -1072,6 +1072,8 @@ test("community block and report controls call the moderation API", async ({ pag
 
 // Search runs on demand and a selected result becomes a normal username-based friend request.
 test("Community members can search for people and send a friend request from a result", async ({ page }) => {
+  // Reuse the shared auth and dashboard mocks; the more specific route below overrides only Community calls.
+  await mockApplicationApi(page);
   const calls: Array<{ path: string; method: string; body?: any }> = [];
   await page.route("http://localhost:4000/api/social/**", async route => {
     const request = route.request();

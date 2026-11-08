@@ -1423,8 +1423,11 @@ test("Coach displays evidence and explanation for workout progression guidance",
 
 test("Coach settings disclose optional AI processing and keep consent off by default", async ({ page }) => {
   await mockApplicationApi(page);
-  await signIn(page);
-  await page.getByRole("button", { name: /Overview/ }).click();
+  await page.goto("/");
+  await page.getByLabel("Email").fill("tester@example.com");
+  await page.getByLabel("Password").fill("test-password");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await expect(page.getByRole("button", { name: /Overview/ })).toBeVisible();
   const consent = page.getByLabel(/Use AI-generated coaching replies/);
   await expect(consent).not.toBeChecked();
   await expect(page.getByText(/message and up to five recent completed workout summaries are sent/i)).toBeVisible();

@@ -758,3 +758,26 @@ footer { padding: 22px 0 0; border-top: 1px solid #202c25; }
 .feed-comments-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 8px; color: #dce8df; font-size: .82rem; }
 .feed-comments-heading span { color: #91a397; font-size: .74rem; }
 @media (max-width: 700px) { .feed-heading time { white-space: normal; } }
+
+
+.coach-routine-builder { display: grid; gap: 14px; margin-bottom: 16px; }
+.coach-routine-builder h2, .coach-routine-preview h3 { margin: 0; }
+.coach-routine-fields { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.coach-routine-fields label { display: grid; gap: 6px; color: #c7d5c9; font-size: .78rem; }
+.coach-routine-fields select { width: 100%; min-width: 0; }
+.coach-routine-note, .coach-routine-disclosure { margin: 0; color: #94a496; font-size: .76rem; line-height: 1.55; }
+.coach-routine-preview { display: grid; gap: 12px; padding: 15px; border: 1px solid #3b503d; border-radius: 12px; background: #121d16; }
+.coach-routine-preview .section-heading-row { align-items: center; }
+.coach-routine-preview .section-heading-row span { color: #a9c18f; font-size: .75rem; }
+.coach-routine-preview ol { display: grid; gap: 8px; margin: 0; padding-left: 24px; }
+.coach-routine-preview li { padding-left: 4px; color: #e0e9e1; }
+.coach-routine-preview li span { display: block; margin-top: 3px; color: #91a194; font-size: .75rem; }
+.coach-routine-preview > button { justify-self: start; }
+.coach-routine-disclosure { color: #839386; }
+
+@media (max-width: 760px) {
+  .coach-routine-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 420px) {
+  .coach-routine-fields { grid-template-columns: 1fr; }
+}

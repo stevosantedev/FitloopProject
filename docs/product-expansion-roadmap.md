@@ -38,7 +38,8 @@ The existing Python rule-based coach remains a useful baseline and fallback. A l
 
 3. **Training assistance**
    - Explain exercises and training concepts using the reviewed first-party catalogue.
-   - Help draft routines and suggest adjustments, with the user confirming changes before they are saved.
+   - [x] Provide a transparent catalogue-based full-body routine draft using the user's goal, weekly availability, equipment and experience; transfer selected movements into the existing routine editor for review, with no save until the user confirms. This is a deterministic first slice, not generative AI or a complete weekly split.
+   - Suggest adjustments to reviewed routines only after further evaluation and confirmation flows.
    - Explain progress trends without presenting heuristic muscle-volume estimates as physiological facts.
    - Ask a clarifying question when goals, equipment, experience or constraints materially affect the answer.
 

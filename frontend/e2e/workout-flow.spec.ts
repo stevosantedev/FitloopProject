@@ -1239,3 +1239,47 @@ test("Community comment authors can edit and delete only their own comments", as
   expect(calls.some(call => call.method === "DELETE" && call.path === "/api/social/comments/comment-own")).toBeTruthy();
 });
 
+
+
+test("Coach creates a catalogue-grounded routine draft and requires review before saving", async ({ page }) => {
+  const saveCalls: any[] = [];
+  await mockApplicationApi(page);
+  await page.route("http://localhost:4000/api/workouts/exercises", async route => {
+    const movements = [
+      { ...exercise, id: "draft-squat", name: "Goblet squat", equipment: "Dumbbell", movementPattern: "Squat", difficulty: "Beginner" },
+      { ...exercise, id: "draft-hinge", name: "Romanian deadlift", equipment: "Dumbbell", movementPattern: "Hip hinge", difficulty: "Intermediate" },
+      { ...exercise, id: "draft-push", name: "Push-up", equipment: "Bodyweight", movementPattern: "Horizontal push", difficulty: "Beginner" },
+      { ...exercise, id: "draft-pull", name: "Single-arm dumbbell row", equipment: "Dumbbell", movementPattern: "Horizontal pull", difficulty: "Beginner" },
+      { ...exercise, id: "draft-core", name: "Dead bug", equipment: "Bodyweight", movementPattern: "Anti-extension", difficulty: "Beginner" }
+    ];
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ exercises: movements }) });
+  });
+  await page.route("http://localhost:4000/api/workouts/routines", async route => {
+    if (route.request().method() === "POST") saveCalls.push(route.request().postDataJSON());
+    await route.fallback();
+  });
+  await page.goto("/");
+  await page.getByLabel("Email").fill("tester@example.com");
+  await page.getByLabel("Password").fill("test-password");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.locator(".sidebar-nav").getByRole("button", { name: "Coach" }).click();
+  await page.getByLabel("Available equipment").selectOption("dumbbells");
+  await page.getByRole("button", { name: "Generate routine draft" }).click();
+  const preview = page.locator(".coach-routine-preview");
+  await expect(preview).toContainText("Goblet squat");
+  await expect(preview).toContainText("Romanian deadlift");
+  await expect(preview).toContainText("Push-up");
+  await expect(preview).toContainText("Single-arm dumbbell row");
+  await expect(preview).toContainText("Dead bug");
+  await expect(page.getByText(/Nothing is saved until you review/)).toBeVisible();
+  expect(saveCalls).toHaveLength(0);
+  await preview.getByRole("button", { name: "Review in routine editor" }).click();
+  await expect(page.getByRole("heading", { name: "Create a routine" })).toBeVisible();
+  await expect(page.getByLabel("Routine name")).toHaveValue("Coach draft · Full body");
+  await expect(page.locator(".exercise-picker input:checked")).toHaveCount(5);
+  expect(saveCalls).toHaveLength(0);
+  await page.getByRole("button", { name: "Save routine" }).click();
+  await expect(page.getByText("Your routine has been saved.")).toBeVisible();
+  expect(saveCalls).toHaveLength(1);
+  expect(saveCalls[0].exercises).toHaveLength(5);
+});

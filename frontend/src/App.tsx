@@ -9,6 +9,7 @@
 import { useEffect, useRef, useState } from "react";
 import MuscleMap from "./components/MuscleMap";
 import GuidedRestTimer from "./components/GuidedRestTimer";
+import CoachRoutineDraft from "./components/CoachRoutineDraft";
 import { clearQueuedWorkouts, getQueuedWorkouts, queueWorkout, removeQueuedWorkout } from "./offlineWorkoutQueue";
 
 type User = { id: string; username: string; displayName?: string | null; bio?: string | null };
@@ -545,6 +546,14 @@ export default function App() {
     } catch (error) {
       setCoachChatError(error instanceof Error ? error.message : "The coach could not send a reply.");
     } finally { setCoachChatSending(false); }
+  }
+
+  function reviewCoachRoutineDraft(name: string, exerciseIds: string[]) {
+    setRoutineName(name);
+    setRoutineExerciseIds(exerciseIds);
+    setEditingRoutineId("");
+    setActiveTab("workouts");
+    setNotice("Coach draft loaded into the routine editor. Review the movements and save when ready; nothing has been saved yet.");
   }
 
   async function deleteCoachConversation(conversationId: string) {
@@ -1630,6 +1639,7 @@ export default function App() {
 
     {activeTab === "coach" && <section className="page-section">
       <div className="welcome compact"><p className="eyebrow">YOUR TRAINING COMPANION</p><h1>Meet your coach.</h1><p className="muted">Ask about your logged training, exercise technique or how to shape your next routine.</p></div>
+      <CoachRoutineDraft exercises={exercises} onReviewDraft={reviewCoachRoutineDraft} />
       <div className="coach-chat-layout">
         <aside className="panel coach-conversation-list">
           <div className="section-heading-row"><h2>Conversations</h2><button type="button" className="small-button" onClick={() => void createCoachConversation()}>New chat +</button></div>

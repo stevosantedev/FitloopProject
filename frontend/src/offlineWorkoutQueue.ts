@@ -57,7 +57,8 @@ export async function queueWorkout(userId: string, payload: OfflineWorkoutPayloa
     await new Promise<void>((resolve, reject) => {
       const transaction = database.transaction(STORE_NAME, "readwrite");
       // add() prevents a duplicate ID from silently replacing another queued workout.
-      transaction.objectStore(STORE_NAME).add(entry);      transaction.objectStore(STORE_NAME).add(entry);
+      // add() prevents a duplicate ID from silently replacing another queued workout.
+      transaction.objectStore(STORE_NAME).add(entry);
       transaction.oncomplete = () => resolve();
       transaction.onerror = () => reject(transaction.error ?? new Error("Could not save the workout offline."));
       transaction.onabort = () => reject(transaction.error ?? new Error("Offline workout save was interrupted."));

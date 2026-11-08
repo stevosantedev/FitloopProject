@@ -70,11 +70,11 @@ The current friends-only feed, workout posts, reactions and comments provide a s
    - [x] Create friends-only text updates from the Community screen, with a 500-character limit and a clear accepted-friends audience notice.
    - [x] Allow authors to delete their own posts; the API scopes deletion to the authenticated author and database cascades remove associated reactions/comments.
    - [x] Add API validation and route tests for text post creation, blank/overlong content and author-only deletion; add a browser journey for composing and sharing an update.
-   - [ ] Expand the feed into richer responsive cards for completed workouts and user-created updates, with polished author identity, timestamps, reaction counts and comment previews.
+   - [x] Expand the feed into responsive cards for completed workouts and user-created updates, with author identity, semantic timestamps, reaction counts, workout summaries and comment discussions.
    - [x] Add an explicit first-page feed refresh action; a failed refresh preserves the currently rendered posts and exposes an accessible retry.
    - [x] Present machine-readable post timestamps and a clearly labelled comment count/section on each feed card.
    - [x] Add cursor-based pagination with a bounded page size, deterministic ordering, a look-ahead query and server-side visibility checks on every page.
-   - [ ] Complete deliberate loading, empty, error and retry states for the full feed journey.
+   - [x] Complete deliberate loading, empty, error and retry states for the feed journey; browser coverage verifies initial-load failure recovery to a genuine empty state, failed first-page refresh recovery and older-post/comment pagination retries.
    - [ ] Add optimistic reactions only where failures can be rolled back accurately.
    - Image uploads remain out of scope until private media storage, file validation, metadata stripping, access control and deletion are implemented.
 

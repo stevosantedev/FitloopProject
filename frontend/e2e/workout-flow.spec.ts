@@ -821,6 +821,37 @@ test("community users can share a friends-only text update", async ({ page }) =>
 });
 
 
+test("Community feed retries an initial failure and then shows a genuine empty state", async ({ page }) => {
+  await mockApplicationApi(page);
+  let feedRequests = 0;
+  await page.route("http://localhost:4000/api/social/feed**", async route => {
+    feedRequests += 1;
+    if (feedRequests === 1) {
+      await route.fulfill({
+        status: 503, contentType: "application/json",
+        body: JSON.stringify({ error: "Community feed is temporarily unavailable." })
+      });
+      return;
+    }
+    await route.fulfill({
+      status: 200, contentType: "application/json",
+      body: JSON.stringify({ posts: [], hasMore: false, nextCursor: null })
+    });
+  });
+  await page.goto("/");
+  await page.getByLabel("Email").fill("tester@example.com");
+  await page.getByLabel("Password").fill("test-password");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.locator(".sidebar-nav").getByRole("button", { name: "Community" }).click();
+  const error = page.getByRole("alert").filter({ hasText: "Community feed is temporarily unavailable." });
+  await expect(error).toBeVisible();
+  await expect(page.getByText("No shared workouts yet. Once you and your friends log a session, it can appear here.")).toHaveCount(0);
+  await error.getByRole("button", { name: "Try again" }).click();
+  await expect(page.getByText("No shared workouts yet. Once you and your friends log a session, it can appear here.")).toBeVisible();
+  await expect(page.locator(".feed-card")).toHaveCount(0);
+  expect(feedRequests).toBe(2);
+});
+
 test("community block and report controls call the moderation API", async ({ page }) => {
   await mockApplicationApi(page);
   const calls: Array<{ path: string; method: string }> = [];

@@ -897,7 +897,7 @@ test("Community feed refreshes the first page and preserves posts when refresh f
   await page.getByRole("button", { name: "Sign in" }).click();
   await page.locator(".sidebar-nav").getByRole("button", { name: "Community" }).click();
   await expect(page.getByText("The activity already on screen")).toBeVisible();
-  await expect(page.locator(".feed-card time")).toHaveAttribute("datetime", "2026-11-08T10:00:00.000Z");
+  await expect(page.locator(".feed-card").filter({ hasText: "The activity already on screen" }).locator("time")).toHaveAttribute("datetime", "2026-11-08T10:00:00.000Z");
   await expect(page.locator(".feed-card").filter({ hasText: "The activity already on screen" }).locator(".feed-comments-heading")).toContainText("0 comments");
   await expect(page.locator(".feed-card").filter({ hasText: "A post with one comment" }).locator(".feed-comments-heading")).toContainText("1 comment");
   await expect(page.locator(".feed-card").filter({ hasText: "A post with multiple comments" }).locator(".feed-comments-heading")).toContainText("2 comments");

@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { prisma } from "../prisma.js";
 import { deleteUserAccount } from "./deleteUserAccount.js";
 
+// Use the real database constraints to verify deletion beyond the mocked transaction-order tests.
 test("account deletion removes owned records and private exercises while preserving shared data", {
   skip: !process.env.DATABASE_URL
 }, async () => {
@@ -145,6 +146,7 @@ test("account deletion removes owned records and private exercises while preserv
 
     await deleteUserAccount(prisma, owner.id);
 
+    // Read back every dependent table so a missing cascade cannot be hidden by a successful delete response.
     const [
       deletedUser,
       dailyLogs,
@@ -196,6 +198,7 @@ test("account deletion removes owned records and private exercises while preserv
       prisma.user.findUnique({ where: { id: friend.id } })
     ]);
 
+    // The owner and private data disappear, while shared catalogue entries and unrelated users remain.
     assert.equal(deletedUser, null);
     for (const count of [
       dailyLogs, routines, sessions, plannedSessions, trainingPlans, trainingPlanDays, coachEvents, coachPreferences,

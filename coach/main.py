@@ -67,6 +67,48 @@ def health():
 
 
 
+def training_progress_summary(sessions: list[RecentSession]) -> list[str]:
+    """Compare the highest logged load for the same movement across distinct sessions.
+
+    This describes recorded loads only; it does not estimate one-rep max or claim
+    that a load change proves a change in strength.
+    """
+    by_exercise: dict[str, dict[str, tuple[str, float]]] = {}
+    display_names: dict[str, str] = {}
+    for session in sorted(sessions, key=lambda item: item.date):
+        session_best: dict[str, float] = {}
+        for exercise in session.exercises:
+            if exercise.weightKg is None:
+                continue
+            key = exercise.name.casefold().strip()
+            if not key:
+                continue
+            display_names.setdefault(key, exercise.name)
+            session_best[key] = max(session_best.get(key, exercise.weightKg), exercise.weightKg)
+        for key, load in session_best.items():
+            by_exercise.setdefault(key, {})[session.date.isoformat()] = (session.date.isoformat(), load)
+
+    comparisons = []
+    for key, entries in by_exercise.items():
+        ordered = sorted(entries.values(), key=lambda item: item[0])
+        if len(ordered) < 2:
+            continue
+        previous_date, previous_load = ordered[-2]
+        latest_date, latest_load = ordered[-1]
+        name = display_names[key]
+        if latest_load > previous_load:
+            change = f"rose by {latest_load - previous_load:g} kg"
+        elif latest_load < previous_load:
+            change = f"was {previous_load - latest_load:g} kg lower"
+        else:
+            change = "was unchanged"
+        comparisons.append(
+            f"{name}: the highest logged load {change} "
+            f"({previous_load:g} kg on {previous_date} to {latest_load:g} kg on {latest_date})."
+        )
+    return comparisons
+
+
 @app.post("/coach/conversation")
 def conversation(payload: ConversationRequest):
     """Provide a transparent rule-guided conversation starter until a reviewed model provider is enabled."""
@@ -100,11 +142,29 @@ def conversation(payload: ConversationRequest):
                 for exercise in session.exercises:
                     if exercise.name not in exercise_names:
                         exercise_names.append(exercise.name)
+            latest_session = max(sessions, key=lambda item: item.date)
+            latest_movements = []
+            for exercise in latest_session.exercises:
+                if exercise.name not in latest_movements:
+                    latest_movements.append(exercise.name)
+            comparisons = training_progress_summary(sessions)
+            comparison_text = " ".join(comparisons[:3])
+            if comparison_text:
+                comparison_text += (
+                    " These are comparisons of the highest loads recorded for the same movement; "
+                    "rep ranges, technique and session conditions can differ, so they are not a definitive strength test."
+                )
+            else:
+                comparison_text = (
+                    " I don't yet have two separate sessions with a recorded load for the same movement, "
+                    "so I can't make a like-for-like load comparison."
+                )
             reply = (
                 f"I can see {len(sessions)} recent completed workout(s) in your FitLoop history, covering "
-                f"{len(exercise_names)} distinct movement(s). Your recent movements include "
-                f"{', '.join(exercise_names[:6]) if exercise_names else 'no completed exercise sets'}. "
-                "This is a snapshot, not enough on its own to prove a trend. Which lift or performance goal would you like to review?"
+                f"{len(exercise_names)} distinct movement(s). Your latest recorded session was "
+                f"{latest_session.date.isoformat()} and included "
+                f"{', '.join(latest_movements[:6]) if latest_movements else 'no completed exercise sets'}. "
+                f"{comparison_text} Which lift or performance goal would you like to review?"
             )
     elif any(term in lowered for term in ("workout", "routine", "plan", "programme", "program")):
         reply = (

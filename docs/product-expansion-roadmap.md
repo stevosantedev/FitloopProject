@@ -33,6 +33,7 @@ The existing Python rule-based coach remains a useful baseline and fallback. A l
    - Define a minimal, typed context package assembled by the API for the authenticated user.
    - Include only relevant information and an explicit time window; distinguish missing data from zero.
    - Ground training answers in actual logged sessions, exercise catalogue records and stated goals.
+   - [x] For progress questions, compare the highest recorded load for the same movement across separate completed sessions, identify the latest session and explain the limitations; never treat a load change alone as proof of strength gain.
    - Show which FitLoop information informed a recommendation; do not invent workouts, records or user history.
 
 3. **Training assistance**

@@ -77,6 +77,46 @@ def test_conversation_gives_a_transparent_guided_reply_and_uses_training_context
     assert "Bench press" in result["message"]
 
 
+def test_progress_reply_compares_highest_logged_load_for_the_same_movement():
+    response = client.post("/coach/conversation", json={
+        "message": "Can you review my progress?",
+        "context": {"recentSessions": [
+            {"date": "2026-10-25", "exercises": [
+                {"name": "Bench press", "reps": 8, "weightKg": 50},
+                {"name": "Bench press", "reps": 6, "weightKg": 45},
+            ]},
+            {"date": "2026-11-01", "exercises": [
+                {"name": "Bench press", "reps": 6, "weightKg": 60},
+                {"name": "Bench press", "reps": 5, "weightKg": 55},
+            ]},
+        ]},
+    })
+    assert response.status_code == 200
+    message = response.json()["message"]
+    assert "latest recorded session was 2026-11-01" in message
+    assert "Bench press: the highest logged load rose by 10 kg" in message
+    assert "50 kg on 2026-10-25 to 60 kg on 2026-11-01" in message
+    assert "not a definitive strength test" in message
+
+
+def test_progress_reply_does_not_invent_a_load_comparison_for_bodyweight_only_logs():
+    response = client.post("/coach/conversation", json={
+        "message": "Am I getting stronger?",
+        "context": {"recentSessions": [
+            {"date": "2026-10-25", "exercises": [
+                {"name": "Push-up", "reps": 12, "weightKg": None},
+            ]},
+            {"date": "2026-11-01", "exercises": [
+                {"name": "Push-up", "reps": 15, "weightKg": None},
+            ]},
+        ]},
+    })
+    assert response.status_code == 200
+    message = response.json()["message"]
+    assert "can't make a like-for-like load comparison" in message
+    assert "rose by" not in message
+
+
 def test_conversation_uses_conservative_safety_response_for_pain():
     response = client.post("/coach/conversation", json={"message": "My shoulder hurts during pressing"})
     assert response.status_code == 200

@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { summariseDailyLogs, summariseWorkoutSessions } from "./analytics.js";
 
+// The average uses only recorded values; an absent check-in is not evidence of zero activity.
 test("daily averages ignore fields that were not logged", () => {
   // Missing values should not pull a person's average down to zero.
   const result = summariseDailyLogs([
@@ -17,6 +18,7 @@ test("daily averages ignore fields that were not logged", () => {
   assert.equal(result.averageFocusMinutes, 90);
 });
 
+// Null preserves the distinction between an untracked metric and a measured zero.
 test("daily averages return null when no measurements exist", () => {
   // Null makes the difference between no data and a real zero measurement clear.
   const result = summariseDailyLogs([{ sleepMinutes: null, steps: undefined }]);
@@ -24,6 +26,7 @@ test("daily averages return null when no measurements exist", () => {
   assert.equal(result.averageSteps, null);
 });
 
+// Completed bodyweight sets count as work, while unknown load is excluded from kilogram volume.
 test("workout summary counts completed sets and known weighted volume", () => {
   // Incomplete sets are ignored, and bodyweight work counts without a made-up weight.
   const result = summariseWorkoutSessions([{

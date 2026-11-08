@@ -27,33 +27,39 @@ async function requestWithToken(value, header = true) {
   }
 }
 
+// A valid token must satisfy every claim the API uses to identify its intended caller.
 test("accepts a token with the expected signature, issuer and audience", async () => {
   const response = await requestWithToken(token());
   assert.equal(response.status, 200);
   assert.deepEqual(await response.json(), { userId: "account-1" });
 });
 
+// Prevent algorithm substitution even when the same secret could verify another HMAC variant.
 test("rejects a token signed with a different algorithm", async () => {
   const response = await requestWithToken(jwt.sign({ sub: "account-1" }, secret, { algorithm: "HS384", issuer: "fitloop-api", audience: "fitloop-web" }));
   assert.equal(response.status, 401);
 });
 
+// A token from a different issuer must not become an API credential by sharing a signing key.
 test("rejects a token issued for another service", async () => {
   const response = await requestWithToken(token({}, { issuer: "another-api" }));
   assert.equal(response.status, 401);
 });
 
+// Tokens issued to a different client are not valid credentials for the FitLoop frontend.
 test("rejects a token intended for another audience", async () => {
   const response = await requestWithToken(token({}, { audience: "another-client" }));
   assert.equal(response.status, 401);
 });
 
+// Both absent credentials and credentials outside their validity window must fail closed.
 test("rejects expired tokens and missing bearer credentials", async () => {
   const expired = token({}, { expiresIn: -1 });
   assert.equal((await requestWithToken(expired)).status, 401);
   assert.equal((await requestWithToken("", false)).status, 401);
 });
 
+// A signature alone is not enough; the API needs a stable account subject for ownership checks.
 test("rejects a signed token without an account subject", async () => {
   const withoutSubject = jwt.sign({}, secret, { issuer: "fitloop-api", audience: "fitloop-web", algorithm: "HS256" });
   assert.equal((await requestWithToken(withoutSubject)).status, 401);

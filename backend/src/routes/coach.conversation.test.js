@@ -25,6 +25,7 @@ async function withApi(prisma, fetchImpl, run) {
 }
 
 // This fixture also verifies the prompt context is minimal: private notes and wellbeing logs must not be forwarded.
+// Both sides of the exchange are persisted together so a conversation cannot contain a half-saved turn.
 test("POST message persists a user and guided coach reply in an owned conversation", async () => {
   const writes = [];
   let servicePayload;
@@ -93,6 +94,7 @@ test("POST message persists a user and guided coach reply in an owned conversati
 });
 
 // Ownership must be checked before reading workout history, not merely before saving the reply.
+// Reject ownership before loading workout history, keeping another account's training data out of scope.
 test("POST message does not query training data for a conversation owned by another account", async () => {
   let sessionReads = 0;
   const prisma = {
@@ -110,6 +112,7 @@ test("POST message does not query training data for a conversation owned by anot
 });
 
 // A failed provider call must not leave an orphaned user message that looks like a completed exchange.
+// A failed coach request must not leave a user message with no matching reply in the stored thread.
 test("POST message leaves history unchanged when the coaching service is unavailable", async () => {
   let transactions = 0;
   const prisma = {
@@ -128,6 +131,7 @@ test("POST message leaves history unchanged when the coaching service is unavail
   assert.equal(transactions, 0);
 });
 
+// Empty prompts should be rejected before database work or calls to the coaching service.
 test("POST message rejects blank content before querying conversation", async () => {
   let lookups = 0;
   const prisma = { coachConversation: { findFirst: async () => { lookups += 1; return null; } } };
@@ -143,6 +147,7 @@ test("POST message rejects blank content before querying conversation", async ()
 
 
 // Exercise the actual preference route through HTTP to protect the default, opt-in and revocation contract.
+// Consent is opt-in, account-owned and revocable; a previous choice must not survive a later opt-out.
 test("Coach AI preference defaults off and can be enabled then revoked by its owner", async () => {
   let savedPreference = null;
   const prisma = {

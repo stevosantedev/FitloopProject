@@ -859,6 +859,41 @@ test("community block and report controls call the moderation API", async ({ pag
 });
 
 
+test("Community feed refreshes the first page and preserves posts when refresh fails", async ({ page }) => {
+  await mockApplicationApi(page);
+  let feedRequests = 0;
+  const makePost = (id: string, text: string) => ({
+    id, createdAt: "2026-11-08T10:00:00.000Z", text, type: "update",
+    user: { id: "user-2", username: "friend", displayName: "Friend" },
+    reactions: [], comments: []
+  });
+  await page.route("http://localhost:4000/api/social/feed", async route => {
+    feedRequests += 1;
+    if (feedRequests === 2) {
+      return route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ error: "Feed refresh temporarily unavailable." }) });
+    }
+    const posts = feedRequests === 1
+      ? [makePost("post-initial", "The activity already on screen")]
+      : [makePost("post-refreshed", "A newly shared training update")];
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({
+      posts, hasMore: false, nextCursor: null
+    }) });
+  });
+  await page.goto("/");
+  await page.getByLabel("Email").fill("tester@example.com");
+  await page.getByLabel("Password").fill("test-password");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.locator(".sidebar-nav").getByRole("button", { name: "Community" }).click();
+  await expect(page.getByText("The activity already on screen")).toBeVisible();
+  await page.getByRole("button", { name: "Refresh feed" }).click();
+  await expect(page.getByRole("alert")).toContainText("Feed refresh temporarily unavailable.");
+  await expect(page.getByText("The activity already on screen")).toBeVisible();
+  await page.getByRole("alert").getByRole("button", { name: "Try again" }).click();
+  await expect(page.getByText("A newly shared training update")).toBeVisible();
+  await expect(page.getByText("The activity already on screen")).toHaveCount(0);
+  expect(feedRequests).toBe(3);
+});
+
 test("community feed loads older posts without replacing the first page", async ({ page }) => {
   await mockApplicationApi(page);
   let feedRequests = 0;

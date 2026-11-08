@@ -153,6 +153,8 @@ export default function App() {
   const [feedHasMore, setFeedHasMore] = useState(false);
   const [feedLoadingMore, setFeedLoadingMore] = useState(false);
   const [feedLoadMoreError, setFeedLoadMoreError] = useState("");
+  const [feedRefreshing, setFeedRefreshing] = useState(false);
+  const [feedRefreshError, setFeedRefreshError] = useState("");
   const [activeTab, setActiveTab] = useState<"home" | "workouts" | "community" | "coach">("home");
   const [notice, setNotice] = useState("");
   // Keep first-load and refresh failures separate from legitimate empty account data.
@@ -424,8 +426,26 @@ export default function App() {
 
   // Append older posts without replacing the current feed. The API applies
   // the same live friendship and block checks to every cursor request.
+  // Refresh only the first feed page so a transient failure never discards activity already on screen.
+  async function refreshCommunityFeed() {
+    if (feedRefreshing || feedLoadingMore) return;
+    setFeedRefreshing(true);
+    setFeedRefreshError("");
+    try {
+      const data = await request("/api/social/feed");
+      setPosts(data.posts);
+      setFeedCursor(data.nextCursor ?? null);
+      setFeedHasMore(Boolean(data.hasMore));
+      setFeedLoadMoreError("");
+    } catch (error) {
+      setFeedRefreshError(error instanceof Error ? error.message : "Could not refresh the community feed.");
+    } finally {
+      setFeedRefreshing(false);
+    }
+  }
+
   async function loadMoreCommunityPosts() {
-    if (!feedHasMore || !feedCursor || feedLoadingMore) return;
+    if (!feedHasMore || !feedCursor || feedLoadingMore || feedRefreshing) return;
     setFeedLoadingMore(true);
     setFeedLoadMoreError("");
     try {
@@ -1652,7 +1672,14 @@ export default function App() {
         <div className="composer-footer"><small>{communityPostDraft.trim().length}/500 · Shared with accepted friends</small><button disabled={!communityPostDraft.trim()}>Share update</button></div>
       </form>
       <section className="panel section-gap">
-        <p className="eyebrow">FRIENDS-ONLY FEED</p><h2>Recent activity</h2>
+        <div className="feed-section-heading">
+          <div><p className="eyebrow">FRIENDS-ONLY FEED</p><h2>Recent activity</h2></div>
+          <button type="button" className="small-button secondary feed-refresh" onClick={() => void refreshCommunityFeed()} disabled={feedRefreshing || feedLoadingMore}>
+            {feedRefreshing ? "Refreshing…" : "Refresh feed"}
+          </button>
+        </div>
+        {feedRefreshing && <p className="feed-refresh-status" role="status">Checking for new activity…</p>}
+        {feedRefreshError && <div className="load-error" role="alert"><span>{feedRefreshError} Your current posts are still available.</span><button type="button" className="secondary" onClick={() => void refreshCommunityFeed()}>Try again</button></div>}
         {posts.length === 0 && communityLoading ? <p className="muted" role="status">Loading recent activity…</p> : posts.length === 0 && communityError ? <p className="muted">The feed is unavailable until the community can be refreshed.</p> : posts.length === 0 ? <p className="muted">No shared workouts yet. Once you and your friends log a session, it can appear here.</p> :
           <div className="feed-list">{posts.map(post => {
             const workoutSummary = post.session ? summariseWorkoutPost(post.session) : [];

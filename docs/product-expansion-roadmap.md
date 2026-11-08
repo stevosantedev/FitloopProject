@@ -70,6 +70,7 @@ The current friends-only feed, workout posts, reactions and comments provide a s
    - [x] Allow authors to delete their own posts; the API scopes deletion to the authenticated author and database cascades remove associated reactions/comments.
    - [x] Add API validation and route tests for text post creation, blank/overlong content and author-only deletion; add a browser journey for composing and sharing an update.
    - [ ] Expand the feed into richer responsive cards for completed workouts and user-created updates, with polished author identity, timestamps, reaction counts and comment previews.
+   - [x] Add an explicit first-page feed refresh action; a failed refresh preserves the currently rendered posts and exposes an accessible retry.
    - [x] Add cursor-based pagination with a bounded page size, deterministic ordering, a look-ahead query and server-side visibility checks on every page.
    - [ ] Complete deliberate loading, empty, error and retry states for the full feed journey.
    - [ ] Add optimistic reactions only where failures can be rolled back accurately.

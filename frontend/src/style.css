@@ -732,3 +732,14 @@ footer { padding: 22px 0 0; border-top: 1px solid #202c25; }
   .profile-dialog-backdrop { align-items: end; padding: 10px; }
   .profile-dialog { border-radius: 18px 18px 10px 10px; }
 }
+
+/* Keep feed refresh controls aligned with the section title at every viewport size. */
+.feed-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 14px; }
+.feed-section-heading h2 { margin: 0; }
+.feed-section-heading .eyebrow { margin-bottom: 5px; }
+.feed-refresh { width: auto; flex: 0 0 auto; }
+.feed-refresh-status { margin: -3px 0 12px; color: #a9c18f; font-size: .78rem; }
+@media (max-width: 560px) {
+  .feed-section-heading { align-items: flex-start; }
+  .feed-refresh { min-height: 42px; padding-inline: 11px; }
+}

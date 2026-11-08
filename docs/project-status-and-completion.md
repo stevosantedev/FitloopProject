@@ -51,7 +51,8 @@ The application has an app-oriented responsive shell and installable web-app fou
 - [x] Add server-enforced cursor pagination to the friends-only feed, with deterministic ordering, a bounded page size and visibility checks on every page.
 - [x] Add moderator-only report queue, status transitions, reviewer timestamps and resolution notes; moderator identity is configured server-side and cannot be self-assigned.
 - [x] Add a browser journey proving older posts append without replacing the current feed.
-- [ ] Expand the visual feed with richer workout/update cards and comprehensive loading/error/retry states; cursor pagination, author-only comment editing/deletion and the first moderator review UI are delivered, but the feed is not yet feature-complete.
+- [ ] Expand the visual feed further with richer workout/update cards and polished comment previews; workout summaries, comment management, reaction toggles, pagination and moderator review are delivered.
+- [x] Add first-page feed refresh with an accessible loading state, retry after failure and preservation of already loaded posts when refresh fails.
 - [ ] Add image upload only after storage, access control, file validation, metadata stripping, deletion and media-rights decisions are implemented.
 - [ ] Deliver the in-app activity inbox after core coach and community interactions; consider push notifications only with explicit preferences and permission handling.
 - [ ] Follow `docs/product-expansion-roadmap.md` for the detailed delivery slices and acceptance criteria.

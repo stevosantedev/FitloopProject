@@ -7,10 +7,12 @@ type Props = { view: "front" | "back"; selectedSlug: string };
  * highlighted torso/limb region.
  */
 export default function MuscleAnatomyIllustration({ view, selectedSlug }: Props) {
+  // Canonical slugs keep each selectable shape aligned with catalogue records and training totals.
   const shape = (slug: string, path: string, key: string) => (
     <path key={key} className={selectedSlug === slug ? "muscle-shape active" : "muscle-shape"} d={path} />
   );
 
+  // Front-view paths share the SVG viewBox so every muscle stays aligned with the body outline.
   const front = [
     ["anterior-deltoid", "M91 94 Q105 82 119 96 L113 123 Q98 130 86 113 Z M141 96 Q155 82 169 94 L174 113 Q162 130 147 123 Z"],
     ["lateral-deltoid", "M82 104 Q90 91 101 96 L96 126 L84 132 L76 118 Z M159 96 Q170 91 178 104 L184 118 L176 132 L164 126 Z"],
@@ -31,6 +33,7 @@ export default function MuscleAnatomyIllustration({ view, selectedSlug }: Props)
     ["soleus", "M105 358 L115 358 L112 397 L103 397 Z M145 358 L155 358 L157 397 L148 397 Z"]
   ] as const;
 
+  // Back-view paths use the same coordinate system, avoiding a jump when users switch sides.
   const back = [
     ["trapezius", "M111 87 L149 87 L162 128 L130 155 L98 128 Z"],
     ["lower-trapezius", "M119 129 L141 129 L130 178 Z"],
@@ -61,6 +64,7 @@ export default function MuscleAnatomyIllustration({ view, selectedSlug }: Props)
         <path d="M104 207 L128 207 L122 309 L106 309 Z M132 207 L156 207 L154 309 L138 309 Z" />
         <path d="M106 306 L119 306 L113 420 L96 420 Z M141 306 L154 306 L164 420 L147 420 Z" />
       </g>
+      {/* The artwork is decorative; named controls below it provide the accessible selection interface. */}
       <g className="muscle-layer">
         {muscles.map(([slug, path], index) => shape(slug, path, slug + "-" + index))}
       </g>

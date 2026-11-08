@@ -73,6 +73,8 @@ type FeedPost = {
 };
 type WorkoutPostMovement = { exerciseId: string; name: string; completedSets: number; totalSets: number };
 
+// Convert a workout into one feed row per movement so the community card stays readable
+// without exposing set-by-set private workout detail.
 function summariseWorkoutPost(session: WorkoutFeedSession): WorkoutPostMovement[] {
   const movements = new Map<string, WorkoutPostMovement>();
   for (const set of session.sets) {
@@ -100,6 +102,8 @@ type ProgressionSuggestion = { exerciseId: string; exerciseName: string; recomme
 // work without an extra environment variable.
 const API = import.meta.env.VITE_API_URL ?? "http://localhost:4000";
 
+// The root component owns cross-tab state and coordinates API calls. Smaller components
+// handle focused interactions while this component keeps account and feature state in sync.
 export default function App() {
   // Authentication state is restored from the browser between page reloads.
   // The server remains responsible for validating the token on every private request.
@@ -217,7 +221,8 @@ export default function App() {
    * Callers receive the parsed response body; non-2xx responses become errors
    * so each form or action can show a useful message in its own context.
    */
-  async function request(path: string, options: RequestInit = {}) {
+  // Centralise authentication headers and response errors so private API calls behave consistently.
+async function request(path: string, options: RequestInit = {}) {
     // One request helper applies the same JSON and authentication rules to every private feature.
     const response = await fetch(`${API}${path}`, {
       ...options,
@@ -233,7 +238,8 @@ export default function App() {
   }
 
   // Fetch only the signed-in account's saved weekly programmes when Coach is opened.
-  async function loadTrainingPlans() {
+  // Refresh saved plans independently so editing a plan does not reset unrelated workout state.
+async function loadTrainingPlans() {
     setTrainingPlansLoading(true);
     try {
       const data = await request("/api/workouts/training-plans");
@@ -247,7 +253,8 @@ export default function App() {
 
   // Save the reviewed programme in one API operation. Each day becomes a normal
   // owned routine, so existing workout history and set-recording paths still apply.
-  async function saveTrainingPlan(input: CoachPlanInput) {
+  // Send the complete plan draft in one request; the API owns replacement and history preservation.
+async function saveTrainingPlan(input: CoachPlanInput) {
     setTrainingPlanSaving(true);
     try {
       const data = await request("/api/workouts/training-plans", {
@@ -266,7 +273,8 @@ export default function App() {
 
   // Replace the programme's day records with newly reviewed routines. Existing routines
   // are left intact so completed sessions keep their original movement history.
-  async function updateTrainingPlan(planId: string, input: CoachPlanInput) {
+  // Editing is explicit so a saved plan can change without silently changing an active workout.
+async function updateTrainingPlan(planId: string, input: CoachPlanInput) {
     setTrainingPlanSaving(true);
     try {
       const data = await request("/api/workouts/training-plans/" + planId, {
@@ -283,7 +291,8 @@ export default function App() {
     }
   }
 
-  async function deleteTrainingPlan(planId: string) {
+  // Change local state only after the API confirms deletion, keeping the screen aligned with saved data.
+async function deleteTrainingPlan(planId: string) {
     if (!window.confirm("Delete this weekly programme? Its workout history will be kept.")) return;
     try {
       await request("/api/workouts/training-plans/" + planId, { method: "DELETE" });
@@ -365,7 +374,8 @@ export default function App() {
 
   // Refresh all workout data in parallel. The exercise list is also used by the
   // routine builder, so initialise its selection when the user has none yet.
-  async function loadProgressionSuggestions() {
+  // Suggestions are derived server-side so comparison rules stay consistent across clients.
+async function loadProgressionSuggestions() {
     setProgressionLoading(true);
     setProgressionError("");
     try {
@@ -429,7 +439,8 @@ export default function App() {
 
   // The API decides which friends and posts are visible; the browser never builds
   // a feed by fetching arbitrary users' activity.
-  async function loadCommunity() {
+  // Load community data through owner-scoped endpoints; the UI does not decide who may see a profile or post.
+async function loadCommunity() {
     setCommunityLoading(true);
     setCommunityError("");
     try {
@@ -474,7 +485,8 @@ export default function App() {
     setProfileViewLoading(false);
   }
 
-  async function openCommunityProfile(userId: string) {
+  // Keep the triggering control so keyboard focus can return when the accessible profile dialog closes.
+async function openCommunityProfile(userId: string) {
     const requestId = ++profileRequestIdRef.current;
     setViewedProfile(null);
     setProfileViewError("");
@@ -523,7 +535,8 @@ export default function App() {
   // Append older posts without replacing the current feed. The API applies
   // the same live friendship and block checks to every cursor request.
   // Refresh only the first feed page so a transient failure never discards activity already on screen.
-  async function refreshCommunityFeed() {
+  // Preserve visible posts until the server returns a successful first-page replacement.
+async function refreshCommunityFeed() {
     if (feedRefreshing || feedLoadingMore) return;
     setFeedRefreshing(true);
     setFeedRefreshError("");
@@ -540,7 +553,8 @@ export default function App() {
     }
   }
 
-  async function loadMoreCommunityPosts() {
+  // Pagination appends older posts without replacing the newest page or duplicating visible entries.
+async function loadMoreCommunityPosts() {
     if (!feedHasMore || !feedCursor || feedLoadingMore || feedRefreshing) return;
     setFeedLoadingMore(true);
     setFeedLoadMoreError("");
@@ -561,7 +575,8 @@ export default function App() {
 
   // Load the next chronological comment page without replacing comments already on the card.
   // The API rechecks the post's current friends/block visibility before returning any rows.
-  async function loadMoreComments(postId: string) {
+  // Track comment pagination per post because several feed cards can load replies independently.
+async function loadMoreComments(postId: string) {
     const post = posts.find(item => item.id === postId);
     const cursor = post?.comments[post.comments.length - 1]?.id;
     if (!post || !cursor || commentLoading[postId] || post.comments.length >= (post._count?.comments ?? post.comments.length)) return;
@@ -582,7 +597,8 @@ export default function App() {
   }
 
   // Conversation history is private and loaded only after the coach destination is opened.
-  async function loadCoachConversations() {
+  // Load conversation metadata separately from message history to keep the Coach list quick to open.
+async function loadCoachConversations() {
     setCoachChatLoading(true);
     setCoachChatError("");
     try {
@@ -594,7 +610,8 @@ export default function App() {
     } finally { setCoachChatLoading(false); }
   }
 
-  async function loadCoachChat(conversationId: string) {
+  // Older messages do not store provider mode, so clear the latest-reply indicator when history is loaded.
+async function loadCoachChat(conversationId: string) {
     setCoachChatLoading(true);
     setCoachChatError("");
     try {
@@ -619,7 +636,8 @@ export default function App() {
     }
   }
 
-  async function sendCoachMessage(event: React.FormEvent) {
+  // Prevent overlapping sends and preserve the user's draft if the service fails, so retrying does not lose text.
+async function sendCoachMessage(event: React.FormEvent) {
     event.preventDefault();
     const message = coachDraft.trim();
     if (!message || coachChatSending) return;
@@ -691,7 +709,8 @@ export default function App() {
 
   // Preferences affect the coach's tone and focus. The API validates the values
   // again before storing them, even though the UI offers a fixed set of choices.
-  async function saveCoachPreference(event: React.FormEvent) {
+  // Save consent and coaching style to the account rather than treating them as temporary browser toggles.
+async function saveCoachPreference(event: React.FormEvent) {
     event.preventDefault();
     try {
       const data = await request("/api/coach/preferences", {
@@ -782,7 +801,8 @@ export default function App() {
 
   // Build a separate sequence of set records for each selected exercise.
   // The server still validates every numeric bound before writing the session.
-  async function recordWorkout(event: React.FormEvent) {
+  // Use a stable request ID so a retry after a network interruption cannot create duplicate workout history.
+async function recordWorkout(event: React.FormEvent) {
     event.preventDefault();
     try {
       const workoutSets = selectedExerciseIds.flatMap(exerciseId => {
@@ -1076,7 +1096,8 @@ export default function App() {
 
   // Account removal is intentionally harder to trigger than sign-out: the user
   // must type the confirmation word and the API must verify their password.
-  async function deleteAccount(event: React.FormEvent) {
+  // Clear this account's local offline data as part of deletion so pending sessions are not replayed later.
+async function deleteAccount(event: React.FormEvent) {
     event.preventDefault();
     if (deleteConfirmation !== "DELETE") {
       setNotice("Type DELETE exactly to confirm account removal.");
@@ -1119,7 +1140,8 @@ export default function App() {
 
   // Sign-out clears the active view and token but preserves queued workouts for
   // this account, allowing them to sync after the user signs in again.
-  function signOut() {
+  // Clear the active session and private in-memory state before returning to the sign-in screen.
+function signOut() {
     // Removing the browser token ends this local session without deleting account records or offline drafts.
     localStorage.removeItem("fitloop-token");
     localStorage.removeItem("fitloop-user");

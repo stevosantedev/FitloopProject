@@ -1,3 +1,9 @@
+"""Rule-guided and optional AI coaching endpoints for FitLoop.
+
+The API receives only the small, validated summaries selected by the backend.
+It does not look up accounts or fetch health records on its own.
+"""
+
 from datetime import date
 from statistics import mean
 import os
@@ -10,6 +16,7 @@ import httpx
 app = FastAPI(title="FitLoop Coach", version="0.1.0")
 
 
+    # Optional values stay null when a user has not logged them; missing data is not zero.
 class DailyMetric(BaseModel):
     """A small daily snapshot; account identity is deliberately not part of this model."""
 
@@ -21,6 +28,7 @@ class DailyMetric(BaseModel):
     focusMinutes: Optional[int] = Field(default=None, ge=0, le=1440)
 
 
+    # Bound the history length so one request cannot become an unbounded analysis.
 class CheckInRequest(BaseModel):
     """The service accepts a short history so trends are less affected by one unusual day."""
 
@@ -29,6 +37,7 @@ class CheckInRequest(BaseModel):
     focus: Literal["energy", "consistency", "recovery"] = "energy"
 
 
+    # Tone changes are deliberately narrow; they must not change the underlying coaching rule.
 def wording(message: str, style: str) -> str:
     """Change the tone without changing the rule or its safety limits."""
     if style == "direct":
@@ -39,6 +48,7 @@ def wording(message: str, style: str) -> str:
 
 
 
+    # These limits mirror the backend session contract and cap the context sent to the coach.
 class RecentExercise(BaseModel):
     name: str = Field(min_length=1, max_length=100)
     reps: int = Field(ge=1, le=500)
@@ -71,6 +81,7 @@ def health():
 
 
 
+    # Normalize exercise names so capitalization and surrounding spaces do not create separate movements.
 def training_progress_summary(sessions: list[RecentSession]) -> list[str]:
     """Compare the highest logged load for the same movement across distinct sessions.
 
@@ -79,8 +90,11 @@ def training_progress_summary(sessions: list[RecentSession]) -> list[str]:
     """
     by_exercise: dict[str, dict[str, tuple[str, float]]] = {}
     display_names: dict[str, str] = {}
+    # Process sessions chronologically so the latest two recorded dates can be compared.
     for session in sorted(sessions, key=lambda item: item.date):
         session_best: dict[str, float] = {}
+        # Keep the strongest load for each movement in a session; duplicate set rows should not
+        # make one workout appear to contain several independent progress points.
         for exercise in session.exercises:
             if exercise.weightKg is None:
                 continue
@@ -92,6 +106,7 @@ def training_progress_summary(sessions: list[RecentSession]) -> list[str]:
         for key, load in session_best.items():
             by_exercise.setdefault(key, {})[session.date.isoformat()] = (session.date.isoformat(), load)
 
+    # A movement needs two distinct recorded dates before a change can be described.
     comparisons = []
     for key, entries in by_exercise.items():
         ordered = sorted(entries.values(), key=lambda item: item[0])
@@ -100,6 +115,7 @@ def training_progress_summary(sessions: list[RecentSession]) -> list[str]:
         previous_date, previous_load = ordered[-2]
         latest_date, latest_load = ordered[-1]
         name = display_names[key]
+        # Describe the direction and size of the recorded load change, not a claim about adaptation.
         if latest_load > previous_load:
             change = f"rose by {latest_load - previous_load:g} kg"
         elif latest_load < previous_load:
@@ -114,6 +130,8 @@ def training_progress_summary(sessions: list[RecentSession]) -> list[str]:
 
 
 @app.post("/coach/conversation")
+    # Prepare a guided response first. Optional model processing can replace it only after
+    # consent, configuration and safety checks have all passed.
 def conversation(payload: ConversationRequest):
     """Provide a transparent rule-guided conversation starter until a reviewed model provider is enabled."""
     message = payload.message.strip()
@@ -122,6 +140,8 @@ def conversation(payload: ConversationRequest):
     # This early safety route avoids pretending to diagnose pain or medical symptoms.
     urgent_terms = ("chest pain", "faint", "fainted", "cannot breathe", "can't breathe", "severe dizziness")
     injury_terms = ("injury", "injured", "pain", "hurt", "swollen", "strain", "tear")
+    # Urgent and injury language is handled before general intent matching so it cannot
+    # fall through into routine or progress advice.
     if any(term in lowered for term in urgent_terms):
         reply = (
             "Please stop exercising. Chest pain, fainting or serious breathing difficulty may require emergency medical attention. "
@@ -133,6 +153,7 @@ def conversation(payload: ConversationRequest):
             "and consider advice from a qualified healthcare professional, especially if symptoms are severe, worsening or persistent. "
             "If you want, tell me which movement is uncomfortable and I can help identify non-medical training alternatives to discuss."
         )
+    # Progress comparisons use only the recent sessions supplied by the authenticated API.
     elif any(term in lowered for term in ("progress", "stronger", "getting stronger", "improve", "lifting more")):
         sessions = payload.context.recentSessions
         if not sessions:
@@ -141,16 +162,19 @@ def conversation(payload: ConversationRequest):
                 "loads and repetitions you've recorded. What strength or training goal are you working towards?"
             )
         else:
+            # Count distinct movement names for context rather than counting every set as an exercise.
             exercise_names = []
             for session in sessions:
                 for exercise in session.exercises:
                     if exercise.name not in exercise_names:
                         exercise_names.append(exercise.name)
+            # The incoming list is bounded but not guaranteed to be in chronological order.
             latest_session = max(sessions, key=lambda item: item.date)
             latest_movements = []
             for exercise in latest_session.exercises:
                 if exercise.name not in latest_movements:
                     latest_movements.append(exercise.name)
+            # Keep the response short; a chat reply does not need the full comparison history.
             comparisons = training_progress_summary(sessions)
             comparison_text = " ".join(comparisons[:3])
             if comparison_text:
@@ -189,7 +213,9 @@ def conversation(payload: ConversationRequest):
 
     # A model is used only when the account owner has opted in and an operator has
     # configured a provider key. Safety routes above always remain rule-guided.
-    if payload.aiEnabled and os.getenv("AI_COACH_API_KEY") and not any(term in lowered for term in urgent_terms + injury_terms):
+    # Keep the guided reply ready as a fallback. Only non-safety requests with explicit
+    # account consent and a configured server key are eligible for model processing.
+    if payload.aiEnabled and os.getenv("AI_COACH_API_KEY")    if payload.aiEnabled and os.getenv("AI_COACH_API_KEY") and not any(term in lowered for term in urgent_terms + injury_terms):
         try:
             generated = generate_ai_reply(payload)
             if generated:
@@ -201,6 +227,7 @@ def conversation(payload: ConversationRequest):
     return {"message": wording(reply, payload.style), "responseMode": "guided_rules"}
 
 
+    # Build a minimal context payload rather than forwarding raw database records or account metadata.
 def generate_ai_reply(payload: ConversationRequest) -> str | None:
     """Request a grounded training reply without sending account identifiers or wellbeing logs."""
     api_key = os.getenv("AI_COACH_API_KEY")
@@ -208,6 +235,7 @@ def generate_ai_reply(payload: ConversationRequest) -> str | None:
     if not api_key:
         return None
 
+    # Serialize only date, routine name and completed movement measurements validated by Pydantic.
     context = [
         {
             "date": session.date.isoformat(),
@@ -219,6 +247,7 @@ def generate_ai_reply(payload: ConversationRequest) -> str | None:
         }
         for session in payload.context.recentSessions
     ]
+    # Bound provider time and output size so a slow response cannot hold up coaching indefinitely.
     response = httpx.post(
         "https://api.openai.com/v1/chat/completions",
         headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
@@ -253,6 +282,7 @@ def generate_ai_reply(payload: ConversationRequest) -> str | None:
         },
         timeout=15.0,
     )
+    # HTTP errors and malformed provider output are treated as unavailable; the route supplies guided fallback.
     response.raise_for_status()
     content = response.json()["choices"][0]["message"]["content"]
     if not isinstance(content, str):
@@ -262,12 +292,14 @@ def generate_ai_reply(payload: ConversationRequest) -> str | None:
 
 
 @app.post("/coach/check-in")
+    # Sort once so each recent-versus-earlier comparison follows the same time direction.
 def check_in(payload: CheckInRequest):
     """Return cautious prompts with the measurements and rule behind each suggestion."""
     logs = sorted(payload.logs, key=lambda item: item.date)
     messages = []
 
     # Require at least three sleep records before comparing periods; missing days are not zeroes.
+    # Missing sleep logs are excluded rather than treated as nights with zero minutes of sleep.
     sleep_values = [item.sleepMinutes for item in logs if item.sleepMinutes is not None]
     if len(sleep_values) >= 5:
         recent = sleep_values[-3:]
@@ -290,6 +322,7 @@ def check_in(payload: CheckInRequest):
             })
 
     # An unlogged step count is unknown, so the comparison uses only days with a recorded value.
+    # Compare only days with a recorded step count; a device sync gap is not inactivity.
     step_values = [item.steps for item in logs if item.steps is not None]
     if len(step_values) >= 4 and mean(step_values[-2:]) < mean(step_values[:-2]) * 0.6:
         messages.append({
@@ -304,7 +337,8 @@ def check_in(payload: CheckInRequest):
         })
 
     # Consistency prompts are based on logging frequency, not a judgement about missed targets.
-    if not messages and payload.focus == "consistency" and 1 <= len(logs) < 5:
+    # Offer a logging-habit prompt only when no measured trend has already produced advice.
+    if not messages and payload.focus == "consistency"    if not messages and payload.focus == "consistency" and 1 <= len(logs) < 5:
         messages.append({
             "kind": "consistency_reflection",
             "message": wording("You have logged a few check-ins. A small routine that fits your week may make it easier to keep the habit going.", payload.style),
@@ -316,6 +350,7 @@ def check_in(payload: CheckInRequest):
         })
 
     # A quiet period should not be treated as failure; the default response avoids guilt-based nudges.
+    # Avoid inventing a problem when the available measurements show no clear trend.
     if not messages:
         messages.append({
             "kind": "steady_check_in",

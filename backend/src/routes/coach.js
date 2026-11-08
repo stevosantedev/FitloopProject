@@ -1,11 +1,16 @@
+// Coach routes own account-scoped conversation storage and preference handling.
+// The separate service generates advice; this API selects the minimum context,
+// persists successful exchanges and keeps private account data out of prompts.
 import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../prisma.js";
 import { config } from "../config.js";
 
+// Dependencies are injectable so route tests can verify ownership and persistence without live services.
 export function createCoachRouter(prismaClient = prisma, fetchImpl = fetch) {
 const router = Router();
 
+// Validate preferences at the API boundary. AI consent must arrive as an explicit boolean.
 const preferenceInput = z.object({
   style: z.enum(["gentle", "direct"]).default("gentle"),
   focus: z.enum(["energy", "consistency", "recovery"]).default("energy"),
@@ -20,6 +25,7 @@ const messageInput = z.object({ message: z.string().trim().min(1).max(2000) });
 
 
  // Conversation metadata is always scoped to the authenticated owner.
+ // Return only the signed-in owner's recent conversations and a small latest-message preview.
  router.get("/conversations", async (req, res, next) => {
    try {
      const conversations = await prismaClient.coachConversation.findMany({
@@ -36,6 +42,7 @@ const messageInput = z.object({ message: z.string().trim().min(1).max(2000) });
    } catch (error) { return next(error); }
  });
 
+ // A conversation is created for the authenticated account, never for an owner ID supplied by the browser.
  router.post("/conversations", async (req, res, next) => {
    try {
      const input = conversationInput.parse(req.body ?? {});
@@ -46,6 +53,7 @@ const messageInput = z.object({ message: z.string().trim().min(1).max(2000) });
    } catch (error) { return next(error); }
  });
 
+ // Check ownership before querying messages; knowing another conversation ID must not reveal its contents.
  router.get("/conversations/:id/messages", async (req, res, next) => {
    try {
      const conversation = await prismaClient.coachConversation.findFirst({
@@ -60,6 +68,7 @@ const messageInput = z.object({ message: z.string().trim().min(1).max(2000) });
    } catch (error) { return next(error); }
  });
 
+ // Validate the message before spending a service request or writing chat history.
  router.post("/conversations/:id/messages", async (req, res, next) => {
    try {
      const input = messageInput.parse(req.body);
@@ -69,12 +78,15 @@ const messageInput = z.object({ message: z.string().trim().min(1).max(2000) });
      if (!conversation) return res.status(404).json({ error: "Conversation not found." });
 
      // Only recent completed training details are sent; account IDs, private notes and wellbeing logs stay out.
+     // Select only five recent sessions and completed sets. Private notes, account IDs and daily wellbeing logs
+     // are deliberately excluded from the context sent to the coaching service.
      const sessions = await prismaClient.workoutSession.findMany({
        where: { userId: req.userId }, orderBy: { startedAt: "desc" }, take: 5,
        select: { startedAt: true, routine: { select: { name: true } },
          sets: { where: { completed: true }, select: { reps: true, weightKg: true, exercise: { select: { name: true } } } } }
      });
-     const preference = await prismaClient.coachPreference.findUnique({ where: { userId: req.userId } });
+     // Consent is read from the server-side account preference; changing the message body cannot enable AI.
+     const preference = await prismaClient.coachPreference.findUnique     const preference = await prismaClient.coachPreference.findUnique({ where: { userId: req.userId } });
      const response = await fetchImpl(config.COACH_SERVICE_URL + "/coach/conversation", {
        method: "POST", headers: { "content-type": "application/json" },
        body: JSON.stringify({ message: input.message, style: preference?.style ?? "gentle",
@@ -83,11 +95,15 @@ const messageInput = z.object({ message: z.string().trim().min(1).max(2000) });
            exercises: session.sets.map(set => ({ name: set.exercise.name, reps: set.reps, weightKg: set.weightKg }))
          })) } })
      });
-     if (!response.ok) return res.status(503).json({ error: "The coach is temporarily unavailable. Your message was not saved; please try again." });
+     // Do not save the user's message if the service failed; otherwise the chat would look complete
+     // even though no assistant reply exists. The user can safely retry the prompt.
+     if (!response.ok) return res.status(503)     if (!response.ok) return res.status(503).json({ error: "The coach is temporarily unavailable. Your message was not saved; please try again." });
      const result = await response.json();
      if (typeof result.message !== "string" || !result.message.trim())
        return res.status(503).json({ error: "The coach returned an incomplete response. Please try again." });
 
+     // Save both sides of the exchange together. A failed insert or conversation update rolls back
+     // the whole transaction instead of leaving a one-sided conversation.
      const messages = await prismaClient.$transaction(async tx => {
        const userMessage = await tx.coachMessage.create({ data: { conversationId: conversation.id, role: "user", content: input.message } });
        const assistantMessage = await tx.coachMessage.create({ data: { conversationId: conversation.id, role: "assistant", content: result.message } });
@@ -100,6 +116,7 @@ const messageInput = z.object({ message: z.string().trim().min(1).max(2000) });
    } catch (error) { return next(error); }
  });
 
+ // deleteMany combines deletion with the ownership filter, avoiding a separate lookup/delete race.
  router.delete("/conversations/:id", async (req, res, next) => {
    try {
      const result = await prismaClient.coachConversation.deleteMany({
@@ -111,6 +128,7 @@ const messageInput = z.object({ message: z.string().trim().min(1).max(2000) });
  });
 
 // A user can tune the tone and emphasis without changing the coach's underlying safety rules.
+// Explicit defaults let the UI render a complete settings state before a preference row exists.
 router.get("/preferences", async (req, res, next) => {
   try {
     const preference = await prismaClient.coachPreference.findUnique({ where: { userId: req.userId } });
@@ -120,6 +138,7 @@ router.get("/preferences", async (req, res, next) => {
   }
 });
 
+// Upsert makes first-time setup and later preference changes use the same validated path.
 router.put("/preferences", async (req, res, next) => {
   try {
     const input = preferenceInput.parse(req.body);
@@ -135,6 +154,7 @@ router.put("/preferences", async (req, res, next) => {
 });
 
 // Decisions are stored against the original message so coaching suggestions can be evaluated later.
+// The owner filter prevents one account from changing another account's coaching feedback.
 router.patch("/events/:id/decision", async (req, res, next) => {
   try {
     const input = decisionInput.parse(req.body);
@@ -149,9 +169,11 @@ router.patch("/events/:id/decision", async (req, res, next) => {
   }
 });
 
+// Check-ins use a bounded two-week window; older measurements are not needed for these prompts.
 router.post("/check-in", async (req, res, next) => {
   try {
     const since = new Date(Date.now() - 14 * 86400000);
+    // Fetch independent records together rather than making the check-in wait for two sequential queries.
     const [logs, preference] = await Promise.all([
       prismaClient.dailyLog.findMany({
         where: { userId: req.userId, date: { gte: since } },
@@ -178,7 +200,8 @@ router.post("/check-in", async (req, res, next) => {
     const result = await response.json();
 
     // Persist the rule and explanation shown to the user so the advice can be evaluated later.
-    const events = await prismaClient.$transaction(result.messages.map((message) =>
+    // Persist the exact rule, wording and explanation shown to the user for later review.
+    const events = await prismaClient.$transaction(result.messages.map    const events = await prismaClient.$transaction(result.messages.map((message) =>
       prismaClient.coachEvent.create({
         data: {
           userId: req.userId,
@@ -196,6 +219,7 @@ router.post("/check-in", async (req, res, next) => {
   }
 });
 
+// History is private to the authenticated account and capped to keep the response manageable.
 router.get("/history", async (req, res, next) => {
   try {
     const events = await prismaClient.coachEvent.findMany({

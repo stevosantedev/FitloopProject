@@ -38,7 +38,7 @@ const exercise = {
   muscles: [{ role: "PRIMARY", muscle: { name: "Quadriceps", slug: "quadriceps" } }]
 };
 
-async function mockApplicationApi(page: Page, onSessionSave?: (body: any) => void, sessionSaveStatus: number | (() => number) = 200, muscleStats: any[] = []) {
+async function mockApplicationApi(page: Page, onSessionSave?: (body: any) => void, sessionSaveStatus: number | (() => number) = 200, muscleStats: any[] = [], catalogueExercises: any[] = [exercise], onRoutineSave?: (body: any) => void) {
   const routines: any[] = [];
   const conversations: any[] = [];
   const chatMessages: Record<string, any[]> = {};
@@ -79,11 +79,12 @@ async function mockApplicationApi(page: Page, onSessionSave?: (body: any) => voi
       conversations[0]._count.messages = chatMessages["chat-1"].length;
       body = { messages, responseMode: "guided_rules" };
     } else if (url.pathname === "/api/workouts/exercises") {
-      body = { exercises: [exercise] };
+      body = { exercises: catalogueExercises };
     } else if (url.pathname === "/api/workouts/routines" && method === "GET") {
       body = { routines };
     } else if (url.pathname === "/api/workouts/routines" && method === "POST") {
       const input = request.postDataJSON();
+      onRoutineSave?.(input);
       const routine = { id: "routine-1", name: input.name, exercises: input.exercises.map((item: any) => ({ exercise })) };
       routines.push(routine);
       body = { routine };
@@ -1243,26 +1244,20 @@ test("Community comment authors can edit and delete only their own comments", as
 
 test("Coach creates a catalogue-grounded routine draft and requires review before saving", async ({ page }) => {
   const saveCalls: any[] = [];
-  await mockApplicationApi(page);
-  await page.route("http://localhost:4000/api/workouts/exercises", async route => {
-    const movements = [
-      { ...exercise, id: "draft-squat", name: "Goblet squat", equipment: "Dumbbell", movementPattern: "Squat", difficulty: "Beginner" },
-      { ...exercise, id: "draft-hinge", name: "Romanian deadlift", equipment: "Dumbbell", movementPattern: "Hip hinge", difficulty: "Intermediate" },
-      { ...exercise, id: "draft-push", name: "Push-up", equipment: "Bodyweight", movementPattern: "Horizontal push", difficulty: "Beginner" },
-      { ...exercise, id: "draft-pull", name: "Single-arm dumbbell row", equipment: "Dumbbell", movementPattern: "Horizontal pull", difficulty: "Beginner" },
-      { ...exercise, id: "draft-core", name: "Dead bug", equipment: "Bodyweight", movementPattern: "Anti-extension", difficulty: "Beginner" }
-    ];
-    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ exercises: movements }) });
-  });
-  await page.route("http://localhost:4000/api/workouts/routines", async route => {
-    if (route.request().method() === "POST") saveCalls.push(route.request().postDataJSON());
-    await route.fallback();
-  });
+  const movements = [
+    { ...exercise, id: "draft-squat", name: "Goblet squat", equipment: "Dumbbell", movementPattern: "Squat", difficulty: "Beginner" },
+    { ...exercise, id: "draft-hinge", name: "Romanian deadlift", equipment: "Dumbbell", movementPattern: "Hip hinge", difficulty: "Intermediate" },
+    { ...exercise, id: "draft-push", name: "Push-up", equipment: "Bodyweight", movementPattern: "Horizontal push", difficulty: "Beginner" },
+    { ...exercise, id: "draft-pull", name: "Single-arm dumbbell row", equipment: "Dumbbell", movementPattern: "Horizontal pull", difficulty: "Beginner" },
+    { ...exercise, id: "draft-core", name: "Dead bug", equipment: "Bodyweight", movementPattern: "Anti-extension", difficulty: "Beginner" }
+  ];
+  await mockApplicationApi(page, undefined, 200, [], movements, body => saveCalls.push(body));
   await page.goto("/");
   await page.getByLabel("Email").fill("tester@example.com");
   await page.getByLabel("Password").fill("test-password");
   await page.getByRole("button", { name: "Sign in" }).click();
   await page.locator(".sidebar-nav").getByRole("button", { name: "Coach" }).click();
+  await expect(page.getByRole("heading", { name: "Meet your coach." })).toBeVisible();
   await page.getByLabel("Available equipment").selectOption("dumbbells");
   await page.getByRole("button", { name: "Generate routine draft" }).click();
   const preview = page.locator(".coach-routine-preview");

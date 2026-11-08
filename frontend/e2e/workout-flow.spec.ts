@@ -1,16 +1,4 @@
 
-test("Coach settings disclose optional AI processing and keep consent off by default", async ({ page }) => {
-  await mockApplicationApi(page);
-  await signIn(page);
-  await page.getByRole("button", { name: "Profile" }).click();
-  const consent = page.getByLabel(/Use AI-generated coaching replies/);
-  await expect(consent).not.toBeChecked();
-  await expect(page.getByText(/message and up to five recent completed workout summaries are sent/i)).toBeVisible();
-  await consent.check();
-  await page.getByRole("button", { name: "Save coach preferences" }).click();
-  await expect(page.getByText("Your coaching preferences have been saved.")).toBeVisible();
-});
-
 test("app publishes an installable manifest and offline worker assets", async ({ page }) => {
   const manifestResponse = await page.request.get("/manifest.webmanifest");
   expect(manifestResponse.ok()).toBeTruthy();
@@ -1432,3 +1420,16 @@ test("Coach displays evidence and explanation for workout progression guidance",
   await expect(panel.getByText(/two more reps at the same load/)).toBeVisible();
   await expect(panel.getByText(/Latest: 10 reps at 20 kg · Previous: 8 reps at 20 kg/)).toBeVisible();
 });
+
+test("Coach settings disclose optional AI processing and keep consent off by default", async ({ page }) => {
+  await mockApplicationApi(page);
+  await signIn(page);
+  await page.getByRole("button", { name: /Overview/ }).click();
+  const consent = page.getByLabel(/Use AI-generated coaching replies/);
+  await expect(consent).not.toBeChecked();
+  await expect(page.getByText(/message and up to five recent completed workout summaries are sent/i)).toBeVisible();
+  await consent.check();
+  await page.getByRole("button", { name: "Save coach preferences" }).click();
+  await expect(page.getByText("Your coaching preferences have been saved.")).toBeVisible();
+});
+

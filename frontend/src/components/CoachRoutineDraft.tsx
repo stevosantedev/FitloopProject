@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 
-type ExerciseOption = {
+export type ExerciseOption = {
   id: string;
   name: string;
   equipment?: string | null;
@@ -8,22 +8,93 @@ type ExerciseOption = {
   difficulty?: string | null;
 };
 
-type Props = {
-  exercises: ExerciseOption[];
-  onReviewDraft: (name: string, exerciseIds: string[]) => void;
-};
-
 type Goal = "general" | "strength" | "muscle";
 type Equipment = "bodyweight" | "dumbbells" | "gym";
 type Experience = "beginner" | "intermediate" | "experienced";
+type Movement = "squat" | "hinge" | "horizontalPush" | "verticalPush" | "horizontalPull" | "verticalPull" | "kneeFlexion" | "core";
 
-const movementSlots = [
-  { terms: ["squat", "single-leg"] },
-  { terms: ["hip hinge", "hip extension", "knee flexion"] },
-  { terms: ["horizontal push", "vertical push", "incline push"] },
-  { terms: ["horizontal pull", "vertical pull", "horizontal abduction"] },
-  { terms: ["anti-extension", "anti-lateral", "anti-rotation", "dynamic core"] }
-];
+export type CoachPlanInput = {
+  name: string;
+  goal: Goal;
+  daysPerWeek: number;
+  experience: Experience;
+  equipment: Equipment;
+  days: Array<{
+    dayNumber: number;
+    label: string;
+    routineName: string;
+    exercises: Array<{ exerciseId: string; sortOrder: number }>;
+  }>;
+};
+
+export type TrainingPlanView = {
+  id: string;
+  name: string;
+  goal: Goal;
+  daysPerWeek: number;
+  experience: Experience;
+  equipment: Equipment;
+  days: Array<{
+    id: string;
+    dayNumber: number;
+    label: string;
+    routine: {
+      id: string;
+      name: string;
+      exercises: Array<{ exercise: ExerciseOption }>;
+    };
+  }>;
+};
+
+type Props = {
+  exercises: ExerciseOption[];
+  plans: TrainingPlanView[];
+  plansLoading: boolean;
+  saving: boolean;
+  onSavePlan: (input: CoachPlanInput) => Promise<void>;
+  onDeletePlan: (planId: string) => void;
+  onStartDay: (routine: TrainingPlanView["days"][number]["routine"]) => void;
+};
+
+type DraftDay = { dayNumber: number; label: string; movements: Movement[]; exercises: ExerciseOption[] };
+
+const movementTerms: Record<Movement, string[]> = {
+  squat: ["squat", "single-leg"],
+  hinge: ["hip hinge", "hip extension"],
+  horizontalPush: ["horizontal push", "incline push"],
+  verticalPush: ["vertical push"],
+  horizontalPull: ["horizontal pull", "horizontal abduction"],
+  verticalPull: ["vertical pull"],
+  kneeFlexion: ["knee flexion"],
+  core: ["anti-extension", "anti-lateral", "anti-rotation", "dynamic core", "core"]
+};
+const fullBody: Movement[] = ["squat", "hinge", "horizontalPush", "verticalPush", "horizontalPull", "verticalPull", "core"];
+
+function splitFor(days: number): Array<{ label: string; movements: Movement[] }> {
+  if (days === 2) return [{ label: "Full body A", movements: fullBody }, { label: "Full body B", movements: fullBody }];
+  if (days === 3) return [1, 2, 3].map(number => ({ label: "Full body " + String.fromCharCode(64 + number), movements: fullBody }));
+  if (days === 4) return [
+    { label: "Upper A", movements: ["horizontalPush", "verticalPush", "horizontalPull", "verticalPull", "core"] },
+    { label: "Lower A", movements: ["squat", "hinge", "kneeFlexion", "core"] },
+    { label: "Upper B", movements: ["horizontalPush", "verticalPush", "horizontalPull", "verticalPull", "core"] },
+    { label: "Lower B", movements: ["squat", "hinge", "kneeFlexion", "core"] }
+  ];
+  if (days === 5) return [
+    { label: "Push", movements: ["horizontalPush", "verticalPush", "core"] },
+    { label: "Pull", movements: ["horizontalPull", "verticalPull", "core"] },
+    { label: "Legs", movements: ["squat", "hinge", "kneeFlexion", "core"] },
+    { label: "Upper", movements: ["horizontalPush", "verticalPush", "horizontalPull", "verticalPull", "core"] },
+    { label: "Lower", movements: ["squat", "hinge", "kneeFlexion", "core"] }
+  ];
+  return [
+    { label: "Push A", movements: ["horizontalPush", "verticalPush", "core"] },
+    { label: "Pull A", movements: ["horizontalPull", "verticalPull", "core"] },
+    { label: "Legs A", movements: ["squat", "hinge", "kneeFlexion", "core"] },
+    { label: "Push B", movements: ["horizontalPush", "verticalPush", "core"] },
+    { label: "Pull B", movements: ["horizontalPull", "verticalPull", "core"] },
+    { label: "Legs B", movements: ["squat", "hinge", "kneeFlexion", "core"] }
+  ];
+}
 
 function equipmentAllowed(exercise: ExerciseOption, equipment: Equipment) {
   const value = (exercise.equipment ?? "").toLowerCase();
@@ -46,45 +117,79 @@ function goalScore(exercise: ExerciseOption, goal: Goal) {
   return 0;
 }
 
-export default function CoachRoutineDraft({ exercises, onReviewDraft }: Props) {
+function matchesMovement(exercise: ExerciseOption, movement: Movement) {
+  const pattern = (exercise.movementPattern ?? "").toLowerCase();
+  return movementTerms[movement].some(term => pattern.includes(term));
+}
+
+export default function CoachRoutineDraft({ exercises, plans, plansLoading, saving, onSavePlan, onDeletePlan, onStartDay }: Props) {
   const [goal, setGoal] = useState<Goal>("general");
   const [days, setDays] = useState("3");
   const [equipment, setEquipment] = useState<Equipment>("gym");
   const [experience, setExperience] = useState<Experience>("beginner");
-  const [draft, setDraft] = useState<ExerciseOption[]>([]);
+  const [planName, setPlanName] = useState("");
+  const [draft, setDraft] = useState<DraftDay[]>([]);
   const [generated, setGenerated] = useState(false);
 
-  const eligibleCount = useMemo(
-    () => exercises.filter(exercise => equipmentAllowed(exercise, equipment)).length,
-    [exercises, equipment]
+  const eligible = useMemo(
+    () => exercises.filter(exercise => equipmentAllowed(exercise, equipment) && difficultyScore(exercise, experience) < 8),
+    [exercises, equipment, experience]
   );
 
   function buildDraft() {
-    const eligible = exercises.filter(exercise => equipmentAllowed(exercise, equipment));
-    const selected: ExerciseOption[] = [];
-    for (const slot of movementSlots) {
-      const candidates = eligible
-        .filter(exercise => !selected.some(item => item.id === exercise.id))
-        .filter(exercise => slot.terms.some(term => (exercise.movementPattern ?? "").toLowerCase().includes(term)));
-      candidates.sort((a, b) =>
-        difficultyScore(a, experience) - difficultyScore(b, experience) ||
-        goalScore(a, goal) - goalScore(b, goal) ||
-        a.name.localeCompare(b.name)
-      );
-      if (candidates[0] && difficultyScore(candidates[0], experience) < 8) selected.push(candidates[0]);
-    }
-    setDraft(selected);
+    const used = new Set<string>();
+    const nextDraft = splitFor(Number(days)).map((template, index) => {
+      const selected: ExerciseOption[] = [];
+      for (const movement of template.movements) {
+        const candidates = eligible
+          .filter(exercise => !selected.some(item => item.id === exercise.id))
+          .filter(exercise => matchesMovement(exercise, movement));
+        candidates.sort((a, b) =>
+          Number(used.has(a.id)) - Number(used.has(b.id)) ||
+          difficultyScore(a, experience) - difficultyScore(b, experience) ||
+          goalScore(a, goal) - goalScore(b, goal) ||
+          a.name.localeCompare(b.name)
+        );
+        if (candidates[0]) {
+          selected.push(candidates[0]);
+          used.add(candidates[0].id);
+        }
+      }
+      return { dayNumber: index + 1, label: template.label, movements: template.movements, exercises: selected };
+    });
+    setDraft(nextDraft);
+    setPlanName("Coach · " + (goal === "general" ? "General fitness" : goal === "strength" ? "Strength" : "Muscle building") + " · " + days + "-day programme");
     setGenerated(true);
   }
 
-  const routineName = goal === "strength" ? "Coach draft · Strength" : goal === "muscle" ? "Coach draft · Muscle focus" : "Coach draft · Full body";
+  function toggleExercise(dayNumber: number, exercise: ExerciseOption, checked: boolean) {
+    setDraft(current => current.map(day => {
+      if (day.dayNumber !== dayNumber) return day;
+      const next = checked ? [...day.exercises, exercise] : day.exercises.filter(item => item.id !== exercise.id);
+      return { ...day, exercises: next };
+    }));
+  }
+
+  async function saveDraft() {
+    await onSavePlan({
+      name: planName.trim(), goal, daysPerWeek: Number(days), experience, equipment,
+      days: draft.map(day => ({
+        dayNumber: day.dayNumber,
+        label: day.label,
+        routineName: planName.trim() + " · " + day.label,
+        exercises: day.exercises.map((exercise, sortOrder) => ({ exerciseId: exercise.id, sortOrder }))
+      }))
+    });
+    setGenerated(false);
+    setDraft([]);
+  }
 
   return (
     <section className="panel coach-routine-builder" aria-labelledby="coach-routine-heading">
       <div>
         <p className="eyebrow">TRAINING ASSISTANT</p>
-        <h2 id="coach-routine-heading">Build a routine draft</h2>
-        <p className="muted">Set your preferences and get a starting session assembled from the FitLoop exercise library. You stay in control of every movement.</p>
+        <h2 id="coach-routine-heading">Build a weekly programme</h2>
+        <p className="muted">Choose how often you can train and get a starting weekly structure assembled from the FitLoop exercise library. Review every day before saving.</p>
       </div>
       <div className="coach-routine-fields">
         <label>Training goal
@@ -93,7 +198,7 @@ export default function CoachRoutineDraft({ exercises, onReviewDraft }: Props) {
           </select>
         </label>
         <label>Days available each week
-          <select value={days} onChange={event => setDays(event.target.value)}>
+          <select value={days} onChange={event => { setDays(event.target.value); setGenerated(false); }}>
             <option value="2">2 days</option><option value="3">3 days</option><option value="4">4 days</option><option value="5">5 days</option><option value="6">6 days</option>
           </select>
         </label>
@@ -108,17 +213,43 @@ export default function CoachRoutineDraft({ exercises, onReviewDraft }: Props) {
           </select>
         </label>
       </div>
-      <p className="coach-routine-note">This creates one full-body session template, not a complete weekly split. Your {days}-day availability is noted so you can decide how it fits your week.</p>
-      <button type="button" className="secondary" onClick={buildDraft} disabled={eligibleCount === 0}>Generate routine draft</button>
+      <p className="coach-routine-note">The draft uses a full-body structure for 2–3 days, upper/lower for 4 days, and a push/pull/legs-based split for 5–6 days. It is a starting layout, not a personalised clinical prescription.</p>
+      <button type="button" className="secondary" onClick={buildDraft} disabled={eligible.length === 0}>Generate weekly programme</button>
       {generated && <div className="coach-routine-preview" aria-live="polite">
-        <div className="section-heading-row"><h3>{routineName}</h3><span>{draft.length} movements</span></div>
-        {draft.length === 0 ? <p role="status">The current catalogue does not contain enough matching movements for these equipment and experience settings. Try a broader equipment choice.</p> : <>
-          <ol>{draft.map((exercise, index) => <li key={exercise.id}><strong>{index + 1}. {exercise.name}</strong><span>{exercise.movementPattern} · {exercise.equipment ?? "Equipment varies"}</span></li>)}</ol>
-          <p className="muted">Suggested starting point only: review exercise technique, choose appropriate loads and adjust the session to your needs.</p>
-          <button type="button" onClick={() => onReviewDraft(routineName, draft.map(exercise => exercise.id))}>Review in routine editor</button>
-        </>}
+        <label className="coach-plan-name">Programme name<input value={planName} onChange={event => setPlanName(event.target.value)} maxLength={80} /></label>
+        <div className="section-heading-row"><h3>Review your {days}-day programme</h3><span>{draft.reduce((total, day) => total + day.exercises.length, 0)} movement slots filled</span></div>
+        <div className="coach-plan-day-grid">
+          {draft.map(day => <article className="coach-plan-day" key={day.dayNumber}>
+            <div className="section-heading-row"><h4>Day {day.dayNumber} · {day.label}</h4><span>{day.exercises.length} movements</span></div>
+            {day.exercises.length === 0 ? <p className="muted">No matching movements found for this day. Try different equipment.</p> : <ol>{day.exercises.map(exercise => <li key={exercise.id}><strong>{exercise.name}</strong><span>{exercise.movementPattern ?? "Movement"} · {exercise.equipment ?? "Equipment varies"}</span></li>)}</ol>}
+            <details className="coach-plan-adjustments">
+              <summary>Add or remove movements</summary>
+              <div className="coach-plan-adjustment-list">
+                {eligible.filter(exercise => day.movements.some(movement => matchesMovement(exercise, movement))).map(exercise => <label key={exercise.id}>
+                  <input type="checkbox" aria-label={"Day " + day.dayNumber + ": " + exercise.name} checked={day.exercises.some(item => item.id === exercise.id)} onChange={event => toggleExercise(day.dayNumber, exercise, event.target.checked)} />
+                  <span>{exercise.name}</span>
+                </label>)}
+              </div>
+            </details>
+          </article>)}
+        </div>
+        <p className="muted">Review the exercise choices, technique and training load before starting. You can remove or add matching movements to each day.</p>
+        <button type="button" onClick={() => void saveDraft()} disabled={saving || !planName.trim() || draft.some(day => day.exercises.length < 2)}>
+          {saving ? "Saving programme…" : "Save weekly programme"}
+        </button>
+        {draft.some(day => day.exercises.length < 2) && <p role="status">Each training day needs at least two selected movements before this programme can be saved.</p>}
       </div>}
-      <p className="coach-routine-disclosure">This is a transparent catalogue-based draft, not a generative AI recommendation or medical assessment. Nothing is saved until you review the movements in the routine editor and choose Save routine.</p>
+      <div className="coach-saved-plans">
+        <div className="section-heading-row"><h3>Your programmes</h3><span>{plans.length} saved</span></div>
+        {plansLoading ? <p className="muted" role="status">Loading your programmes…</p> : plans.length === 0 ? <p className="muted">Your saved weekly programmes will appear here.</p> : plans.map(plan => <article className="coach-saved-plan" key={plan.id}>
+          <div className="section-heading-row"><div><h4>{plan.name}</h4><p className="muted">{plan.daysPerWeek} days · {plan.goal} · {plan.experience}</p></div><button type="button" className="small-button" onClick={() => onDeletePlan(plan.id)}>Delete</button></div>
+          <div className="coach-saved-plan-days">{plan.days.map(day => <div key={day.id}>
+            <div><strong>Day {day.dayNumber} · {day.label}</strong><small>{day.routine.exercises.length} movements</small></div>
+            <button type="button" className="secondary small-button" onClick={() => onStartDay(day.routine)}>Start {day.label}</button>
+          </div>)}</div>
+        </article>)}
+      </div>
+      <p className="coach-routine-disclosure">This programme is assembled from catalogue movement patterns and your selected preferences. It is not a generative AI recommendation or medical assessment. The Coach does not know your injuries, recovery needs or clinical history; adjust the programme to your circumstances.</p>
     </section>
   );
 }

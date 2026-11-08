@@ -13,6 +13,7 @@ import socialRoutes from "./routes/social.js";
 import coachRoutes from "./routes/coach.js";
 import analyticsRoutes from "./routes/analytics.js";
 
+// Middleware order is intentional: security headers and request parsing run before route handlers.
 const app = express();
 
 // Security headers, a strict browser origin and a small JSON limit reduce avoidable API exposure.
@@ -21,6 +22,7 @@ app.use(cors({ origin: config.FRONTEND_ORIGIN }));
 app.use(express.json({ limit: "32kb" }));
 
 // Login and registration are rate-limited because password endpoints attract automated guessing.
+// Limit only authentication endpoints here; other sensitive actions have their own route-level controls.
 app.use("/api/auth", rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 10,
@@ -46,6 +48,7 @@ app.get("/api/me", requireAuth, async (req, res, next) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/daily-logs", requireAuth, dailyLogRoutes);
+// Apply authentication at the router boundary so every workout handler receives a verified req.userId.
 app.use("/api/workouts", requireAuth, workoutRoutes);
 app.use("/api/social", requireAuth, socialRoutes);
 app.use("/api/coach", requireAuth, coachRoutes);
@@ -65,6 +68,7 @@ const server = app.listen(config.PORT, () => {
 });
 
 // Closing the database connection cleanly prevents hanging processes during local shutdowns.
+// Close HTTP and database resources on process termination so deployments do not abandon open connections.
 async function shutdown() {
   server.close(async () => {
     await prisma.$disconnect();

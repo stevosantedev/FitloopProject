@@ -1,14 +1,19 @@
+// Social routes manage profiles, friendships, blocks, reports and the friends-only feed.
+// Every private lookup is scoped to the authenticated account, and block relationships
+// are checked before profile or feed content is returned.
 import { Router } from "express";
 import { z } from "zod";
 import rateLimit from "express-rate-limit";
 import { prisma } from "../prisma.js";
 
+// The router accepts injected database and moderator identities so tests can verify access rules without production configuration.
 export function createSocialRouter(prismaClient = prisma, moderatorIds = (process.env.MODERATOR_USER_IDS ?? "").split(",").map(id => id.trim()).filter(Boolean)) {
 const router = Router();
 const configuredModeratorIds = moderatorIds instanceof Set ? moderatorIds : new Set(moderatorIds);
 const commentInput = z.object({ text: z.string().trim().min(1).max(500) });
 const postInput = z.object({ text: z.string().trim().min(1).max(500) }).strict();
 const reactionInput = z.object({ value: z.enum(["like", "strong", "clap"]).default("like") });
+// Report submissions are limited per authenticated account to reduce spam without relying on client-side throttling.
 const reportLimiter = rateLimit({ windowMs: 60 * 60 * 1000, limit: 5, standardHeaders: true, legacyHeaders: false, keyGenerator: req => req.userId });
 const reportInput = z.object({
   targetType: z.enum(["user", "post"]),
@@ -23,6 +28,7 @@ const profileInput = z.object({
 }).strict().refine(input => Object.keys(input).length > 0);
 
 // Profile fields are deliberately limited to display identity; email and private account data never leave the API.
+// Return only fields intended for a community profile; account email and private settings stay server-side.
 router.get("/profile/me", async (req, res, next) => {
   try {
     const profile = await prismaClient.user.findUnique({
@@ -34,6 +40,7 @@ router.get("/profile/me", async (req, res, next) => {
   } catch (error) { return next(error); }
 });
 
+// Profile edits accept only the explicitly supported fields so callers cannot mass-assign account properties.
 router.patch("/profile/me", async (req, res, next) => {
   try {
     const input = profileInput.parse(req.body);
@@ -47,6 +54,7 @@ router.patch("/profile/me", async (req, res, next) => {
 });
 
 // A profile lookup is available to signed-in members, but private profiles resolve only for the owner or an accepted friend.
+// Visibility checks happen before profile details are selected, including private-account and block rules.
 router.get("/profile/:id", async (req, res, next) => {
   try {
     const profile = await prismaClient.user.findUnique({
@@ -76,6 +84,7 @@ router.get("/profile/:id", async (req, res, next) => {
 });
 
 // A block is mutual for visibility: either party stops seeing the other's social activity.
+// Centralise block lookups so feed, profile and interaction routes apply the same two-way exclusion.
 async function blockedIds(userId) {
   const blocks = await prismaClient.userBlock.findMany({
     where: { OR: [{ blockerId: userId }, { blockedUserId: userId }] },
@@ -85,6 +94,7 @@ async function blockedIds(userId) {
 }
 
 // Resolve accepted connections in both directions because a friendship is stored as one request row.
+// Only accepted connections count as friends; pending requests do not grant feed access.
 async function friendIds(userId) {
   const connections = await prismaClient.friendConnection.findMany({
     where: {
@@ -115,6 +125,7 @@ router.get("/friends", async (req, res, next) => {
   }
 });
 
+// A request must not create a connection where either account has blocked the other.
 router.post("/friends/request", async (req, res, next) => {
   try {
     const input = z.object({ username: z.string().min(3).max(24) }).parse(req.body);
@@ -201,6 +212,7 @@ router.delete("/friends/:id", async (req, res, next) => {
 
 
 // Blocking removes any pending/accepted relationship and hides both accounts' activity from one another.
+// Blocking also invalidates the social connection so old friendship state cannot keep content visible.
 router.post("/blocks/:userId", async (req, res, next) => {
   try {
     const targetId = req.params.userId;
@@ -243,6 +255,7 @@ router.delete("/blocks/:userId", async (req, res, next) => {
 });
 
 // Reports are accepted only for a real account or a post the reporter can already view.
+// Validate the target and reason before recording a private moderation report; rate limiting is applied per reporter.
 router.post("/reports", reportLimiter, async (req, res, next) => {
   try {
     const input = reportInput.parse(req.body);
@@ -286,6 +299,7 @@ const moderationDecisionInput = z.object({
   resolutionNote: z.string().trim().min(10).max(1000).optional()
 }).strict();
 
+// Moderator access comes from server configuration, not a client-supplied role or editable profile field.
 function requireModerator(req, res, next) {
   if (!configuredModeratorIds.has(req.userId)) return res.status(403).json({ error: "Moderator access required." });
   return next();
@@ -297,6 +311,7 @@ router.get("/moderation/capability", (req, res) => {
 });
 
 // Only allowlisted moderators can inspect reports. Reporter and target projections intentionally omit email and credentials.
+// The moderation queue is intentionally unavailable to ordinary users, even if they know the endpoint.
 router.get("/moderation/reports", requireModerator, async (req, res, next) => {
   try {
     const input = moderationQueueInput.parse(req.query);
@@ -320,6 +335,7 @@ router.get("/moderation/reports", requireModerator, async (req, res, next) => {
 });
 
 // A decision is conditional on the status just read, preventing two moderators silently overwriting each other.
+// Validate state transitions and require an explanatory note before closing a report so decisions are auditable.
 router.patch("/moderation/reports/:id", requireModerator, async (req, res, next) => {
   try {
     const input = moderationDecisionInput.parse(req.body);
@@ -354,6 +370,7 @@ router.patch("/moderation/reports/:id", requireModerator, async (req, res, next)
 });
 
 
+// Posts are limited to accepted friends and plain text; the server does not accept arbitrary media URLs.
 router.post("/posts", async (req, res, next) => {
   try {
     const input = postInput.parse(req.body);
@@ -410,6 +427,7 @@ router.delete("/posts/:id", async (req, res, next) => {
   }
 });
 
+// Build the visible friend set first, then fetch only posts allowed by friendship and block relationships.
 router.get("/feed", async (req, res, next) => {
   try {
     // Re-evaluate visibility for every page; a block or friendship change
@@ -457,6 +475,7 @@ router.get("/feed", async (req, res, next) => {
   }
 });
 
+// Reactions are toggled for the current account only; repeated clicks should not create duplicate reactions.
 router.post("/posts/:id/reactions", async (req, res, next) => {
   try {
     const input = reactionInput.parse(req.body);
@@ -490,6 +509,7 @@ router.post("/posts/:id/reactions", async (req, res, next) => {
 });
 
 // Return older comments only when the signed-in member can still see the parent post.
+// Comment pages are scoped to a post the current user is allowed to see.
 router.get("/posts/:id/comments", async (req, res, next) => {
   try {
     const input = z.object({
@@ -518,6 +538,7 @@ router.get("/posts/:id/comments", async (req, res, next) => {
   }
 });
 
+// Check post visibility before accepting a reply so hidden or blocked content cannot be interacted with by ID.
 router.post("/posts/:id/comments", async (req, res, next) => {
   try {
     const input = commentInput.parse(req.body);
@@ -539,6 +560,7 @@ router.post("/posts/:id/comments", async (req, res, next) => {
 
 // Authors may edit their own comments only while the parent post remains visible to them.
 // The nested post filter makes ownership and current feed visibility part of the write itself.
+// Only the comment author can edit the text; moderators use the separate report workflow.
 router.patch("/comments/:id", async (req, res, next) => {
   try {
     const input = commentInput.strict().parse(req.body);
@@ -558,6 +580,7 @@ router.patch("/comments/:id", async (req, res, next) => {
 });
 
 // Deletion uses the same atomic author and current-visibility checks as editing.
+// Keep comment deletion owner-scoped so a user cannot remove another person's contribution.
 router.delete("/comments/:id", async (req, res, next) => {
   try {
     const ids = [req.userId, ...await friendIds(req.userId)];

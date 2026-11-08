@@ -21,11 +21,14 @@ import { buildProgressionSuggestions } from "../utils/progressionSuggestions.js"
  * in-memory fake, exercising HTTP parsing, validation and ownership decisions
  * without requiring a running PostgreSQL server.
  */
+// The router is created with an injectable database client so the same ownership and validation
+// rules can be exercised in route tests without connecting to a real database.
 export function createWorkoutRouter(prismaClient = prisma) {
 const router = Router();
 
 // Validate routine templates before touching the database. The exercise IDs are
 // checked against the catalogue in the handler because Zod cannot verify records.
+// Request shape validation happens before any catalogue lookup or database write.
 const routineInput = z.object({
   name: z.string().min(1).max(80),
   description: z.string().max(300).optional(),
@@ -293,6 +296,7 @@ const trainingPlanInclude = {
   }
 };
 
+// Check day structure and duplicate positions before creating replacement routines.
 async function validateTrainingPlanDays(prismaClient, userId, days) {
   const savedRoutineIds = days.filter(day => day.routineId).map(day => day.routineId);
   if (savedRoutineIds.length) {
@@ -317,6 +321,7 @@ async function validateTrainingPlanDays(prismaClient, userId, days) {
   return true;
 }
 
+// Convert one validated plan day into a routine template; session history keeps its own references.
 function createTrainingPlanDay(day, userId) {
   if (day.routineId) {
     return { dayNumber: day.dayNumber, label: day.label, routine: { connect: { id: day.routineId } } };
@@ -339,6 +344,7 @@ function createTrainingPlanDay(day, userId) {
   };
 }
 
+// Plans are private account data, so the authenticated owner is applied before returning any rows.
 router.get("/training-plans", async (req, res, next) => {
   try {
     const plans = await prismaClient.trainingPlan.findMany({
@@ -350,6 +356,7 @@ router.get("/training-plans", async (req, res, next) => {
   } catch (error) { return next(error); }
 });
 
+// Validate the whole plan before creating its parent record to avoid partially saved programmes.
 router.post("/training-plans", async (req, res, next) => {
   try {
     const input = trainingPlanInput.parse(req.body);
@@ -368,6 +375,7 @@ router.post("/training-plans", async (req, res, next) => {
   } catch (error) { return next(error); }
 });
 
+// Updating a plan replaces its routine templates rather than mutating routines already referenced by workout history.
 router.put("/training-plans/:id", async (req, res, next) => {
   try {
     const input = trainingPlanInput.parse(req.body);
@@ -391,6 +399,7 @@ router.put("/training-plans/:id", async (req, res, next) => {
   } catch (error) { return next(error); }
 });
 
+// The owner filter is part of the delete itself so a guessed plan ID cannot remove another account's data.
 router.delete("/training-plans/:id", async (req, res, next) => {
   try {
     const result = await prismaClient.trainingPlan.deleteMany({
@@ -402,6 +411,7 @@ router.delete("/training-plans/:id", async (req, res, next) => {
 });
 
 // Compare the two latest completed sessions per movement for this account only.
+// Fetch only the recent completed set history needed by the progression utility; the utility owns the comparison rules.
 router.get("/progression-suggestions", async (req, res, next) => {
   try {
     const sets = await prismaClient.workoutSet.findMany({
@@ -413,6 +423,7 @@ router.get("/progression-suggestions", async (req, res, next) => {
   } catch (error) { return next(error); }
 });
 
+// Personal records are calculated from the current account's completed sets, never from shared catalogue data.
 router.get("/personal-records", async (req, res, next) => {
   try {
     const sets = await prismaClient.workoutSet.findMany({
@@ -430,6 +441,7 @@ router.get("/personal-records", async (req, res, next) => {
 
 // Return recent history newest-first. The limit keeps a dashboard request bounded;
 // a dedicated pagination endpoint can replace this when the history grows.
+// Session history is paginated and owner-scoped so large histories do not need to load in one response.
 router.get("/sessions", async (req, res, next) => {
   try {
     const sessions = await prismaClient.workoutSession.findMany({
@@ -447,6 +459,7 @@ router.get("/sessions", async (req, res, next) => {
 // Save a completed workout session, including every set performed during it.
 // The session and its feed post are created together so the feed cannot advertise
 // a workout whose history record failed to save.
+// Validate client input first, then resolve every exercise and routine against records the signed-in user may use.
 router.post("/sessions", async (req, res, next) => {
   let clientRequestId;
   try {

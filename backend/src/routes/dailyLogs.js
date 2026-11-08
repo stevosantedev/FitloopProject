@@ -15,8 +15,10 @@ const dailyLogInput = z.object({
   note: z.string().max(500).optional()
 });
 
+// Read only the current account's daily entries; the requested window is capped below.
 router.get("/", async (req, res, next) => {
   try {
+    // Keep the history window bounded to prevent a dashboard request from loading years of daily records.
     const days = Math.min(Math.max(Number(req.query.days) || 14, 1), 90);
     const logs = await prisma.dailyLog.findMany({
       where: {
@@ -31,11 +33,13 @@ router.get("/", async (req, res, next) => {
   }
 });
 
+// One row per account and calendar date lets a user correct a check-in without creating duplicates.
 router.put("/", async (req, res, next) => {
   try {
     const input = dailyLogInput.parse(req.body);
     // UTC midnight gives each calendar date one stable key regardless of server timezone.
     const date = new Date(`${input.date}T00:00:00.000Z`);
+    // The composite key includes the authenticated owner, so two accounts can log the same calendar date independently.
     const log = await prisma.dailyLog.upsert({
       where: { userId_date: { userId: req.userId, date } },
       create: { ...input, userId: req.userId, date },

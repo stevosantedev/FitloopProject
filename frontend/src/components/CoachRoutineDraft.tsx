@@ -130,6 +130,7 @@ export default function CoachRoutineDraft({ exercises, plans, plansLoading, savi
   const [planName, setPlanName] = useState("");
   const [draft, setDraft] = useState<DraftDay[]>([]);
   const [generated, setGenerated] = useState(false);
+  const [saveError, setSaveError] = useState("");
 
   const eligible = useMemo(
     () => exercises.filter(exercise => equipmentAllowed(exercise, equipment) && difficultyScore(exercise, experience) < 8),
@@ -234,6 +235,7 @@ export default function CoachRoutineDraft({ exercises, plans, plansLoading, savi
           </article>)}
         </div>
         <p className="muted">Review the exercise choices, technique and training load before starting. You can remove or add matching movements to each day.</p>
+        {saveError && <p className="load-error" role="alert">{saveError}</p>}
         <button type="button" onClick={() => void saveDraft()} disabled={saving || !planName.trim() || draft.some(day => day.exercises.length < 2)}>
           {saving ? "Saving programme…" : "Save weekly programme"}
         </button>

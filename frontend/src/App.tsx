@@ -9,7 +9,7 @@
 import { useEffect, useRef, useState } from "react";
 import MuscleMap from "./components/MuscleMap";
 import GuidedRestTimer from "./components/GuidedRestTimer";
-import CoachRoutineDraft from "./components/CoachRoutineDraft";
+import CoachRoutineDraft, { type CoachPlanInput, type TrainingPlanView } from "./components/CoachRoutineDraft";
 import { clearQueuedWorkouts, getQueuedWorkouts, queueWorkout, removeQueuedWorkout } from "./offlineWorkoutQueue";
 
 type User = { id: string; username: string; displayName?: string | null; bio?: string | null };
@@ -118,6 +118,10 @@ export default function App() {
   // Keep the selected coaching tone and focus available while the user edits their preferences.
   const [coachPreference, setCoachPreference] = useState<CoachPreference>({ style: "gentle", focus: "energy" });
   const [exercises, setExercises] = useState<Exercise[]>([]);
+  // Weekly programmes are separate from one-off routines but reuse their saved day templates.
+  const [trainingPlans, setTrainingPlans] = useState<TrainingPlanView[]>([]);
+  const [trainingPlansLoading, setTrainingPlansLoading] = useState(false);
+  const [trainingPlanSaving, setTrainingPlanSaving] = useState(false);
   // Local filters keep catalogue searching responsive without repeated API calls.
   const [exerciseSearch, setExerciseSearch] = useState("");
   const [exerciseMuscleFilter, setExerciseMuscleFilter] = useState("all");
@@ -220,6 +224,57 @@ export default function App() {
     const data = await response.json();
     if (!response.ok) throw new ApiRequestError(data.error ?? "The request could not be completed.", response.status);
     return data;
+  }
+
+  // Fetch only the signed-in account's saved weekly programmes when Coach is opened.
+  async function loadTrainingPlans() {
+    setTrainingPlansLoading(true);
+    try {
+      const data = await request("/api/workouts/training-plans");
+      setTrainingPlans(data.plans);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Could not load your training programmes.");
+    } finally {
+      setTrainingPlansLoading(false);
+    }
+  }
+
+  // Save the reviewed programme in one API operation. Each day becomes a normal
+  // owned routine, so existing workout history and set-recording paths still apply.
+  async function saveTrainingPlan(input: CoachPlanInput) {
+    setTrainingPlanSaving(true);
+    try {
+      const data = await request("/api/workouts/training-plans", {
+        method: "POST",
+        body: JSON.stringify(input)
+      });
+      setTrainingPlans(current => [data.plan, ...current.filter(plan => plan.id !== data.plan.id)]);
+      setNotice("Weekly programme saved. Choose a day when you're ready to train.");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Could not save your training programme.");
+      throw error;
+    } finally {
+      setTrainingPlanSaving(false);
+    }
+  }
+
+  async function deleteTrainingPlan(planId: string) {
+    if (!window.confirm("Delete this weekly programme? Its workout history will be kept.")) return;
+    try {
+      await request("/api/workouts/training-plans/" + planId, { method: "DELETE" });
+      setTrainingPlans(current => current.filter(plan => plan.id !== planId));
+      setNotice("Weekly programme deleted. Completed workout history is unchanged.");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Could not delete this programme.");
+    }
+  }
+
+  // Starting a programme day loads its saved routine into the existing workout builder.
+  function startTrainingPlanDay(routine: TrainingPlanView["days"][number]["routine"]) {
+    setSelectedRoutine(routine.id);
+    setSelectedExerciseIds(routine.exercises.map(item => item.exercise.id));
+    setActiveTab("workouts");
+    setNotice(routine.name + " loaded into the workout builder. Review your sets before starting.");
   }
 
   // Registration and sign-in share the same form. The mode controls both the
@@ -1084,7 +1139,10 @@ export default function App() {
     if (token && (activeTab === "workouts" || activeTab === "coach")) void loadWorkouts();
     // Switching tabs loads the latest social and coaching records instead of showing stale data.
     if (token && activeTab === "community") void loadCommunity();
-    if (token && activeTab === "coach") void loadCoachConversations();
+    if (token && activeTab === "coach") {
+      void loadCoachConversations();
+      void loadTrainingPlans();
+    }
   }, [token, activeTab]);
 
   useEffect(() => {
@@ -1640,7 +1698,15 @@ export default function App() {
 
     {activeTab === "coach" && <section className="page-section">
       <div className="welcome compact"><p className="eyebrow">YOUR TRAINING COMPANION</p><h1>Meet your coach.</h1><p className="muted">Ask about your logged training, exercise technique or how to shape your next routine.</p></div>
-      <CoachRoutineDraft exercises={exercises} onReviewDraft={reviewCoachRoutineDraft} />
+      <CoachRoutineDraft
+        exercises={exercises}
+        plans={trainingPlans}
+        plansLoading={trainingPlansLoading}
+        saving={trainingPlanSaving}
+        onSavePlan={saveTrainingPlan}
+        onDeletePlan={deleteTrainingPlan}
+        onStartDay={startTrainingPlanDay}
+      />
       <div className="coach-chat-layout">
         <aside className="panel coach-conversation-list">
           <div className="section-heading-row"><h2>Conversations</h2><button type="button" className="small-button" onClick={() => void createCoachConversation()}>New chat +</button></div>

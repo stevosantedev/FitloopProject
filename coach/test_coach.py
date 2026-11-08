@@ -8,6 +8,7 @@ from main import app
 client = TestClient(app)
 
 
+    # No history should produce a neutral check-in, not a judgement about consistency.
 def test_empty_history_returns_a_non_alarmist_check_in():
     # An empty history should never be described as a negative trend or a missed target.
     response = client.post("/coach/check-in", json={"logs": []})
@@ -17,6 +18,7 @@ def test_empty_history_returns_a_non_alarmist_check_in():
     assert message["reasons"]
 
 
+    # The rule needs enough dated observations to explain a recent-versus-earlier comparison.
 def test_sleep_rule_explains_the_comparison():
     # Five observations are required so the recent three can be compared with earlier records.
     logs = [
@@ -33,6 +35,7 @@ def test_sleep_rule_explains_the_comparison():
     assert any("average" in reason for reason in message["reasons"])
 
 
+    # A consistency preference should invite a small next step without inventing a missed target.
 def test_consistency_focus_uses_a_low_pressure_logging_prompt():
     # The consistency preference changes the prompt without inventing a missed-goal judgement.
     response = client.post("/coach/check-in", json={
@@ -48,6 +51,7 @@ def test_consistency_focus_uses_a_low_pressure_logging_prompt():
     assert any("not reaching a required streak" in reason for reason in message["reasons"])
 
 
+    # Recovery focus changes emphasis, while keeping the advice within the supplied sleep data.
 def test_recovery_focus_changes_sleep_wording():
     # The recovery preference changes how the same sleep trend is framed.
     logs = [
@@ -62,6 +66,7 @@ def test_recovery_focus_changes_sleep_wording():
     assert "recent sleep averages" in response.json()["messages"][0]["message"]
 
 
+    # Guided replies must explain their source and use only the workout context supplied to the service.
 def test_conversation_gives_a_transparent_guided_reply_and_uses_training_context():
     response = client.post("/coach/conversation", json={
         "message": "Can you review my progress?",
@@ -78,6 +83,7 @@ def test_conversation_gives_a_transparent_guided_reply_and_uses_training_context
     assert "Bench press" in result["message"]
 
 
+    # Compare like-for-like movements and choose the highest completed load from each session.
 def test_progress_reply_compares_highest_logged_load_for_the_same_movement():
     response = client.post("/coach/conversation", json={
         "message": "Can you review my progress?",
@@ -100,6 +106,7 @@ def test_progress_reply_compares_highest_logged_load_for_the_same_movement():
     assert "not a definitive strength test" in message
 
 
+    # Bodyweight history has no external load to compare, so the reply must not manufacture one.
 def test_progress_reply_does_not_invent_a_load_comparison_for_bodyweight_only_logs():
     response = client.post("/coach/conversation", json={
         "message": "Am I getting stronger?",
@@ -118,6 +125,7 @@ def test_progress_reply_does_not_invent_a_load_comparison_for_bodyweight_only_lo
     assert "rose by" not in message
 
 
+    # Pain language is handled by the conservative safety path rather than training progression advice.
 def test_conversation_uses_conservative_safety_response_for_pain():
     response = client.post("/coach/conversation", json={"message": "My shoulder hurts during pressing"})
     assert response.status_code == 200
@@ -125,18 +133,21 @@ def test_conversation_uses_conservative_safety_response_for_pain():
     assert response.json()["responseMode"] == "guided_rules"
 
 
+    # Urgent symptom language must trigger escalation wording and stay outside the optional AI provider.
 def test_conversation_escalates_urgent_symptoms():
     response = client.post("/coach/conversation", json={"message": "I have chest pain while training"})
     assert response.status_code == 200
     assert "emergency medical attention" in response.json()["message"]
 
 
+    # Bound message size before prompt construction or provider work.
 def test_conversation_rejects_oversized_messages():
     response = client.post("/coach/conversation", json={"message": "x" * 2001})
     assert response.status_code == 422
 
 
 
+    # The live provider path requires both account consent and server-side provider configuration.
 def test_ai_reply_is_used_only_after_explicit_consent_and_provider_configuration(monkeypatch):
     # A configured key is not enough: the account must opt in on the request.
     monkeypatch.setenv("AI_COACH_API_KEY", "test-key")
@@ -165,6 +176,7 @@ def test_ai_reply_is_used_only_after_explicit_consent_and_provider_configuration
     assert "Recent completed workout summaries" in calls[0][1]["json"]["messages"][1]["content"]
 
 
+    # A configured API key alone must never override the account's opt-in setting.
 def test_ai_provider_is_not_called_without_user_consent(monkeypatch):
     monkeypatch.setenv("AI_COACH_API_KEY", "test-key")
     calls = []
@@ -175,6 +187,7 @@ def test_ai_provider_is_not_called_without_user_consent(monkeypatch):
     assert calls == []
 
 
+    # Provider outages should leave the user with a safe guided reply instead of a broken conversation.
 def test_ai_provider_failure_falls_back_to_guided_reply(monkeypatch):
     monkeypatch.setenv("AI_COACH_API_KEY", "test-key")
 
@@ -190,6 +203,7 @@ def test_ai_provider_failure_falls_back_to_guided_reply(monkeypatch):
     assert response.json()["responseMode"] == "guided_rules"
 
 
+    # This is a hard boundary: urgent symptom messages must bypass external AI processing entirely.
 def test_urgent_symptoms_never_call_ai_provider(monkeypatch):
     monkeypatch.setenv("AI_COACH_API_KEY", "test-key")
     calls = []
@@ -203,6 +217,7 @@ def test_urgent_symptoms_never_call_ai_provider(monkeypatch):
     assert "emergency medical attention" in response.json()["message"]
     assert calls == []
 
+    # User text and workout names are data, not instructions that can replace the system policy.
 def test_ai_prompt_treats_user_content_as_untrusted_data(monkeypatch):
     # User text and custom workout names can contain instruction-like content; they must not outrank coach rules.
     monkeypatch.setenv("AI_COACH_API_KEY", "test-key")

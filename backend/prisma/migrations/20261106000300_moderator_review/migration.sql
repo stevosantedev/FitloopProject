@@ -1,4 +1,5 @@
 -- Record the latest moderator decision without granting roles through user-editable profile fields.
+-- Nullable review attribution preserves the report if its moderator account is later deleted.
 ALTER TABLE "ContentReport"
   ADD COLUMN "reviewedById" TEXT,
   ADD COLUMN "reviewedAt" TIMESTAMP(3),

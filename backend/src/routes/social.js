@@ -372,6 +372,31 @@ router.post("/posts", async (req, res, next) => {
   }
 });
 
+router.patch("/posts/:id", async (req, res, next) => {
+  try {
+    const input = postInput.parse(req.body);
+    // Restrict edits to the signed-in author's text updates; workout records remain immutable feed summaries.
+    const result = await prismaClient.feedPost.updateMany({
+      where: { id: req.params.id, userId: req.userId, type: "update" },
+      data: { text: input.text }
+    });
+    if (result.count === 0) return res.status(404).json({ error: "Post not found." });
+    const post = await prismaClient.feedPost.findFirst({
+      where: { id: req.params.id, userId: req.userId, type: "update" },
+      include: {
+        user: { select: { id: true, username: true, displayName: true } },
+        reactions: { select: { value: true, userId: true } },
+        comments: { include: { user: { select: { id: true, username: true } } }, orderBy: [{ createdAt: "asc" }, { id: "asc" }], take: 20 },
+        _count: { select: { comments: true } }
+      }
+    });
+    if (!post) return res.status(404).json({ error: "Post not found." });
+    return res.json({ post });
+  } catch (error) {
+    return next(error);
+  }
+});
+
 router.delete("/posts/:id", async (req, res, next) => {
   try {
     // Only the author can remove a post; deleting it cascades its reactions and comments.

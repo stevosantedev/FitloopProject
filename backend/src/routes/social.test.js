@@ -51,6 +51,69 @@ test("POST posts rejects blank and overlong updates before writing", async () =>
   assert.equal(writes, 0);
 });
 
+test("PATCH posts edits only the authenticated author's text update", async () => {
+  let updateQuery;
+  let readQuery;
+  const post = {
+    id: "post-a", userId: "user-a", type: "update", text: "Edited training update",
+    user: { id: "user-a", username: "runner", displayName: "Runner" },
+    reactions: [], comments: [], _count: { comments: 0 }
+  };
+  const prisma = {
+    feedPost: {
+      updateMany: async args => { updateQuery = args; return { count: 1 }; },
+      findFirst: async args => { readQuery = args; return post; }
+    }
+  };
+  await withSocialApi(prisma, async base => {
+    const response = await fetch(base + "/api/social/posts/post-a", {
+      method: "PATCH", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ text: "  Edited training update  " })
+    });
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { post });
+  });
+  assert.deepEqual(updateQuery.where, { id: "post-a", userId: "user-a", type: "update" });
+  assert.deepEqual(updateQuery.data, { text: "Edited training update" });
+  assert.deepEqual(readQuery.where, { id: "post-a", userId: "user-a", type: "update" });
+  assert.deepEqual(readQuery.include.user.select, { id: true, username: true, displayName: true });
+});
+
+test("PATCH posts cannot edit another author's post or a workout post", async () => {
+  let reads = 0;
+  const prisma = {
+    feedPost: {
+      updateMany: async args => {
+        assert.deepEqual(args.where, { id: "post-a", userId: "user-a", type: "update" });
+        return { count: 0 };
+      },
+      findFirst: async () => { reads += 1; return null; }
+    }
+  };
+  await withSocialApi(prisma, async base => {
+    const response = await fetch(base + "/api/social/posts/post-a", {
+      method: "PATCH", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ text: "Attempted edit" })
+    });
+    assert.equal(response.status, 404);
+  });
+  assert.equal(reads, 0);
+});
+
+test("PATCH posts rejects blank, overlong and unexpected fields before writing", async () => {
+  let writes = 0;
+  const prisma = { feedPost: { updateMany: async () => { writes += 1; return { count: 1 }; } } };
+  await withSocialApi(prisma, async base => {
+    for (const body of [{ text: " " }, { text: "x".repeat(501) }, { text: "Valid text", userId: "user-b" }]) {
+      const response = await fetch(base + "/api/social/posts/post-a", {
+        method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify(body)
+      });
+      assert.equal(response.status, 400);
+    }
+  });
+  assert.equal(writes, 0);
+});
+
 test("DELETE posts only removes a post authored by the signed-in account", async () => {
   let query;
   const prisma = { feedPost: { deleteMany: async args => { query = args; return { count: 1 }; } } };

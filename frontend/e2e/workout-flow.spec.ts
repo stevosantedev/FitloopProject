@@ -806,6 +806,44 @@ test("dedicated coach workspace creates a conversation and displays a guided rep
   await expect(contextDisclosure).toContainText("Private session notes, daily wellbeing logs and account identifiers are excluded.");
 });
 
+test("authors can edit their own Community text updates", async ({ page }) => {
+  await mockApplicationApi(page);
+  let postText = "The original training update";
+  let patchCalls = 0;
+  const makePost = () => ({
+    id: "post-editable", createdAt: "2026-11-08T10:00:00.000Z",
+    type: "update", text: postText,
+    user: { id: "user-1", username: "tester", displayName: "Tester" },
+    reactions: [], comments: [], _count: { comments: 0 }
+  });
+  await page.route("http://localhost:4000/api/social/feed**", async route => {
+    await route.fulfill({
+      status: 200, contentType: "application/json",
+      body: JSON.stringify({ posts: [makePost()], hasMore: false, nextCursor: null })
+    });
+  });
+  await page.route("http://localhost:4000/api/social/posts/post-editable", async route => {
+    if (route.request().method() !== "PATCH") return route.continue();
+    patchCalls += 1;
+    postText = route.request().postDataJSON().text;
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ post: makePost() }) });
+  });
+  await page.goto("/");
+  await page.getByLabel("Email").fill("tester@example.com");
+  await page.getByLabel("Password").fill("test-password");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.locator(".sidebar-nav").getByRole("button", { name: "Community" }).click();
+  const card = page.locator(".feed-card").filter({ hasText: "The original training update" });
+  await expect(card).toBeVisible();
+  await card.getByRole("button", { name: "Edit post" }).click();
+  await card.getByLabel("Edit your update").fill("A corrected training update");
+  await card.getByRole("button", { name: "Save edit" }).click();
+  await expect(page.locator(".feed-card")).toContainText("A corrected training update");
+  await expect(page.getByText("The original training update")).toHaveCount(0);
+  await expect(page.getByRole("status")).toContainText("Your update has been edited.");
+  expect(patchCalls).toBe(1);
+});
+
 test("community users can share a friends-only text update", async ({ page }) => {
   await mockApplicationApi(page);
   await page.goto("/");

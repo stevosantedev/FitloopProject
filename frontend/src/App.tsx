@@ -193,6 +193,8 @@ export default function App() {
   const [profileBioDraft, setProfileBioDraft] = useState("");
   const [profileSaving, setProfileSaving] = useState(false);
   const [communityPostDraft, setCommunityPostDraft] = useState("");
+  const [editingPostId, setEditingPostId] = useState<string | null>(null);
+  const [editingPostDraft, setEditingPostDraft] = useState("");
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
   const [commentLoading, setCommentLoading] = useState<Record<string, boolean>>({});
   const [commentLoadErrors, setCommentLoadErrors] = useState<Record<string, string>>({});
@@ -795,6 +797,30 @@ export default function App() {
       await loadCommunity();
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Could not share your update.");
+    }
+  }
+
+  function startPostEdit(post: FeedPost) {
+    setEditingPostId(post.id);
+    setEditingPostDraft(post.text ?? "");
+  }
+
+  function cancelPostEdit() {
+    setEditingPostId(null);
+    setEditingPostDraft("");
+  }
+
+  async function savePostEdit(event: React.FormEvent, postId: string) {
+    event.preventDefault();
+    const text = editingPostDraft.trim();
+    if (!text) return;
+    try {
+      await request("/api/social/posts/" + postId, { method: "PATCH", body: JSON.stringify({ text }) });
+      cancelPostEdit();
+      await loadCommunity();
+      setNotice("Your update has been edited.");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Could not edit your update.");
     }
   }
 
@@ -1687,7 +1713,11 @@ export default function App() {
             const commentCount = post._count?.comments ?? post.comments.length;
             return <article className="feed-card" key={post.id}>
             <div className="feed-heading"><div className="feed-author"><span className="feed-avatar" aria-hidden="true">{(post.user.displayName || post.user.username).slice(0, 1).toUpperCase()}</span><div><button type="button" className="feed-profile-link" onClick={event => { profileTriggerRef.current = event.currentTarget; void openCommunityProfile(post.user.id); }}>{post.user.displayName || "@" + post.user.username}</button><small>@{post.user.username}</small></div></div><time dateTime={post.createdAt}>{new Date(post.createdAt).toLocaleString()}</time></div>
-            {post.text ? <p className="community-post-text">{post.text}</p> : <p>{post.session?.routine?.name ?? "Completed a workout"}</p>}
+            {post.text && editingPostId === post.id ? <form className="post-edit-form" onSubmit={event => void savePostEdit(event, post.id)}>
+              <label className="sr-only" htmlFor={"edit-post-" + post.id}>Edit your update</label>
+              <textarea id={"edit-post-" + post.id} value={editingPostDraft} onChange={event => setEditingPostDraft(event.target.value)} maxLength={500} rows={3} />
+              <div className="composer-footer"><small>{editingPostDraft.trim().length}/500</small><div className="post-edit-actions"><button type="submit" disabled={!editingPostDraft.trim()}>Save edit</button><button type="button" className="secondary" onClick={cancelPostEdit}>Cancel</button></div></div>
+            </form> : post.text ? <p className="community-post-text">{post.text}</p> : <p>{post.session?.routine?.name ?? "Completed a workout"}</p>}
             {post.session && <div className="workout-post-summary" aria-label="Workout summary">
               <div className="workout-post-metrics">
                 <span><strong>{post.session.sets.filter(set => set.completed).length}</strong> sets completed</span>
@@ -1700,7 +1730,7 @@ export default function App() {
                 {workoutSummary.length > 4 && <p className="workout-post-more">+{workoutSummary.length - 4} more movements</p>}
               </div>
             </div>}
-            {post.user.id === user?.id && <button type="button" className="small-button post-delete" onClick={() => void deleteCommunityPost(post.id)}>Delete post</button>}
+            {post.user.id === user?.id && <div className="post-owner-actions">{post.type === "update" && editingPostId !== post.id && <button type="button" className="small-button secondary" onClick={() => startPostEdit(post)}>Edit post</button>}{editingPostId !== post.id && <button type="button" className="small-button post-delete" onClick={() => void deleteCommunityPost(post.id)}>Delete post</button>}</div>}
             {post.user.id !== user?.id && <div className="connection-actions"><button type="button" className="small-button secondary" onClick={() => void reportCommunityTarget("post", post.id)}>Report post</button><button type="button" className="small-button secondary" onClick={() => void blockCommunityUser(post.user.id)}>Block author</button></div>}
             <div className="reaction-row" aria-label="Post reactions">
               {([

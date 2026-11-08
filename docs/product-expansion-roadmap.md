@@ -69,6 +69,7 @@ The current friends-only feed, workout posts, reactions and comments provide a s
 1. **Feed experience**
    - [x] Create friends-only text updates from the Community screen, with a 500-character limit and a clear accepted-friends audience notice.
    - [x] Allow authors to delete their own posts; the API scopes deletion to the authenticated author and database cascades remove associated reactions/comments.
+   - [x] Allow authors to edit their own text updates with strict 500-character validation; the API hides other users’ posts and immutable workout summaries behind author/type checks.
    - [x] Add API validation and route tests for text post creation, blank/overlong content and author-only deletion; add a browser journey for composing and sharing an update.
    - [x] Expand the feed into responsive cards for completed workouts and user-created updates, with author identity, semantic timestamps, reaction counts, workout summaries and comment discussions.
    - [x] Add an explicit first-page feed refresh action; a failed refresh preserves the currently rendered posts and exposes an accessible retry.

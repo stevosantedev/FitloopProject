@@ -623,6 +623,8 @@ test("progression suggestions compare recent completed sessions and ignore incom
   assert.equal(suggestions[0].recommendation, "consider_small_increase");
   assert.equal(suggestions[0].latest.reps, 10);
   assert.equal(suggestions[0].previous.reps, 8);
+  assert.equal(suggestions[0].recentSessions.length, 3);
+  assert.deepEqual(suggestions[0].recentSessions.map(session => session.reps), [10, 8, 12]);
 });
 
 test("progression suggestions omit exercises without two completed sessions", () => {

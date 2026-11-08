@@ -14,13 +14,14 @@ export function buildProgressionSuggestions(sets) {
   }
   const suggestions = [];
   for (const group of byExercise.values()) {
-    const recent = [...group.sessions.values()].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 2);
+    const recent = [...group.sessions.values()].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
     if (recent.length < 2) continue;
     const best = session => session.sets.reduce((winner, set) => {
       const score = (set.weightKg ?? 0) * 100000 + set.reps;
       return !winner || score > winner.score ? { score, reps: set.reps, weightKg: set.weightKg ?? null } : winner;
     }, null);
-    const latest = best(recent[0]), previous = best(recent[1]);
+    const recentSessions = recent.map(session => ({ ...best(session), date: new Date(session.date).toISOString() }));
+    const latest = recentSessions[0], previous = recentSessions[1];
     let recommendation, reason;
     if (latest.weightKg != null && previous.weightKg != null && latest.weightKg > previous.weightKg && latest.reps >= previous.reps) {
       recommendation = "maintain";
@@ -36,8 +37,9 @@ export function buildProgressionSuggestions(sets) {
       reason = "Your recent performance is broadly unchanged. Keep the load steady and focus on consistent, controlled reps.";
     }
     suggestions.push({ exerciseId: group.exerciseId, exerciseName: group.exerciseName, recommendation, reason,
-      latest: { reps: latest.reps, weightKg: latest.weightKg, date: new Date(recent[0].date).toISOString() },
-      previous: { reps: previous.reps, weightKg: previous.weightKg, date: new Date(recent[1].date).toISOString() } });
+      latest: { reps: latest.reps, weightKg: latest.weightKg, date: latest.date },
+      previous: { reps: previous.reps, weightKg: previous.weightKg, date: previous.date },
+      recentSessions });
   }
   return suggestions.sort((a, b) => a.exerciseName.localeCompare(b.exerciseName));
 }

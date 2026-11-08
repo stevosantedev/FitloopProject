@@ -95,7 +95,7 @@ type CoachChatMessage = { id: string; role: "user" | "assistant"; content: strin
 type CoachPreference = { style: "gentle" | "direct"; focus: "energy" | "consistency" | "recovery" };
 type PersonalRecord = { exerciseId: string; exerciseName: string; heaviestLoad: { value: number; date: string | null; sessionId: string | null } | null; mostReps: { value: number; date: string | null; sessionId: string | null } | null; highestSetVolume: { value: number; date: string | null; sessionId: string | null } | null };
 
-type ProgressionSuggestion = { exerciseId: string; exerciseName: string; recommendation: "maintain" | "consider_small_increase" | "repeat_or_reduce"; reason: string; latest: { reps: number; weightKg: number | null; date: string }; previous: { reps: number; weightKg: number | null; date: string } };
+type ProgressionSuggestion = { exerciseId: string; exerciseName: string; recommendation: "maintain" | "consider_small_increase" | "repeat_or_reduce"; reason: string; latest: { reps: number; weightKg: number | null; date: string }; previous: { reps: number; weightKg: number | null; date: string }; recentSessions: Array<{ reps: number; weightKg: number | null; date: string }> };
 // Keep the API origin configurable for deployments while making local development
 // work without an extra environment variable.
 const API = import.meta.env.VITE_API_URL ?? "http://localhost:4000";
@@ -1738,6 +1738,7 @@ export default function App() {
           <div className="section-heading-row"><strong>{item.exerciseName}</strong><span className={"progression-status " + item.recommendation}>{item.recommendation === "consider_small_increase" ? "Consider a small increase" : item.recommendation === "repeat_or_reduce" ? "Repeat or reduce" : "Maintain"}</span></div>
           <p>{item.reason}</p>
           <small>Latest: {item.latest.reps} reps at {item.latest.weightKg == null ? "bodyweight / unweighted" : item.latest.weightKg + " kg"} · Previous: {item.previous.reps} reps at {item.previous.weightKg == null ? "bodyweight / unweighted" : item.previous.weightKg + " kg"}</small>
+          {item.recentSessions.length > 2 && <small>Recent history ({item.recentSessions.length} sessions, newest first): {item.recentSessions.map((session, index) => `${session.reps} reps · ${session.weightKg == null ? "unweighted" : session.weightKg + " kg"}`).join(" → ")}</small>}
         </article>)}</div>
         <button type="button" className="secondary-action" onClick={() => void loadProgressionSuggestions()} disabled={progressionLoading}>Refresh progression guidance</button>
       </section>

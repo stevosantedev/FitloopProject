@@ -1258,8 +1258,12 @@ test("Coach creates a catalogue-grounded routine draft and requires review befor
   await page.getByRole("button", { name: "Sign in" }).click();
   await page.locator(".sidebar-nav").getByRole("button", { name: "Coach" }).click();
   await expect(page.getByRole("heading", { name: "Meet your coach." })).toBeVisible();
+  // The Coach tab loads its shared exercise catalogue on demand; wait for it before generating a draft.
+  const generateDraft = page.getByRole("button", { name: "Generate routine draft" });
+  await expect(generateDraft).toBeEnabled();
   await page.getByLabel("Available equipment").selectOption("dumbbells");
-  await page.getByRole("button", { name: "Generate routine draft" }).click();
+  await expect(generateDraft).toBeEnabled();
+  await generateDraft.click();
   const preview = page.locator(".coach-routine-preview");
   await expect(preview).toContainText("Goblet squat");
   await expect(preview).toContainText("Romanian deadlift");

@@ -1080,8 +1080,9 @@ export default function App() {
   }, [token]);
 
   useEffect(() => {
-    // Switching tabs loads the latest records instead of showing stale cached social or workout information.
-    if (token && activeTab === "workouts") void loadWorkouts();
+    // The Coach routine builder uses the same exercise catalogue as Workouts, so load it on either tab.
+    if (token && (activeTab === "workouts" || activeTab === "coach")) void loadWorkouts();
+    // Switching tabs loads the latest social and coaching records instead of showing stale data.
     if (token && activeTab === "community") void loadCommunity();
     if (token && activeTab === "coach") void loadCoachConversations();
   }, [token, activeTab]);

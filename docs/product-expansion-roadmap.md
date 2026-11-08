@@ -95,7 +95,7 @@ The current friends-only feed, workout posts, reactions and comments provide a s
    - Use owned or properly licensed media only.
 
 4. **Community quality and safety**
-   - Edit/delete own posts and comments; prevent duplicate or unauthorised actions.
+   - [x] Edit/delete own text-update posts and comments with server-enforced author ownership, strict input validation and browser/API regression tests; workout-summary posts remain immutable.
    - [x] Report visible posts and user accounts with a bounded reason/details schema and private moderation records.
    - [x] Restrict report queue and decisions to deployment-allowlisted moderators; expose only minimal reporter/target identities.
    - [x] Block/unblock accounts; blocking removes existing connections and hides each account's profiles, feed posts and new friend requests from the other.

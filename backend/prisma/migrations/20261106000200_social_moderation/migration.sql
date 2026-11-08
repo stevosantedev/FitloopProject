@@ -1,4 +1,5 @@
 -- Add private account blocking and moderation reports.
+-- A block is directional so either user can independently hide the other account.
 CREATE TABLE "UserBlock" (
   "id" TEXT NOT NULL,
   "blockerId" TEXT NOT NULL,
@@ -6,6 +7,7 @@ CREATE TABLE "UserBlock" (
   "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT "UserBlock_pkey" PRIMARY KEY ("id")
 );
+-- Reports are stored outside feed content because reporter details and review status are private.
 CREATE TABLE "ContentReport" (
   "id" TEXT NOT NULL,
   "reporterId" TEXT NOT NULL,
@@ -17,6 +19,7 @@ CREATE TABLE "ContentReport" (
   "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT "ContentReport_pkey" PRIMARY KEY ("id")
 );
+-- The unique pair prevents duplicate blocks while retaining the direction of who created the block.
 CREATE UNIQUE INDEX "UserBlock_blockerId_blockedUserId_key" ON "UserBlock"("blockerId", "blockedUserId");
 CREATE INDEX "UserBlock_blockedUserId_idx" ON "UserBlock"("blockedUserId");
 CREATE INDEX "ContentReport_status_createdAt_idx" ON "ContentReport"("status", "createdAt");

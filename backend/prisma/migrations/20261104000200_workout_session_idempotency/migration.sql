@@ -4,5 +4,6 @@
 ALTER TABLE "WorkoutSession"
 ADD COLUMN "clientRequestId" TEXT;
 
+-- This index is the final guard against two tabs saving the same offline request concurrently.
 CREATE UNIQUE INDEX "WorkoutSession_clientRequestId_key"
 ON "WorkoutSession"("clientRequestId");

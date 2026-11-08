@@ -2,6 +2,7 @@
 -- This migration creates the complete current data model from an empty database.
 -- IDs with Prisma cuid() defaults are supplied by the Prisma client, not PostgreSQL.
 
+-- Primary and secondary links use an enum so volume calculations cannot receive arbitrary role labels.
 CREATE TYPE "MuscleRole" AS ENUM ('PRIMARY', 'SECONDARY');
 
 CREATE TABLE "User" (
@@ -33,6 +34,7 @@ CREATE TABLE "DailyLog" (
   CONSTRAINT "DailyLog_pkey" PRIMARY KEY ("id")
 );
 
+-- Shared catalogue rows have no owner; private custom movements carry ownerId for access checks.
 CREATE TABLE "Exercise" (
   "id" TEXT NOT NULL,
   "slug" TEXT,
@@ -56,6 +58,7 @@ CREATE TABLE "Exercise" (
   CONSTRAINT "Exercise_pkey" PRIMARY KEY ("id")
 );
 
+-- Canonical muscle slugs are stable identifiers shared by exercise links and the anatomy explorer.
 CREATE TABLE "Muscle" (
   "id" TEXT NOT NULL,
   "slug" TEXT NOT NULL,
@@ -66,6 +69,7 @@ CREATE TABLE "Muscle" (
   CONSTRAINT "Muscle_pkey" PRIMARY KEY ("id")
 );
 
+-- Routines are templates; the session tables below capture work actually performed.
 CREATE TABLE "WorkoutRoutine" (
   "id" TEXT NOT NULL,
   "userId" TEXT NOT NULL,
@@ -83,6 +87,7 @@ CREATE TABLE "RoutineExercise" (
   CONSTRAINT "RoutineExercise_pkey" PRIMARY KEY ("id")
 );
 
+-- A session may omit routineId so users can record an ad-hoc workout.
 CREATE TABLE "WorkoutSession" (
   "id" TEXT NOT NULL,
   "userId" TEXT NOT NULL,
@@ -118,6 +123,7 @@ CREATE TABLE "PlannedSession" (
   CONSTRAINT "PlannedSession_pkey" PRIMARY KEY ("id")
 );
 
+-- Rule-generated coaching records retain their explanation for later review.
 CREATE TABLE "CoachEvent" (
   "id" TEXT NOT NULL,
   "userId" TEXT NOT NULL,
@@ -138,6 +144,7 @@ CREATE TABLE "CoachPreference" (
   CONSTRAINT "CoachPreference_pkey" PRIMARY KEY ("id")
 );
 
+-- Feed records stay separate from session history so social visibility can be enforced independently.
 CREATE TABLE "FeedPost" (
   "id" TEXT NOT NULL,
   "userId" TEXT NOT NULL,
@@ -175,6 +182,7 @@ CREATE TABLE "FeedComment" (
   CONSTRAINT "FeedComment_pkey" PRIMARY KEY ("id")
 );
 
+-- The join table allows one movement to target several muscles with different roles.
 CREATE TABLE "ExerciseMuscle" (
   "exerciseId" TEXT NOT NULL,
   "muscleId" TEXT NOT NULL,
@@ -182,6 +190,7 @@ CREATE TABLE "ExerciseMuscle" (
   CONSTRAINT "ExerciseMuscle_pkey" PRIMARY KEY ("exerciseId", "muscleId")
 );
 
+-- Database uniqueness protects identity and one-per-owner relationships at the storage boundary.
 CREATE UNIQUE INDEX "User_username_key" ON "User"("username");
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 CREATE UNIQUE INDEX "DailyLog_userId_date_key" ON "DailyLog"("userId", "date");
@@ -204,6 +213,7 @@ CREATE UNIQUE INDEX "Reaction_userId_postId_key" ON "Reaction"("userId", "postId
 CREATE INDEX "FeedComment_postId_createdAt_idx" ON "FeedComment"("postId", "createdAt");
 CREATE INDEX "ExerciseMuscle_muscleId_role_idx" ON "ExerciseMuscle"("muscleId", "role");
 
+-- Foreign keys encode record lifecycles: owned data cascades, while historical exercise references restrict deletion.
 ALTER TABLE "DailyLog" ADD CONSTRAINT "DailyLog_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE "Exercise" ADD CONSTRAINT "Exercise_ownerId_fkey" FOREIGN KEY ("ownerId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE "WorkoutRoutine" ADD CONSTRAINT "WorkoutRoutine_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;

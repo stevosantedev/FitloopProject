@@ -1,4 +1,5 @@
 -- Private, account-owned coach conversations and their messages.
+-- userId is the ownership boundary; messages inherit that privacy through the conversation relation.
 CREATE TABLE "CoachConversation" (
   "id" TEXT NOT NULL,
   "userId" TEXT NOT NULL,
@@ -17,6 +18,7 @@ CREATE TABLE "CoachMessage" (
   CONSTRAINT "CoachMessage_pkey" PRIMARY KEY ("id")
 );
 
+-- These indexes support bounded owner conversation lists and ordered message pages.
 CREATE INDEX "CoachConversation_userId_updatedAt_idx" ON "CoachConversation"("userId", "updatedAt");
 CREATE INDEX "CoachMessage_conversationId_createdAt_idx" ON "CoachMessage"("conversationId", "createdAt");
 

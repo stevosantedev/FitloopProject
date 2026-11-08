@@ -1,4 +1,5 @@
 -- Add account-owned weekly training programmes without changing existing routine/session records.
+-- The plan stores user intent; its days point to normal routines so existing workout flows stay reusable.
 CREATE TABLE "TrainingPlan" (
   "id" TEXT NOT NULL,
   "userId" TEXT NOT NULL,
@@ -12,6 +13,7 @@ CREATE TABLE "TrainingPlan" (
   CONSTRAINT "TrainingPlan_pkey" PRIMARY KEY ("id")
 );
 
+-- Unique plan/day numbering prevents two routines from occupying the same scheduled day.
 CREATE TABLE "TrainingPlanDay" (
   "id" TEXT NOT NULL,
   "planId" TEXT NOT NULL,

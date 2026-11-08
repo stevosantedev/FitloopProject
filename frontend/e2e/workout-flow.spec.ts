@@ -39,7 +39,7 @@ const exercise = {
 };
 
 async function mockApplicationApi(page: Page, onSessionSave?: (body: any) => void, sessionSaveStatus: number | (() => number) = 200, muscleStats: any[] = [], catalogueExercises: any[] = [exercise], onRoutineSave?: (body: any) => void) {
-  const routines: any[] = [];
+  const routines: any[] = [];\n  const trainingPlans: any[] = [];
   const conversations: any[] = [];
   const chatMessages: Record<string, any[]> = {};
   const socialPosts: any[] = [];
@@ -78,6 +78,24 @@ async function mockApplicationApi(page: Page, onSessionSave?: (body: any) => voi
       conversations[0].title = input.message.slice(0, 70);
       conversations[0]._count.messages = chatMessages["chat-1"].length;
       body = { messages, responseMode: "guided_rules" };
+    } else if (url.pathname === "/api/workouts/training-plans" && method === "GET") {
+      body = { plans: trainingPlans };
+    } else if (url.pathname === "/api/workouts/training-plans" && method === "POST") {
+      const input = request.postDataJSON();
+      const plan = {
+        id: "plan-1", name: input.name, goal: input.goal, daysPerWeek: input.daysPerWeek,
+        experience: input.experience, equipment: input.equipment,
+        days: input.days.map((day: any, index: number) => ({
+          id: "plan-day-" + (index + 1), dayNumber: day.dayNumber, label: day.label,
+          routine: { id: "plan-routine-" + (index + 1), name: day.routineName,
+            exercises: day.exercises.map((item: any) => ({ exercise: catalogueExercises.find(candidate => candidate.id === item.exerciseId) })) }
+        }))
+      };
+      trainingPlans.unshift(plan);
+      body = { plan };
+    } else if (url.pathname === "/api/workouts/training-plans/plan-1" && method === "DELETE") {
+      trainingPlans.splice(0, trainingPlans.length);
+      body = { deleted: true };
     } else if (url.pathname === "/api/workouts/exercises") {
       body = { exercises: catalogueExercises };
     } else if (url.pathname === "/api/workouts/routines" && method === "GET") {
@@ -1242,7 +1260,7 @@ test("Community comment authors can edit and delete only their own comments", as
 
 
 
-test("Coach creates a catalogue-grounded routine draft and requires review before saving", async ({ page }) => {
+test("Coach builds a weekly programme, saves it only after review and starts a saved day", async ({ page }) => {
   const saveCalls: any[] = [];
   const movements = [
     { ...exercise, id: "draft-squat", name: "Goblet squat", equipment: "Dumbbell", movementPattern: "Squat", difficulty: "Beginner" },
@@ -1251,34 +1269,37 @@ test("Coach creates a catalogue-grounded routine draft and requires review befor
     { ...exercise, id: "draft-pull", name: "Single-arm dumbbell row", equipment: "Dumbbell", movementPattern: "Horizontal pull", difficulty: "Beginner" },
     { ...exercise, id: "draft-core", name: "Dead bug", equipment: "Bodyweight", movementPattern: "Anti-extension", difficulty: "Beginner" }
   ];
-  await mockApplicationApi(page, undefined, 200, [], movements, body => saveCalls.push(body));
+  await mockApplicationApi(page, undefined, 200, [], movements);
+  await page.route("http://localhost:4000/api/workouts/training-plans", async route => {
+    if (route.request().method() === "POST") saveCalls.push(route.request().postDataJSON());
+    await route.fallback();
+  });
   await page.goto("/");
   await page.getByLabel("Email").fill("tester@example.com");
   await page.getByLabel("Password").fill("test-password");
   await page.getByRole("button", { name: "Sign in" }).click();
   await page.locator(".sidebar-nav").getByRole("button", { name: "Coach" }).click();
   await expect(page.getByRole("heading", { name: "Meet your coach." })).toBeVisible();
-  // The Coach tab loads its shared exercise catalogue on demand; wait for it before generating a draft.
-  const generateDraft = page.getByRole("button", { name: "Generate routine draft" });
-  await expect(generateDraft).toBeEnabled();
+  const generate = page.getByRole("button", { name: "Generate weekly programme" });
+  await expect(generate).toBeEnabled();
+  await page.getByLabel("Days available each week").selectOption("2");
   await page.getByLabel("Available equipment").selectOption("dumbbells");
-  await expect(generateDraft).toBeEnabled();
-  await generateDraft.click();
+  await generate.click();
   const preview = page.locator(".coach-routine-preview");
   await expect(preview).toContainText("Goblet squat");
   await expect(preview).toContainText("Romanian deadlift");
   await expect(preview).toContainText("Push-up");
   await expect(preview).toContainText("Single-arm dumbbell row");
   await expect(preview).toContainText("Dead bug");
-  await expect(page.getByText(/Nothing is saved until you review/)).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Review your 2-day programme" })).toBeVisible();
   expect(saveCalls).toHaveLength(0);
-  await preview.getByRole("button", { name: "Review in routine editor" }).click();
-  await expect(page.getByRole("heading", { name: "Create a routine" })).toBeVisible();
-  await expect(page.getByLabel("Routine name")).toHaveValue("Coach draft · Full body");
-  await expect(page.locator(".exercise-picker input:checked")).toHaveCount(5);
-  expect(saveCalls).toHaveLength(0);
-  await page.getByRole("button", { name: "Save routine" }).click();
-  await expect(page.getByText("Your routine has been saved.")).toBeVisible();
+  await page.getByRole("button", { name: "Save weekly programme" }).click();
+  await expect(page.getByText("Weekly programme saved. Choose a day when you're ready to train.")).toBeVisible();
   expect(saveCalls).toHaveLength(1);
-  expect(saveCalls[0].exercises).toHaveLength(5);
+  expect(saveCalls[0].days).toHaveLength(2);
+  expect(saveCalls[0].days.every((day: any) => day.exercises.length >= 2)).toBeTruthy();
+  await expect(page.getByRole("heading", { name: saveCalls[0].name })).toBeVisible();
+  await page.getByRole("button", { name: "Start Full body A" }).click();
+  await expect(page.getByRole("heading", { name: "Build a workout" })).toBeVisible();
+  await expect(page.locator(".exercise-picker input:checked")).toHaveCount(5);
 });

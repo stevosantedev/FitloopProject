@@ -847,7 +847,10 @@ test("dedicated coach workspace creates a conversation and displays a guided rep
   await page.getByRole("button", { name: "Send message" }).click();
   await expect(page.locator(".coach-chat-bubble.user")).toContainText("Can you help me review my progress?");
   await expect(page.locator(".coach-chat-bubble.assistant")).toContainText("I can see your recent FitLoop training.");
-  await expect(page.getByText(/rule-based coaching rather than a generative AI model/)).toBeVisible();
+  const coachDisclosure = page.locator(".coach-disclosure");
+  await expect(coachDisclosure).toContainText("FitLoop uses guided coaching by default.");
+  await expect(coachDisclosure).toContainText("require your consent and a configured provider");
+  await expect(coachDisclosure).toContainText("fall back to guided replies if the provider is unavailable.");
   const contextDisclosure = page.locator(".coach-context-disclosure");
   await expect(contextDisclosure).toContainText("up to five of your most recent logged workout sessions");
   await expect(contextDisclosure).toContainText("Private session notes, daily wellbeing logs and account identifiers are excluded.");

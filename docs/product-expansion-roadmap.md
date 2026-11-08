@@ -1,6 +1,6 @@
 # Product expansion roadmap: AI Coach and Community
 
-Last reviewed: 6 November 2026
+Last reviewed: 8 November 2026
 
 ## Why these workstreams start now
 

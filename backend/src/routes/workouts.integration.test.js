@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import express from "express";
 import { once } from "node:events";
 import { createWorkoutRouter } from "./workouts.js";
+import { buildProgressionSuggestions } from "../utils/progressionSuggestions.js";
 
 /**
  * Start a real HTTP listener around the router while replacing only the database.
@@ -608,4 +609,36 @@ test("DELETE routines prevents removing a routine referenced by the caller's pla
     assert.equal(response.status, 409);
   });
   assert.equal(routineDeletes, 0);
+});
+
+
+test("progression suggestions compare recent completed sessions and ignore incomplete sets", () => {
+  const suggestions = buildProgressionSuggestions([
+    { completed: true, reps: 10, weightKg: 20, exercise: { id: "squat", name: "Goblet squat" }, session: { id: "s3", startedAt: new Date("2026-11-08T10:00:00Z") } },
+    { completed: true, reps: 8, weightKg: 20, exercise: { id: "squat", name: "Goblet squat" }, session: { id: "s2", startedAt: new Date("2026-11-06T10:00:00Z") } },
+    { completed: true, reps: 12, weightKg: 18, exercise: { id: "squat", name: "Goblet squat" }, session: { id: "s1", startedAt: new Date("2026-11-04T10:00:00Z") } },
+    { completed: false, reps: 15, weightKg: 30, exercise: { id: "squat", name: "Goblet squat" }, session: { id: "s4", startedAt: new Date("2026-11-09T10:00:00Z") } }
+  ]);
+  assert.equal(suggestions.length, 1);
+  assert.equal(suggestions[0].recommendation, "consider_small_increase");
+  assert.equal(suggestions[0].latest.reps, 10);
+  assert.equal(suggestions[0].previous.reps, 8);
+});
+
+test("progression suggestions omit exercises without two completed sessions", () => {
+  assert.deepEqual(buildProgressionSuggestions([
+    { completed: true, reps: 8, weightKg: null, exercise: { id: "push", name: "Push-up" }, session: { id: "only", startedAt: new Date("2026-11-08T10:00:00Z") } }
+  ]), []);
+});
+
+test("GET progression suggestions scopes completed sets to the authenticated account", async () => {
+  let query;
+  const prisma = makePrisma({ workoutSet: { findMany: async args => { query = args; return []; } } });
+  await withWorkoutApi(prisma, async baseUrl => {
+    const response = await fetch(baseUrl + "/api/workouts/progression-suggestions");
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { suggestions: [] });
+  });
+  assert.deepEqual(query.where, { completed: true, session: { userId: "user-a" } });
+  assert.equal(query.take, 500);
 });

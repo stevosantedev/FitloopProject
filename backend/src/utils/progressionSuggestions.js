@@ -1,0 +1,43 @@
+/**
+ * Compare the best completed set from the two most recent sessions per exercise.
+ * Suggestions are deliberately conservative: the user decides whether to change load.
+ */
+export function buildProgressionSuggestions(sets) {
+  const byExercise = new Map();
+  for (const set of sets) {
+    if (!set.completed || !set.exercise?.id || !set.session?.startedAt) continue;
+    const group = byExercise.get(set.exercise.id) ?? { exerciseId: set.exercise.id, exerciseName: set.exercise.name, sessions: new Map() };
+    const session = group.sessions.get(set.session.id) ?? { date: set.session.startedAt, sets: [] };
+    session.sets.push(set);
+    group.sessions.set(set.session.id, session);
+    byExercise.set(set.exercise.id, group);
+  }
+  const suggestions = [];
+  for (const group of byExercise.values()) {
+    const recent = [...group.sessions.values()].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 2);
+    if (recent.length < 2) continue;
+    const best = session => session.sets.reduce((winner, set) => {
+      const score = (set.weightKg ?? 0) * 100000 + set.reps;
+      return !winner || score > winner.score ? { score, reps: set.reps, weightKg: set.weightKg ?? null } : winner;
+    }, null);
+    const latest = best(recent[0]), previous = best(recent[1]);
+    let recommendation, reason;
+    if (latest.weightKg != null && previous.weightKg != null && latest.weightKg > previous.weightKg && latest.reps >= previous.reps) {
+      recommendation = "maintain";
+      reason = "You used a heavier load while matching or exceeding your previous reps. Repeat it with controlled technique before increasing again.";
+    } else if (latest.weightKg === previous.weightKg && latest.reps >= previous.reps + 2) {
+      recommendation = "consider_small_increase";
+      reason = "You completed at least two more reps at the same load. If the sets felt controlled, consider the smallest available load increase next time.";
+    } else if (latest.reps < previous.reps || (latest.weightKg != null && previous.weightKg != null && latest.weightKg < previous.weightKg)) {
+      recommendation = "repeat_or_reduce";
+      reason = "Your latest best set was below the previous session. Consider repeating the load or reducing it if technique or recovery felt affected.";
+    } else {
+      recommendation = "maintain";
+      reason = "Your recent performance is broadly unchanged. Keep the load steady and focus on consistent, controlled reps.";
+    }
+    suggestions.push({ exerciseId: group.exerciseId, exerciseName: group.exerciseName, recommendation, reason,
+      latest: { reps: latest.reps, weightKg: latest.weightKg, date: new Date(recent[0].date).toISOString() },
+      previous: { reps: previous.reps, weightKg: previous.weightKg, date: new Date(recent[1].date).toISOString() } });
+  }
+  return suggestions.sort((a, b) => a.exerciseName.localeCompare(b.exerciseName));
+}

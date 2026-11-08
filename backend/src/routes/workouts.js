@@ -12,6 +12,7 @@ import { prisma } from "../prisma.js";
 import { calculateMuscleVolume } from "../utils/muscleVolume.js";
 import { calculatePersonalRecords } from "../utils/personalRecords.js";
 import { sessionInput } from "../utils/workoutSessionInput.js";
+import { buildProgressionSuggestions } from "../utils/progressionSuggestions.js";
 
 /**
  * Create the workout router with an injectable Prisma client.
@@ -397,6 +398,18 @@ router.delete("/training-plans/:id", async (req, res, next) => {
     });
     if (result.count === 0) return res.status(404).json({ error: "Training plan not found." });
     return res.json({ deleted: true });
+  } catch (error) { return next(error); }
+});
+
+// Compare the two latest completed sessions per movement for this account only.
+router.get("/progression-suggestions", async (req, res, next) => {
+  try {
+    const sets = await prismaClient.workoutSet.findMany({
+      where: { completed: true, session: { userId: req.userId } },
+      include: { exercise: { select: { id: true, name: true } }, session: { select: { id: true, startedAt: true } } },
+      orderBy: { session: { startedAt: "desc" } }, take: 500
+    });
+    return res.json({ suggestions: buildProgressionSuggestions(sets) });
   } catch (error) { return next(error); }
 });
 

@@ -26,8 +26,9 @@ The existing Python rule-based coach remains a useful baseline and fallback. A l
    - [x] Add a first message/reply pipeline using a clearly disclosed, deterministic rule-guided service; only a small summary of recent completed training is sent to it.
    - [x] Keep the existing check-in suggestion flow available alongside conversations.
    - [x] Disclose the exact categories of training context sent with each message, including the five-session limit and the exclusion of private notes, wellbeing logs and account identifiers; verify the disclosure in the Coach browser journey. Backend projection tests also verify the five-session bound and prove private session notes, wellbeing entries and account identifiers cannot enter the coaching-service payload.
-   - [ ] Integrate a generative model through a provider-neutral server adapter only after model/provider choice, explicit user consent, data-protection review, safety evaluation and cost controls.
-   - The current conversation feature is a guided rules-based preview, not a generative AI coach. The interface discloses this distinction.
+   - [x] Add an optional AI-generated reply path using a server-side OpenAI-compatible Chat Completions endpoint. It is disabled by default, requires an account preference opt-in and configured server key, sends only the bounded recent-workout summary, and falls back to guided rules on provider failure.
+   - [ ] Complete provider-neutral adapter design/provider selection, data-protection and retention review, independent safety evaluation, and usage/cost controls before enabling this path for real users. The current endpoint integration has not been verified against a live provider key.
+   - Conversation replies are guided by default. An optional generative path now exists behind explicit consent and server configuration; when it is not enabled or available, the service returns a guided reply. The UI identifies which mode produced the latest reply. Live provider behaviour remains unverified until a key is configured and tested.
 
 2. **Grounded FitLoop context**
    - Define a minimal, typed context package assembled by the API for the authenticated user.

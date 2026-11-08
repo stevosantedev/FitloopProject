@@ -469,6 +469,53 @@ test("closing a loading Community profile prevents a late response from reopenin
   await expect(trigger).toBeFocused();
 });
 
+// A slow or failed reaction request must not make the feed feel unresponsive or leave a false count behind.
+test("Community reactions update immediately and roll back when the server rejects the change", async ({ page }) => {
+  const socialPosts = await mockApplicationApi(page);
+  socialPosts.push({
+    id: "post-optimistic-reaction", type: "update", text: "Reaction rollback post",
+    createdAt: "2026-11-08T10:00:00.000Z",
+    user: { id: "friend-2", username: "friendtwo" },
+    reactions: [{ userId: "friend-2", value: "like" }],
+    comments: []
+  });
+
+  let releaseResponse!: () => void;
+  let markRequestStarted!: () => void;
+  const responseGate = new Promise<void>(resolve => { releaseResponse = resolve; });
+  const requestStarted = new Promise<void>(resolve => { markRequestStarted = resolve; });
+  await page.route("**/api/social/posts/post-optimistic-reaction/reactions", async route => {
+    markRequestStarted();
+    await responseGate;
+    await route.fulfill({
+      status: 503,
+      contentType: "application/json",
+      body: JSON.stringify({ error: "Reaction service temporarily unavailable." })
+    });
+  });
+
+  await signInAndOpenWorkouts(page);
+  await page.locator(".sidebar-nav").getByRole("button", { name: "Community" }).click();
+  const post = page.locator(".feed-card").filter({ hasText: "Reaction rollback post" });
+  const like = post.getByRole("button", { name: /Like/ });
+
+  await expect(like).toHaveAttribute("aria-pressed", "false");
+  await expect(like).toContainText("1");
+  await like.click();
+  await requestStarted;
+
+  // The local count and selected state change while the server is deliberately held open.
+  await expect(like).toHaveAttribute("aria-pressed", "true");
+  await expect(like).toContainText("2");
+  await expect(like).toBeDisabled();
+
+  releaseResponse();
+  await expect(page.getByText("Reaction service temporarily unavailable.")).toBeVisible();
+  await expect(like).toHaveAttribute("aria-pressed", "false");
+  await expect(like).toContainText("1");
+  await expect(like).toBeEnabled();
+});
+
 // Reaction state should support create, change and remove without duplicating a user's reaction.
 test("Community reactions can be selected, changed and toggled off", async ({ page }) => {
   const socialPosts = await mockApplicationApi(page);

@@ -164,6 +164,9 @@ export default function App() {
   const [moderationError, setModerationError] = useState("");
   const [moderationNoteDrafts, setModerationNoteDrafts] = useState<Record<string, string>>({});
   const [posts, setPosts] = useState<FeedPost[]>([]);
+  // Disable every reaction on a post while its server update is pending; the ref closes the gap before React rerenders.
+  const [reactionSaving, setReactionSaving] = useState<Record<string, boolean>>({});
+  const reactionRequestsRef = useRef(new Set<string>());
   const [feedCursor, setFeedCursor] = useState<string | null>(null);
   const [feedHasMore, setFeedHasMore] = useState(false);
   const [feedLoadingMore, setFeedLoadingMore] = useState(false);
@@ -1034,18 +1037,55 @@ async function recordWorkout(event: React.FormEvent) {
     }
   }
 
-  // The API toggles the selected value off or switches this account to a
-  // different value; reloading keeps every count and selected state canonical.
+  // Update the visible card before waiting for the network so a reaction feels immediate.
+  // Keep the signed-in user's previous reaction so a failed request can restore it without
+  // overwriting reactions other people may have added while the request was in flight.
   async function reactToPost(id: string, value: string) {
+    const post = posts.find(item => item.id === id);
+    if (!post || !user || reactionRequestsRef.current.has(id)) return;
+
+    const previousUserReactions = post.reactions.filter(item => item.userId === user.id);
+    const alreadySelected = previousUserReactions.some(item => item.value === value);
+    const nextUserReactions = alreadySelected ? [] : [{ userId: user.id, value }];
+    reactionRequestsRef.current.add(id);
+    setReactionSaving(current => ({ ...current, [id]: true }));
+    setPosts(current => current.map(item => item.id === id
+      ? { ...item, reactions: [...item.reactions.filter(reaction => reaction.userId !== user.id), ...nextUserReactions] }
+      : item));
+
     try {
       const result = await request(`/api/social/posts/${id}/reactions`, {
         method: "POST",
         body: JSON.stringify({ value })
       });
-      await loadCommunity();
+
+      // Reconcile with the server response instead of reloading the entire feed.
+      // This preserves scroll position and avoids replacing comments or pagination state.
+      setPosts(current => current.map(item => item.id === id
+        ? {
+            ...item,
+            reactions: [
+              ...item.reactions.filter(reaction => reaction.userId !== user.id),
+              ...(result.reaction ? [{ userId: user.id, value: result.reaction.value }] : [])
+            ]
+          }
+        : item));
       setNotice(result.removed ? "Reaction removed." : "Reaction saved.");
     } catch (error) {
+      // Restore only this account's previous reaction; retain any other feed changes made meanwhile.
+      setPosts(current => current.map(item => item.id === id
+        ? {
+            ...item,
+            reactions: [
+              ...item.reactions.filter(reaction => reaction.userId !== user.id),
+              ...previousUserReactions
+            ]
+          }
+        : item));
       setNotice(error instanceof Error ? error.message : "Could not save your reaction.");
+    } finally {
+      reactionRequestsRef.current.delete(id);
+      setReactionSaving(current => ({ ...current, [id]: false }));
     }
   }
 
@@ -1890,7 +1930,7 @@ function signOut() {
             </div>}
             {post.user.id === user?.id && <div className="post-owner-actions">{post.type === "update" && editingPostId !== post.id && <button type="button" className="small-button secondary" onClick={() => startPostEdit(post)}>Edit post</button>}{editingPostId !== post.id && <button type="button" className="small-button post-delete" onClick={() => void deleteCommunityPost(post.id)}>Delete post</button>}</div>}
             {post.user.id !== user?.id && <div className="connection-actions"><button type="button" className="small-button secondary" onClick={() => void reportCommunityTarget("post", post.id)}>Report post</button><button type="button" className="small-button secondary" onClick={() => void blockCommunityUser(post.user.id)}>Block author</button></div>}
-            <div className="reaction-row" aria-label="Post reactions">
+            <div className="reaction-row" aria-label="Post reactions" aria-busy={Boolean(reactionSaving[post.id])}>
               {([
                 { value: "like", label: "Like", emoji: "👏" },
                 { value: "strong", label: "Strong", emoji: "💪" },
@@ -1899,7 +1939,8 @@ function signOut() {
                 const selected = post.reactions.some(item => item.userId === user?.id && item.value === reaction.value);
                 const count = post.reactions.filter(item => item.value === reaction.value).length;
                 return <button key={reaction.value} type="button" className={`reaction-button${selected ? " is-selected" : ""}`}
-                  aria-pressed={selected} onClick={() => void reactToPost(post.id, reaction.value)}>
+                  aria-pressed={selected} disabled={Boolean(reactionSaving[post.id])}
+                  onClick={() => void reactToPost(post.id, reaction.value)}>
                   {reaction.emoji} {reaction.label} <span className="reaction-count">{count}</span>
                 </button>;
               })}

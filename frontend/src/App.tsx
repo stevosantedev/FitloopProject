@@ -139,6 +139,8 @@ export default function App() {
   // Keep focus in the preview and return it to the author link when the dialog closes.
   const profileDialogCloseRef = useRef<HTMLButtonElement | null>(null);
   const profileTriggerRef = useRef<HTMLElement | null>(null);
+  // Ignore late profile responses after the dialog closes or a newer profile request starts.
+  const profileRequestIdRef = useRef(0);
   // Moderator capability is granted by the API's deployment allowlist, never inferred from profile data.
   const [isModerator, setIsModerator] = useState(false);
   const [moderationReports, setModerationReports] = useState<ModerationReport[]>([]);
@@ -366,17 +368,28 @@ export default function App() {
 
   // Profile details are requested only when someone opens a profile. The API
   // decides whether that profile is visible under its privacy and block rules.
+  function closeCommunityProfile() {
+    // Invalidate an outstanding request so a late response cannot reopen a dismissed private preview.
+    profileRequestIdRef.current += 1;
+    setViewedProfile(null);
+    setProfileViewError("");
+    setProfileViewLoading(false);
+  }
+
   async function openCommunityProfile(userId: string) {
+    const requestId = ++profileRequestIdRef.current;
     setViewedProfile(null);
     setProfileViewError("");
     setProfileViewLoading(true);
     try {
       const data = await request("/api/social/profile/" + encodeURIComponent(userId));
-      setViewedProfile(data.profile);
+      if (requestId === profileRequestIdRef.current) setViewedProfile(data.profile);
     } catch (error) {
-      setProfileViewError(error instanceof Error ? error.message : "This profile is unavailable.");
+      if (requestId === profileRequestIdRef.current) {
+        setProfileViewError(error instanceof Error ? error.message : "This profile is unavailable.");
+      }
     } finally {
-      setProfileViewLoading(false);
+      if (requestId === profileRequestIdRef.current) setProfileViewLoading(false);
     }
   }
 
@@ -992,8 +1005,7 @@ export default function App() {
     profileDialogCloseRef.current?.focus();
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        setViewedProfile(null);
-        setProfileViewError("");
+        closeCommunityProfile();
       } else if (event.key === "Tab") {
         // The preview currently has one action. Keep forward and reverse tab navigation inside the modal.
         event.preventDefault();
@@ -1739,10 +1751,10 @@ export default function App() {
       </section>}
     </section>}
 
-    {(profileViewLoading || profileViewError || viewedProfile) && <div className="profile-dialog-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) { setViewedProfile(null); setProfileViewError(""); } }}>
-      <section className="profile-dialog panel" role="dialog" aria-modal="true" aria-labelledby="community-profile-heading" aria-describedby="community-profile-privacy">
+    {(profileViewLoading || profileViewError || viewedProfile) && <div className="profile-dialog-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) closeCommunityProfile(); }}>
+      <section className="profile-dialog panel" role="dialog" aria-modal="true" aria-busy={profileViewLoading} aria-labelledby="community-profile-heading" aria-describedby="community-profile-privacy">
         <div className="profile-dialog-heading"><div><p className="eyebrow">COMMUNITY PROFILE</p><h2 id="community-profile-heading">{profileViewLoading ? "Loading profile…" : viewedProfile?.displayName || (viewedProfile ? "@" + viewedProfile.username : "Profile unavailable")}</h2></div>
-          <button ref={profileDialogCloseRef} type="button" className="small-button secondary" onClick={() => { setViewedProfile(null); setProfileViewError(""); }}>Close</button>
+          <button ref={profileDialogCloseRef} type="button" className="small-button secondary" onClick={closeCommunityProfile}>Close</button>
         </div>
         {profileViewLoading && <p role="status" className="muted">Checking profile visibility…</p>}
         {profileViewError && <p role="alert" className="load-error">{profileViewError}</p>}

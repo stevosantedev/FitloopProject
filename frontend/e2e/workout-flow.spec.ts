@@ -374,6 +374,36 @@ test("Community profile previews handle private or unavailable profiles safely",
   expect(profileRequests).toBe(1);
 });
 
+
+test("closing a loading Community profile prevents a late response from reopening it", async ({ page }) => {
+  const socialPosts = await mockApplicationApi(page);
+  socialPosts.push({
+    id: "post-slow-profile", createdAt: "2026-11-07T10:00:00.000Z", text: "A friend's update",
+    user: { id: "user-2", username: "friend", displayName: "Friend" }, reactions: [], comments: []
+  });
+  await page.route("http://localhost:4000/api/social/profile/user-2", async route => {
+    await new Promise(resolve => setTimeout(resolve, 500));
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({
+      profile: { id: "user-2", username: "friend", displayName: "Late response", bio: "This must not reopen the dialog." }
+    }) });
+  });
+  await page.goto("/");
+  await page.getByLabel("Email").fill("tester@example.com");
+  await page.getByLabel("Password").fill("test-password");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.locator(".sidebar-nav").getByRole("button", { name: "Community" }).click();
+  const trigger = page.locator(".feed-profile-link");
+  await trigger.click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toHaveAttribute("aria-busy", "true");
+  await expect(dialog.getByRole("status")).toContainText("Checking profile visibility");
+  await dialog.getByRole("button", { name: "Close" }).click();
+  await expect(dialog).toHaveCount(0);
+  await page.waitForTimeout(650);
+  await expect(dialog).toHaveCount(0);
+  await expect(trigger).toBeFocused();
+});
+
 test("Community reactions can be selected, changed and toggled off", async ({ page }) => {
   const socialPosts = await mockApplicationApi(page);
   let selected: string | null = null;

@@ -39,7 +39,8 @@ const exercise = {
 };
 
 async function mockApplicationApi(page: Page, onSessionSave?: (body: any) => void, sessionSaveStatus: number | (() => number) = 200, muscleStats: any[] = [], catalogueExercises: any[] = [exercise], onRoutineSave?: (body: any) => void) {
-  const routines: any[] = [];\n  const trainingPlans: any[] = [];
+  const routines: any[] = [];
+  const trainingPlans: any[] = [];
   const conversations: any[] = [];
   const chatMessages: Record<string, any[]> = {};
   const socialPosts: any[] = [];

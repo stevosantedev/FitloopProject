@@ -59,6 +59,7 @@ type Props = {
 
 type DraftDay = { dayNumber: number; label: string; movements: Movement[]; exercises: ExerciseOption[] };
 
+// These aliases match catalogue wording to the smaller set of weekly movement slots.
 const movementTerms: Record<Movement, string[]> = {
   squat: ["squat", "single-leg"],
   hinge: ["hip hinge", "hip extension"],
@@ -69,6 +70,7 @@ const movementTerms: Record<Movement, string[]> = {
   kneeFlexion: ["knee flexion"],
   core: ["anti-extension", "anti-lateral", "anti-rotation", "dynamic core", "core"]
 };
+// Reuse the same movement coverage for two- and three-day plans so limited schedules stay practical.
 const fullBody: Movement[] = ["squat", "hinge", "horizontalPush", "verticalPush", "horizontalPull", "verticalPull", "core"];
 
 // Choose a weekly split from the number of days the user can realistically train.
@@ -130,6 +132,7 @@ function matchesMovement(exercise: ExerciseOption, movement: Movement) {
 
 // This builder creates an editable starting point from catalogue data; it does not claim to replace a qualified coach.
 export default function CoachRoutineDraft({ exercises, plans, plansLoading, saving, onSavePlan, onUpdatePlan, onDeletePlan, onStartDay }: Props) {
+  // Keep choices separate from the generated draft so changing a filter never silently edits a saved plan.
   const [goal, setGoal] = useState<Goal>("general");
   const [days, setDays] = useState("3");
   const [equipment, setEquipment] = useState<Equipment>("gym");
@@ -148,6 +151,7 @@ export default function CoachRoutineDraft({ exercises, plans, plansLoading, savi
 
   // Generate each day from movement slots, avoiding duplicate exercises within a day and spreading choices across the week.
   function buildDraft() {
+    // Prefer spreading movements across the week; this set resets for each generation pass.
     const used = new Set<string>();
     const nextDraft = splitFor(Number(days)).map((template, index) => {
       const selected: ExerciseOption[] = [];
@@ -170,6 +174,7 @@ export default function CoachRoutineDraft({ exercises, plans, plansLoading, savi
       }
       return { dayNumber: index + 1, label: template.label, movements: template.movements, exercises: selected };
     });
+    // Generation is only a preview. Persistence happens after the user has reviewed every day.
     setDraft(nextDraft);
     setPlanName("Coach · " + (goal === "general" ? "General fitness" : goal === "strength" ? "Strength" : "Muscle building") + " · " + days + "-day programme");
     setGenerated(true);
@@ -216,6 +221,7 @@ export default function CoachRoutineDraft({ exercises, plans, plansLoading, savi
     setEquipment(plan.equipment);
     setExperience(plan.experience);
     setPlanName(plan.name);
+    // Restore the saved routine as an editable draft rather than changing the stored plan immediately.
     setDraft(plan.days.map(day => {
       const selected = day.routine.exercises.map(item => item.exercise);
       const movements = movementOptions.filter(movement => selected.some(exercise => matchesMovement(exercise, movement)));
@@ -265,7 +271,8 @@ export default function CoachRoutineDraft({ exercises, plans, plansLoading, savi
       {generated && <div className="coach-routine-preview" aria-live="polite">
         <label className="coach-plan-name">Programme name<input value={planName} onChange={event => setPlanName(event.target.value)} maxLength={80} /></label>
         <div className="section-heading-row"><h3>{editingPlanId ? "Edit your saved programme" : "Review your " + days + "-day programme"}</h3><span>{draft.reduce((total, day) => total + day.exercises.length, 0)} movement slots filled</span></div>
-        <div className="coach-plan-day-grid">
+        {/* Every generated day stays editable so missing catalogue matches can be corrected before saving. */}
+      <div className="coach-plan-day-grid">
           {draft.map(day => <article className="coach-plan-day" key={day.dayNumber}>
             <div className="section-heading-row"><h4>Day {day.dayNumber} · {day.label}</h4><span>{day.exercises.length} movements</span></div>
             {day.exercises.length === 0 ? <p className="muted">No matching movements found for this day. Try different equipment.</p> : <ol>{day.exercises.map(exercise => <li key={exercise.id}><strong>{exercise.name}</strong><span>{exercise.movementPattern ?? "Movement"} · {exercise.equipment ?? "Equipment varies"}</span></li>)}</ol>}
@@ -293,7 +300,8 @@ export default function CoachRoutineDraft({ exercises, plans, plansLoading, savi
           <div className="section-heading-row"><div><h4>{plan.name}</h4><p className="muted">{plan.daysPerWeek} days · {plan.goal} · {plan.experience}</p></div><div className="button-row"><button type="button" className="small-button secondary" onClick={() => editSavedPlan(plan)}>Edit</button><button type="button" className="small-button" onClick={() => onDeletePlan(plan.id)}>Delete</button></div></div>
           <div className="coach-week-schedule" aria-label={plan.name + " weekly schedule"}>
             <div className="coach-week-schedule-heading"><strong>Suggested weekly layout</strong><span>Move sessions to suit your week</span></div>
-            <div className="coach-week-grid">
+            {/* The suggested spread leaves recovery gaps; users can still move sessions around their own week. */}
+           <div className="coach-week-grid">
               {(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"] as const).map((weekday, index) => {
                 const trainingDayIndexes: Record<number, number[]> = {
                   2: [0, 3], 3: [0, 2, 4], 4: [0, 1, 3, 5],

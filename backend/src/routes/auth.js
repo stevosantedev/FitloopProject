@@ -9,6 +9,7 @@ import { deleteUserAccount } from "../utils/deleteUserAccount.js";
 
 const router = Router();
 
+// Registration limits keep identifiers predictable and reject weak or oversized credentials before hashing.
 const registration = z.object({
   username: z.string().min(3).max(24).regex(/^[a-zA-Z0-9_]+$/),
   email: z.string().email().max(254),
@@ -25,6 +26,7 @@ function createToken(userId) {
   return jwt.sign({}, config.JWT_SECRET, { subject: userId, expiresIn: "2h", issuer: "fitloop-api", audience: "fitloop-web", algorithm: "HS256" });
 }
 
+// Normalize email before the uniqueness check so case differences cannot create separate sign-in identities.
 router.post("/register", async (req, res, next) => {
   try {
     const input = registration.parse(req.body);
@@ -48,6 +50,7 @@ router.post("/register", async (req, res, next) => {
   }
 });
 
+// Keep login failures generic so the response does not reveal whether an email address has an account.
 router.post("/login", async (req, res, next) => {
   try {
     const input = login.parse(req.body);
@@ -68,6 +71,7 @@ router.post("/login", async (req, res, next) => {
 });
 
 
+// Account deletion is sensitive: require an authenticated session and fresh password confirmation.
 router.delete("/account", requireAuth, async (req, res, next) => {
   try {
     const input = z.object({ password: z.string().min(1).max(128), confirmation: z.literal("DELETE") }).parse(req.body);
@@ -78,6 +82,7 @@ router.delete("/account", requireAuth, async (req, res, next) => {
       return res.status(401).json({ error: "The password is incorrect." });
     }
 
+    // The utility removes dependent records in one transaction so partial deletion cannot be committed.
     await deleteUserAccount(prisma, req.userId);
     return res.json({ deleted: true });
   } catch (error) {

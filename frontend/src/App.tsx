@@ -1683,8 +1683,9 @@ export default function App() {
         {posts.length === 0 && communityLoading ? <p className="muted" role="status">Loading recent activity…</p> : posts.length === 0 && communityError ? <p className="muted">The feed is unavailable until the community can be refreshed.</p> : posts.length === 0 ? <p className="muted">No shared workouts yet. Once you and your friends log a session, it can appear here.</p> :
           <div className="feed-list">{posts.map(post => {
             const workoutSummary = post.session ? summariseWorkoutPost(post.session) : [];
+            const commentCount = post._count?.comments ?? post.comments.length;
             return <article className="feed-card" key={post.id}>
-            <div className="feed-heading"><div className="feed-author"><span className="feed-avatar" aria-hidden="true">{(post.user.displayName || post.user.username).slice(0, 1).toUpperCase()}</span><div><button type="button" className="feed-profile-link" onClick={event => { profileTriggerRef.current = event.currentTarget; void openCommunityProfile(post.user.id); }}>{post.user.displayName || "@" + post.user.username}</button><small>@{post.user.username}</small></div></div><span>{new Date(post.createdAt).toLocaleString()}</span></div>
+            <div className="feed-heading"><div className="feed-author"><span className="feed-avatar" aria-hidden="true">{(post.user.displayName || post.user.username).slice(0, 1).toUpperCase()}</span><div><button type="button" className="feed-profile-link" onClick={event => { profileTriggerRef.current = event.currentTarget; void openCommunityProfile(post.user.id); }}>{post.user.displayName || "@" + post.user.username}</button><small>@{post.user.username}</small></div></div><time dateTime={post.createdAt}>{new Date(post.createdAt).toLocaleString()}</time></div>
             {post.text ? <p className="community-post-text">{post.text}</p> : <p>{post.session?.routine?.name ?? "Completed a workout"}</p>}
             {post.session && <div className="workout-post-summary" aria-label="Workout summary">
               <div className="workout-post-metrics">
@@ -1714,6 +1715,8 @@ export default function App() {
                 </button>;
               })}
             </div>
+            <section className="feed-comments" aria-label={`Comments, ${commentCount} total`}>
+              <div className="feed-comments-heading"><strong>Comments</strong><span>{commentCount} {commentCount === 1 ? "comment" : "comments"}</span></div>
             {post.comments.map(comment => <div className="comment" key={comment.id}>
               {editingCommentId === comment.id ? <div className="comment-edit">
                 <label className="sr-only" htmlFor={"edit-comment-" + comment.id}>Edit your comment</label>
@@ -1733,6 +1736,7 @@ export default function App() {
               <input aria-label="Write a comment" value={commentDrafts[post.id] ?? ""} onChange={event => setCommentDrafts(current => ({ ...current, [post.id]: event.target.value }))} placeholder="Write a supportive comment..." maxLength={500} />
               <button disabled={!commentDrafts[post.id]?.trim()}>Send</button>
             </form>
+            </section>
           </article>})}</div>}
         {feedHasMore && <button type="button" className="small-button secondary feed-load-more" onClick={() => void loadMoreCommunityPosts()} disabled={feedLoadingMore}>{feedLoadingMore ? "Loading older posts…" : "Load older posts"}</button>}
         {feedLoadMoreError && <div className="load-error" role="alert"><span>{feedLoadMoreError}</span><button type="button" className="secondary" onClick={() => void loadMoreCommunityPosts()}>Try again</button></div>}

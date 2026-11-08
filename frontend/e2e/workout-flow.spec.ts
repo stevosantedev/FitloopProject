@@ -885,6 +885,8 @@ test("Community feed refreshes the first page and preserves posts when refresh f
   await page.getByRole("button", { name: "Sign in" }).click();
   await page.locator(".sidebar-nav").getByRole("button", { name: "Community" }).click();
   await expect(page.getByText("The activity already on screen")).toBeVisible();
+  await expect(page.locator(".feed-card time")).toHaveAttribute("datetime", "2026-11-08T10:00:00.000Z");
+  await expect(page.locator(".feed-comments-heading")).toContainText("0 comments");
   await page.getByRole("button", { name: "Refresh feed" }).click();
   await expect(page.getByRole("alert")).toContainText("Feed refresh temporarily unavailable.");
   await expect(page.getByText("The activity already on screen")).toBeVisible();

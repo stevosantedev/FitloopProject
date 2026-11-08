@@ -743,3 +743,10 @@ footer { padding: 22px 0 0; border-top: 1px solid #202c25; }
   .feed-section-heading { align-items: flex-start; }
   .feed-refresh { min-height: 42px; padding-inline: 11px; }
 }
+
+/* Make post timestamps machine-readable and give the discussion its own visual hierarchy. */
+.feed-heading time { color: #9cad9f; font-size: .8rem; white-space: nowrap; }
+.feed-comments { margin-top: 12px; padding-top: 10px; border-top: 1px solid #2d4033; }
+.feed-comments-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 8px; color: #dce8df; font-size: .82rem; }
+.feed-comments-heading span { color: #91a397; font-size: .74rem; }
+@media (max-width: 700px) { .feed-heading time { white-space: normal; } }

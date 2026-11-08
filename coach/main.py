@@ -1,9 +1,11 @@
 from datetime import date
 from statistics import mean
+import os
 from typing import Literal, Optional
 
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
+import httpx
 
 app = FastAPI(title="FitLoop Coach", version="0.1.0")
 
@@ -58,6 +60,8 @@ class ConversationRequest(BaseModel):
     style: Literal["gentle", "direct"] = "gentle"
     focus: Literal["energy", "consistency", "recovery"] = "energy"
     context: ConversationContext = Field(default_factory=ConversationContext)
+    # Consent is per account and defaults off; provider credentials alone never enable AI.
+    aiEnabled: bool = False
 
 
 @app.get("/health")
@@ -183,7 +187,76 @@ def conversation(payload: ConversationRequest):
             "Tell me your goal and a little about your current training so I can make the next step more relevant."
         )
 
+    # A model is used only when the account owner has opted in and an operator has
+    # configured a provider key. Safety routes above always remain rule-guided.
+    if payload.aiEnabled and os.getenv("AI_COACH_API_KEY"):
+        try:
+            generated = generate_ai_reply(payload)
+            if generated:
+                return {"message": generated, "responseMode": "ai_generated"}
+        except (httpx.HTTPError, ValueError, KeyError, TypeError):
+            # A provider outage must not prevent the user from receiving the safe fallback.
+            pass
+
     return {"message": wording(reply, payload.style), "responseMode": "guided_rules"}
+
+
+def generate_ai_reply(payload: ConversationRequest) -> str | None:
+    """Request a grounded training reply without sending account identifiers or wellbeing logs."""
+    api_key = os.getenv("AI_COACH_API_KEY")
+    model = os.getenv("AI_COACH_MODEL", "gpt-4.1-mini")
+    if not api_key:
+        return None
+
+    context = [
+        {
+            "date": session.date.isoformat(),
+            "routine": session.routine,
+            "exercises": [
+                {"name": item.name, "reps": item.reps, "weightKg": item.weightKg}
+                for item in session.exercises
+            ],
+        }
+        for session in payload.context.recentSessions
+    ]
+    response = httpx.post(
+        "https://api.openai.com/v1/chat/completions",
+        headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+        json={
+            "model": model,
+            "temperature": 0.4,
+            "max_tokens": 350,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": (
+                        "You are FitLoop's fitness and habit coach. Give concise, practical, non-judgemental "
+                        "training guidance. Use only the supplied workout facts; say when information is missing. "
+                        "Do not diagnose, interpret symptoms, prescribe treatment, recommend training through pain, "
+                        "or claim certainty about health or strength. Do not invent measurements, goals or completed "
+                        "workouts. Do not create or save plans. If asked for medical advice, explain your limits and "
+                        "suggest an appropriate qualified professional. Never encourage extreme exercise, food "
+                        "restriction or unsafe weight changes. Ask at most one useful follow-up question. "
+                        f"Use a {payload.style} tone and focus on {payload.focus}."
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": (
+                        f"User message: {payload.message}\n"
+                        f"Recent completed workout summaries (may be empty): {context}"
+                    ),
+                },
+            ],
+        },
+        timeout=15.0,
+    )
+    response.raise_for_status()
+    content = response.json()["choices"][0]["message"]["content"]
+    if not isinstance(content, str):
+        return None
+    cleaned = content.strip()
+    return cleaned[:3000] if cleaned else None
 
 
 @app.post("/coach/check-in")

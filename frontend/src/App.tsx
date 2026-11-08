@@ -92,7 +92,7 @@ function summariseWorkoutPost(session: WorkoutFeedSession): WorkoutPostMovement[
 type CoachMessage = { id: string; message: string; explanation: string; decision?: string };
 type CoachConversation = { id: string; title: string; updatedAt: string; messages?: Array<{ id: string; role: string; content: string }>; _count?: { messages: number } };
 type CoachChatMessage = { id: string; role: "user" | "assistant"; content: string; createdAt: string };
-type CoachPreference = { style: "gentle" | "direct"; focus: "energy" | "consistency" | "recovery" };
+type CoachPreference = { style: "gentle" | "direct"; focus: "energy" | "consistency" | "recovery"; aiEnabled: boolean };
 type PersonalRecord = { exerciseId: string; exerciseName: string; heaviestLoad: { value: number; date: string | null; sessionId: string | null } | null; mostReps: { value: number; date: string | null; sessionId: string | null } | null; highestSetVolume: { value: number; date: string | null; sessionId: string | null } | null };
 
 type ProgressionSuggestion = { exerciseId: string; exerciseName: string; recommendation: "maintain" | "consider_small_increase" | "repeat_or_reduce"; reason: string; latest: { reps: number; weightKg: number | null; date: string }; previous: { reps: number; weightKg: number | null; date: string }; recentSessions: Array<{ reps: number; weightKg: number | null; date: string }> };
@@ -117,7 +117,7 @@ export default function App() {
   const [coachChatSending, setCoachChatSending] = useState(false);
   const [coachChatError, setCoachChatError] = useState("");
   // Keep the selected coaching tone and focus available while the user edits their preferences.
-  const [coachPreference, setCoachPreference] = useState<CoachPreference>({ style: "gentle", focus: "energy" });
+  const [coachPreference, setCoachPreference] = useState<CoachPreference>({ style: "gentle", focus: "energy", aiEnabled: false });
   const [exercises, setExercises] = useState<Exercise[]>([]);
   // Weekly programmes are separate from one-off routines but reuse their saved day templates.
   const [trainingPlans, setTrainingPlans] = useState<TrainingPlanView[]>([]);
@@ -1439,6 +1439,10 @@ export default function App() {
           <select value={coachPreference.focus} onChange={event => setCoachPreference(current => ({ ...current, focus: event.target.value as CoachPreference["focus"] }))}>
             <option value="energy">Everyday energy</option><option value="consistency">Consistency</option><option value="recovery">Rest and recovery</option>
           </select>
+          <label className="coach-ai-consent">
+            <input type="checkbox" checked={coachPreference.aiEnabled} onChange={event => setCoachPreference(current => ({ ...current, aiEnabled: event.target.checked }))} />
+            <span><strong>Use AI-generated coaching replies</strong><small>Optional and off by default. If enabled, your message and up to five recent completed workout summaries are sent to the configured AI provider to draft a reply. Your account identity, private notes and daily wellbeing logs are not sent. You can switch this off at any time.</small></span>
+          </label>
           <button className="secondary-action">Save coach preferences</button>
         </form>
         {coachMessages.map(item => <article className="coach-message" key={item.id}>

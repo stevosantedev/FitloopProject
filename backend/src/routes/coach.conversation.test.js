@@ -78,6 +78,7 @@ test("POST message persists a user and guided coach reply in an owned conversati
 
   assert.equal(servicePayload.message, "Can you review my progress?");
   assert.equal(servicePayload.style, "direct");
+  assert.equal(servicePayload.aiEnabled, false);
   assert.equal(servicePayload.context.recentSessions[0].exercises[0].name, "Bench press");
   assert.equal("userId" in servicePayload, false);
   const serializedPayload = JSON.stringify(servicePayload);

@@ -1,4 +1,5 @@
 from datetime import date
+import httpx
 
 from fastapi.testclient import TestClient
 
@@ -133,3 +134,71 @@ def test_conversation_escalates_urgent_symptoms():
 def test_conversation_rejects_oversized_messages():
     response = client.post("/coach/conversation", json={"message": "x" * 2001})
     assert response.status_code == 422
+
+
+
+def test_ai_reply_is_used_only_after_explicit_consent_and_provider_configuration(monkeypatch):
+    # A configured key is not enough: the account must opt in on the request.
+    monkeypatch.setenv("AI_COACH_API_KEY", "test-key")
+    calls = []
+
+    def fake_post(url, **kwargs):
+        calls.append((url, kwargs))
+        class Response:
+            def raise_for_status(self):
+                return None
+            def json(self):
+                return {"choices": [{"message": {"content": "Try adding one manageable session this week."}}]}
+        return Response()
+
+    monkeypatch.setattr("main.httpx.post", fake_post)
+    response = client.post("/coach/conversation", json={
+        "message": "How can I improve my consistency?",
+        "aiEnabled": True,
+        "context": {"recentSessions": []},
+    })
+    assert response.status_code == 200
+    assert response.json()["responseMode"] == "ai_generated"
+    assert response.json()["message"] == "Try adding one manageable session this week."
+    assert len(calls) == 1
+    assert "Authorization" in calls[0][1]["headers"]
+    assert "Recent completed workout summaries" in calls[0][1]["json"]["messages"][1]["content"]
+
+
+def test_ai_provider_is_not_called_without_user_consent(monkeypatch):
+    monkeypatch.setenv("AI_COACH_API_KEY", "test-key")
+    calls = []
+    monkeypatch.setattr("main.httpx.post", lambda *args, **kwargs: calls.append(args))
+    response = client.post("/coach/conversation", json={"message": "Help me stay consistent"})
+    assert response.status_code == 200
+    assert response.json()["responseMode"] == "guided_rules"
+    assert calls == []
+
+
+def test_ai_provider_failure_falls_back_to_guided_reply(monkeypatch):
+    monkeypatch.setenv("AI_COACH_API_KEY", "test-key")
+
+    def fail_request(*args, **kwargs):
+        raise httpx.TimeoutException("provider timed out")
+
+    monkeypatch.setattr("main.httpx.post", fail_request)
+    response = client.post("/coach/conversation", json={
+        "message": "Help me stay consistent",
+        "aiEnabled": True,
+    })
+    assert response.status_code == 200
+    assert response.json()["responseMode"] == "guided_rules"
+
+
+def test_urgent_symptoms_never_call_ai_provider(monkeypatch):
+    monkeypatch.setenv("AI_COACH_API_KEY", "test-key")
+    calls = []
+    monkeypatch.setattr("main.httpx.post", lambda *args, **kwargs: calls.append(args))
+    response = client.post("/coach/conversation", json={
+        "message": "I have chest pain",
+        "aiEnabled": True,
+    })
+    assert response.status_code == 200
+    assert response.json()["responseMode"] == "guided_rules"
+    assert "emergency medical attention" in response.json()["message"]
+    assert calls == []

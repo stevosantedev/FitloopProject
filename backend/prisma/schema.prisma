@@ -253,6 +253,7 @@ model CoachPreference {
   userId     String @unique
   style      String @default("gentle")
   focus      String @default("energy")
+  aiEnabled  Boolean @default(false)
   user       User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 

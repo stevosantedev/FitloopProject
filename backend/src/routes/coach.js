@@ -8,7 +8,9 @@ const router = Router();
 
 const preferenceInput = z.object({
   style: z.enum(["gentle", "direct"]).default("gentle"),
-  focus: z.enum(["energy", "consistency", "recovery"]).default("energy")
+  focus: z.enum(["energy", "consistency", "recovery"]).default("energy"),
+  // External model processing stays off until the account owner explicitly opts in.
+  aiEnabled: z.boolean().default(false)
 });
 const decisionInput = z.object({ decision: z.enum(["approved", "declined"]) });
 const conversationInput = z.object({
@@ -76,7 +78,7 @@ const messageInput = z.object({ message: z.string().trim().min(1).max(2000) });
      const response = await fetchImpl(config.COACH_SERVICE_URL + "/coach/conversation", {
        method: "POST", headers: { "content-type": "application/json" },
        body: JSON.stringify({ message: input.message, style: preference?.style ?? "gentle",
-         focus: preference?.focus ?? "energy", context: { recentSessions: sessions.map(session => ({
+         focus: preference?.focus ?? "energy", aiEnabled: preference?.aiEnabled === true, context: { recentSessions: sessions.map(session => ({
            date: session.startedAt.toISOString().slice(0, 10), routine: session.routine?.name ?? null,
            exercises: session.sets.map(set => ({ name: set.exercise.name, reps: set.reps, weightKg: set.weightKg }))
          })) } })

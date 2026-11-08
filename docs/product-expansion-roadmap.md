@@ -147,3 +147,16 @@ A practical implementation approach is to finish one end-to-end vertical slice a
 ## Definition of done for each slice
 
 A slice is complete only when its user journey works end-to-end; API ownership and privacy rules are enforced; loading, empty, error and retry states are usable; accessibility is checked; automated tests cover success and failure paths; and the relevant documentation is updated. A visual mock-up or disconnected front-end screen does not count as completion.
+
+
+## Weekly training programme builder
+
+- [x] Add account-owned `TrainingPlan` and ordered `TrainingPlanDay` records linked to workout routines.
+- [x] Add authenticated programme CRUD with account ownership checks and a database migration.
+- [x] Support atomic nested creation of day routines from shared or caller-owned catalogue exercises.
+- [x] Build 2–6 day catalogue-based splits with per-day movement editing and review-before-save.
+- [x] Allow saved programmes to be reopened and edited without changing routines referenced by completed workout history.
+- [x] Show an adjustable seven-day training/rest spread for saved programmes; this is a visual suggestion, not calendar scheduling.
+- [ ] Add browser coverage for the 3-, 5- and 6-day structures and review split balance across the full catalogue.
+- [ ] Add set/rep/load prescriptions, weekday scheduling and programme completion tracking.
+- The current split is transparent catalogue guidance, not generative AI or a clinical prescription.

@@ -1301,6 +1301,14 @@ test("Coach builds a weekly programme, saves it only after review and starts a s
   await generate.click();
   const preview = page.locator(".coach-routine-preview");
   await expect(preview).toContainText("Goblet squat");
+  await page.getByLabel("Days available each week").selectOption("4");
+  await generate.click();
+  await expect(preview.locator(".coach-plan-day")).toHaveCount(4);
+  await expect(preview).toContainText("Upper A");
+  await expect(preview).toContainText("Lower A");
+  await page.getByLabel("Days available each week").selectOption("2");
+  await generate.click();
+  await expect(preview.locator(".coach-plan-day")).toHaveCount(2);
   await expect(preview).toContainText("Romanian deadlift");
   await expect(preview).toContainText("Push-up");
   await expect(preview).toContainText("Single-arm dumbbell row");

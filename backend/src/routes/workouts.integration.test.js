@@ -475,6 +475,51 @@ test("POST training plans creates ordered days from routines owned by the caller
   assert.deepEqual(createArgs.data.days.create.map(day => day.dayNumber), [1, 2]);
 });
 
+test("POST training plans atomically creates each day routine from owned catalogue exercises", async () => {
+  let exerciseLookup; let createArgs;
+  const prisma = makePrisma({
+    exercise: { findMany: async args => { exerciseLookup = args; return [{ id: "bench" }, { id: "row" }]; } },
+    trainingPlan: { create: async args => { createArgs = args; return { id: "plan-inline", ...args.data }; } }
+  });
+  await withWorkoutApi(prisma, async baseUrl => {
+    const response = await fetch(baseUrl + "/api/workouts/training-plans", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        name: "Two day programme", goal: "general", daysPerWeek: 2, experience: "beginner", equipment: "gym",
+        days: [
+          { dayNumber: 1, label: "Day A", routineName: "Programme · Day A", exercises: [{ exerciseId: "bench" }, { exerciseId: "row" }] },
+          { dayNumber: 2, label: "Day B", routineName: "Programme · Day B", exercises: [{ exerciseId: "row" }, { exerciseId: "bench" }] }
+        ]
+      })
+    });
+    assert.equal(response.status, 201);
+  });
+  assert.deepEqual(exerciseLookup.where.OR, [{ isCustom: false }, { ownerId: "user-a" }]);
+  assert.equal(createArgs.data.days.create.length, 2);
+  assert.equal(createArgs.data.days.create[0].routine.create.user.connect.id, "user-a");
+  assert.deepEqual(createArgs.data.days.create[0].routine.create.exercises.create.map(item => item.sortOrder), [0, 1]);
+  assert.equal(createArgs.data.days.create[0].routine.create.exercises.create[0].exercise.connect.id, "bench");
+});
+
+test("POST training plans rejects private exercises owned by another account", async () => {
+  let writes = 0;
+  const prisma = makePrisma({ exercise: { findMany: async () => [] }, trainingPlan: { create: async () => { writes += 1; return {}; } } });
+  await withWorkoutApi(prisma, async baseUrl => {
+    const response = await fetch(baseUrl + "/api/workouts/training-plans", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        name: "Private exercise plan", goal: "general", daysPerWeek: 2, experience: "beginner", equipment: "gym",
+        days: [
+          { dayNumber: 1, label: "Day A", routineName: "Day A", exercises: [{ exerciseId: "other-user-private-id" }] },
+          { dayNumber: 2, label: "Day B", routineName: "Day B", exercises: [{ exerciseId: "other-user-private-id" }] }
+        ]
+      })
+    });
+    assert.equal(response.status, 400);
+  });
+  assert.equal(writes, 0);
+});
+
 test("POST training plans rejects routines owned by another account", async () => {
   let writes = 0;
   const prisma = makePrisma({

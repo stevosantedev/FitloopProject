@@ -622,14 +622,6 @@ export default function App() {
     } finally { setCoachChatSending(false); }
   }
 
-  function reviewCoachRoutineDraft(name: string, exerciseIds: string[]) {
-    setRoutineName(name);
-    setRoutineExerciseIds(exerciseIds);
-    setEditingRoutineId("");
-    setActiveTab("workouts");
-    setNotice("Coach draft loaded into the routine editor. Review the movements and save when ready; nothing has been saved yet.");
-  }
-
   async function deleteCoachConversation(conversationId: string) {
     if (!window.confirm("Delete this coach conversation? Its messages will also be deleted.")) return;
     try {
@@ -1118,6 +1110,7 @@ export default function App() {
     setCoachDraft("");
     setExercises([]);
     setRoutines([]);
+    setTrainingPlans([]);
     setSessions([]);
     setConnections([]);
     setPosts([]);

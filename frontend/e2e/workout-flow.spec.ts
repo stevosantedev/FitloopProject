@@ -1421,6 +1421,20 @@ test("Coach displays evidence and explanation for workout progression guidance",
   await expect(panel.getByText(/Latest: 10 reps at 20 kg · Previous: 8 reps at 20 kg/)).toBeVisible();
 });
 
+test("Coach identifies when a reply uses the guided fallback", async ({ page }) => {
+  await mockApplicationApi(page);
+  await page.goto("/");
+  await page.getByLabel("Email").fill("tester@example.com");
+  await page.getByLabel("Password").fill("test-password");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.locator(".sidebar-nav").getByRole("button", { name: "Coach" }).click();
+  await page.getByRole("button", { name: "New chat +" }).click();
+  await page.getByLabel("Message your coach").fill("Can you help me review my training?");
+  await page.getByRole("button", { name: "Send message" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Guided reply" })).toBeVisible();
+  await expect(page.getByText(/also happens when AI is off or the provider is unavailable/i)).toBeVisible();
+});
+
 test("Coach settings disclose optional AI processing and keep consent off by default", async ({ page }) => {
   await mockApplicationApi(page);
   await page.goto("/");

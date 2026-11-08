@@ -150,7 +150,12 @@ async function mockApplicationApi(page: Page, onSessionSave?: (body: any) => voi
         recommendation: "consider_small_increase",
         reason: "You completed at least two more reps at the same load. If the sets felt controlled, consider the smallest available load increase next time.",
         latest: { reps: 10, weightKg: 20, date: "2026-11-08T10:00:00.000Z" },
-        previous: { reps: 8, weightKg: 20, date: "2026-11-06T10:00:00.000Z" }
+        previous: { reps: 8, weightKg: 20, date: "2026-11-06T10:00:00.000Z" },
+        recentSessions: [
+          { reps: 10, weightKg: 20, date: "2026-11-08T10:00:00.000Z" },
+          { reps: 8, weightKg: 20, date: "2026-11-06T10:00:00.000Z" },
+          { reps: 12, weightKg: 18, date: "2026-11-04T10:00:00.000Z" }
+        ]
       }] };
     } else if (url.pathname === "/api/workouts/personal-records") {
       body = { records: [{

@@ -45,6 +45,8 @@ async function mockApplicationApi(page: Page, onSessionSave?: (body: any) => voi
   const conversations: any[] = [];
   const chatMessages: Record<string, any[]> = {};
   const socialPosts: any[] = [];
+  // Keep the mock preference between requests so browser coverage can verify both consent and opt-out.
+  let coachAiEnabled = false;
   await page.route("http://localhost:4000/**", async route => {
     const request = route.request();
     const url = new URL(request.url());
@@ -55,8 +57,12 @@ async function mockApplicationApi(page: Page, onSessionSave?: (body: any) => voi
       body = { token: "browser-test-token", user: { id: "user-1", username: "tester" } };
     } else if (url.pathname === "/api/me") {
       body = { user: { id: "user-1", username: "tester" } };
-    } else if (url.pathname === "/api/coach/preferences") {
-      body = { preference: { style: "gentle", focus: "energy", aiEnabled: false } };
+    } else if (url.pathname === "/api/coach/preferences" && method === "GET") {
+      body = { preference: { style: "gentle", focus: "energy", aiEnabled: coachAiEnabled } };
+    } else if (url.pathname === "/api/coach/preferences" && method === "PUT") {
+      const input = request.postDataJSON();
+      coachAiEnabled = input.aiEnabled === true;
+      body = { preference: { style: input.style, focus: input.focus, aiEnabled: coachAiEnabled } };
     } else if (url.pathname === "/api/daily-logs") {
       body = { logs: [] };
     } else if (url.pathname === "/api/coach/history") {
@@ -1451,5 +1457,13 @@ test("Coach settings disclose optional AI processing and keep consent off by def
   await consent.check();
   await page.getByRole("button", { name: "Save coach preferences" }).click();
   await expect(page.getByText("Your coaching preferences have been saved.")).toBeVisible();
+  await expect(consent).toBeChecked();
+
+  // Turning consent off must persist, not merely change the checkbox until the next reload.
+  await consent.uncheck();
+  await page.getByRole("button", { name: "Save coach preferences" }).click();
+  await expect(page.getByText("Your coaching preferences have been saved.")).toBeVisible();
+  await page.reload();
+  await expect(page.getByLabel(/Use AI-generated coaching replies/)).not.toBeChecked();
 });
 

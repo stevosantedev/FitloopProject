@@ -48,6 +48,19 @@ Use short, specific comments beside non-obvious statements or small groups of st
 
 A reader should be able to follow a complicated function from its comments without having to infer the purpose of every branch. Add comments at the decision points, not as a wall of prose at the top of the function.
 
+### Comment frequency benchmark
+
+Use the supplied `dashboard.js` example as the density reference. FitLoop code should have explanatory comments throughout substantial functions: file context, function context, and short explanations between meaningful stages. A reader should not need to scroll through a long handler and infer why each group of statements exists.
+
+- Add a short explanation before each meaningful phase of a longer function (input collection, validation, lookup, transformation, persistence, response and cleanup where present).
+- Explain each non-obvious branch, early return, fallback, sorting rule, threshold, retry decision and state transition close to the code.
+- For database work, explain ownership filters, selected fields, ordering, transaction boundaries and why records are created, updated or deleted in that order.
+- For frontend work, explain state ownership, asynchronous request ordering, stale-response protection, accessibility behaviour and why UI state is reset or preserved.
+- For tests, explain the behaviour or regression being protected, the setup that makes the case meaningful and what the assertions prove. Avoid comments on every assertion when the test name already makes it clear.
+- For migrations and seed data, explain compatibility assumptions, defaults, constraints and intentionally conservative or incomplete mappings.
+- Add a comment whenever the reader reaches a new logical phase or a decision whose reason is not obvious. Small, self-explanatory helpers do not need filler comments.
+
+### Comment quality
 ### Comment quality
 
 - Prefer useful explanations over restating the syntax. For example, explain why a query is scoped to the authenticated user, rather than writing "find the user".

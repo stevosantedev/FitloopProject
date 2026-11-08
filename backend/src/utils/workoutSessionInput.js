@@ -7,6 +7,8 @@
  */
 import { z } from "zod";
 
+// Enforce limits at the API boundary because callers can bypass browser form controls.
+// Defaults let simpler clients omit optional metadata without creating partial records.
 export const sessionInput = z.object({
   routineId: z.string().optional(),
   notes: z.string().max(500).optional(),
@@ -23,6 +25,8 @@ export const sessionInput = z.object({
     rpe: z.number().min(1).max(10).optional()
   })).min(1).max(200)
 }).superRefine((input, context) => {
+  // These rules compare multiple rows, so they cannot be expressed as single-field checks.
+}).superRefine((input, context) => {
   // Set numbers are unique within an exercise, not across the whole session.
   // This preserves a stable row identity while allowing every movement to start at set 1.
   // A session needs at least one performed set. Other rows may remain
@@ -35,8 +39,11 @@ export const sessionInput = z.object({
     });
   }
 
+  // Set numbers restart for each exercise; the composite key avoids false duplicates
+  // when two movements both contain a first set.
   const seen = new Set();
   const counts = new Map();
+  // Collect duplicate and per-exercise count information in one pass over the request.
   input.sets.forEach((set, index) => {
     const key = `${set.exerciseId}:${set.setNumber}`;
     if (seen.has(key)) {

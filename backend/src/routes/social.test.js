@@ -23,6 +23,7 @@ async function withSocialApi(prisma, run) {
 }
 
 // Verify the server derives the author from authenticated context and stores trimmed text.
+// The server derives the author from the session and applies the friends-only audience on creation.
 test("POST posts creates a friends-only update for the authenticated author", async () => {
   let args;
   const post = { id: "post-a", userId: "user-a", type: "update", text: "First training update" };
@@ -39,6 +40,7 @@ test("POST posts creates a friends-only update for the authenticated author", as
   assert.deepEqual(args.include.user.select, { id: true, username: true, displayName: true });
 });
 
+// Invalid text must fail before any database write occurs.
 test("POST posts rejects blank and overlong updates before writing", async () => {
   let writes = 0;
   const prisma = { feedPost: { create: async () => { writes += 1; return {}; } } };
@@ -54,6 +56,7 @@ test("POST posts rejects blank and overlong updates before writing", async () =>
   assert.equal(writes, 0);
 });
 
+// Editing is limited to the original author and to text updates, not generated workout posts.
 test("PATCH posts edits only the authenticated author's text update", async () => {
   let updateQuery;
   let readQuery;
@@ -82,6 +85,7 @@ test("PATCH posts edits only the authenticated author's text update", async () =
   assert.deepEqual(readQuery.include.user.select, { id: true, username: true, displayName: true });
 });
 
+// Ownership and post type are checked together so workout history cannot be rewritten.
 test("PATCH posts cannot edit another author's post or a workout post", async () => {
   let reads = 0;
   const prisma = {
@@ -103,6 +107,7 @@ test("PATCH posts cannot edit another author's post or a workout post", async ()
   assert.equal(reads, 0);
 });
 
+// Strict payload validation prevents accidental or mass-assignment updates.
 test("PATCH posts rejects blank, overlong and unexpected fields before writing", async () => {
   let writes = 0;
   const prisma = { feedPost: { updateMany: async () => { writes += 1; return { count: 1 }; } } };
@@ -117,6 +122,7 @@ test("PATCH posts rejects blank, overlong and unexpected fields before writing",
   assert.equal(writes, 0);
 });
 
+// Deletion is scoped by both post ID and authenticated author.
 test("DELETE posts only removes a post authored by the signed-in account", async () => {
   let query;
   const prisma = { feedPost: { deleteMany: async args => { query = args; return { count: 1 }; } } };
@@ -128,6 +134,7 @@ test("DELETE posts only removes a post authored by the signed-in account", async
   assert.deepEqual(query.where, { id: "post-a", userId: "user-a" });
 });
 
+// A not-found response avoids confirming that another account owns the supplied post ID.
 test("DELETE posts returns not found for another author's post", async () => {
   const prisma = { feedPost: { deleteMany: async () => ({ count: 0 }) } };
   await withSocialApi(prisma, async base => {
@@ -136,6 +143,7 @@ test("DELETE posts returns not found for another author's post", async () => {
   });
 });
 
+// Profile updates use the session identity and expose only approved public fields.
 test("PATCH profile updates only the authenticated account's display fields", async () => {
   let query;
   const profile = { id: "user-a", username: "runner", displayName: "Runner One", bio: "Building consistency." };
@@ -153,6 +161,7 @@ test("PATCH profile updates only the authenticated account's display fields", as
   assert.deepEqual(query.select, { id: true, username: true, displayName: true, bio: true, privateAccount: true });
 });
 
+// Validate profile changes before persistence so unsupported fields cannot be smuggled into the update.
 test("PATCH profile rejects empty, overlong and unexpected profile fields", async () => {
   let writes = 0;
   const prisma = { user: { update: async () => { writes += 1; return {}; } } };
@@ -168,6 +177,7 @@ test("PATCH profile rejects empty, overlong and unexpected profile fields", asyn
 });
 
 // A private profile should be indistinguishable from an unavailable profile to non-friends.
+// A private account is not discoverable through profile details without an accepted connection.
 test("private profile lookup is hidden from non-friends", async () => {
   const prisma = {
     user: { findUnique: async () => ({ id: "user-b", username: "private-runner", displayName: "Private Runner", bio: null, privateAccount: true }) },
@@ -180,6 +190,7 @@ test("private profile lookup is hidden from non-friends", async () => {
   });
 });
 
+// Accepted friends may see permitted profile details, but internal privacy controls remain private.
 test("private profile lookup is available to an accepted friend without exposing privacy settings", async () => {
   const prisma = {
     user: { findUnique: async () => ({ id: "user-b", username: "friend-runner", displayName: "Friend Runner", bio: "Training steadily.", privateAccount: true }) },
@@ -199,6 +210,7 @@ test("private profile lookup is available to an accepted friend without exposing
   });
 });
 
+// Public visibility removes the friendship requirement without changing field-level privacy.
 test("public profile lookup is available without a friendship", async () => {
   const prisma = {
     user: { findUnique: async () => ({ id: "user-b", username: "open-runner", displayName: "Open Runner", bio: null, privateAccount: false }) },
@@ -212,6 +224,7 @@ test("public profile lookup is available without a friendship", async () => {
   });
 });
 
+// The visibility switch is writable only through the owner's validated profile endpoint.
 test("profile visibility can only be changed through the strict authenticated profile update", async () => {
   let update;
   const profile = { id: "user-a", username: "runner", displayName: "Runner", bio: null, privateAccount: false };
@@ -228,6 +241,7 @@ test("profile visibility can only be changed through the strict authenticated pr
   assert.deepEqual(update.data, { privateAccount: false });
 });
 
+// Feed identity includes public display fields without exposing email or credentials.
 test("feed includes display name with the safe author identity fields", async () => {
   let args;
   const prisma = {
@@ -258,6 +272,7 @@ test("feed includes display name with the safe author identity fields", async ()
   assert.deepEqual(args.where, { userId: { in: ["user-a"] } });
 });
 
+// The response confirms the saved visibility choice so the UI reflects persisted state.
 test("PATCH profile returns the updated private-account setting", async () => {
   const profile = { id: "user-a", username: "runner", displayName: null, bio: null, privateAccount: false };
   let query;
@@ -274,6 +289,7 @@ test("PATCH profile returns the updated private-account setting", async () => {
 });
 
 
+// Only the recipient can reject an incoming request that is still pending.
 test("incoming pending requests can be declined only by their addressee", async () => {
   let query;
   const prisma = { friendConnection: { deleteMany: async args => { query = args; return { count: 1 }; } } };
@@ -285,6 +301,7 @@ test("incoming pending requests can be declined only by their addressee", async 
   assert.deepEqual(query.where, { id: "request-1", addresseeId: "user-a", status: "pending" });
 });
 
+// Do not disclose or mutate requests outside the recipient and pending-state boundary.
 test("declining another user's request or a non-pending request returns not found", async () => {
   let query;
   const prisma = { friendConnection: { deleteMany: async args => { query = args; return { count: 0 }; } } };
@@ -295,6 +312,7 @@ test("declining another user's request or a non-pending request returns not foun
   assert.deepEqual(query.where, { id: "request-2", addresseeId: "user-a", status: "pending" });
 });
 
+// The sender can withdraw a request before it is accepted.
 test("outgoing pending requests can be cancelled only by their requester", async () => {
   let query;
   const prisma = { friendConnection: { deleteMany: async args => { query = args; return { count: 1 }; } } };
@@ -306,6 +324,7 @@ test("outgoing pending requests can be cancelled only by their requester", async
   assert.deepEqual(query.where, { id: "request-3", requesterId: "user-a", status: "pending" });
 });
 
+// A sender cannot cancel another person's request or remove an accepted friendship through this route.
 test("cancelling another user's request or an accepted connection returns not found", async () => {
   let query;
   const prisma = { friendConnection: { deleteMany: async args => { query = args; return { count: 0 }; } } };
@@ -316,6 +335,7 @@ test("cancelling another user's request or an accepted connection returns not fo
   assert.deepEqual(query.where, { id: "request-4", requesterId: "user-a", status: "pending" });
 });
 
+// Either friend can end an accepted connection, while pending requests keep separate controls.
 test("either member may remove an accepted connection, but not a pending or unrelated row", async () => {
   let query;
   const prisma = { friendConnection: { deleteMany: async args => { query = args; return { count: 1 }; } } };
@@ -330,6 +350,7 @@ test("either member may remove an accepted connection, but not a pending or unre
   });
 });
 
+// Removal must not become a shortcut for changing request state or targeting unrelated users.
 test("removing a pending or unrelated connection returns not found", async () => {
   const prisma = { friendConnection: { deleteMany: async () => ({ count: 0 }) } };
   await withSocialApi(prisma, async base => {
@@ -340,6 +361,7 @@ test("removing a pending or unrelated connection returns not found", async () =>
 
 
 // Blocking must update both sides of the social relationship in one transaction.
+// Blocking and connection cleanup share a transaction so the accounts cannot remain partially linked.
 test("block atomically removes existing connections and creates an owner-scoped block", async () => {
   const calls = [];
   const tx = {
@@ -359,6 +381,7 @@ test("block atomically removes existing connections and creates an owner-scoped 
   assert.deepEqual(calls[1][1].where.blockerId_blockedUserId, { blockerId: "user-a", blockedUserId: "user-b" });
 });
 
+// Reject impossible block targets before writing relationship state.
 test("blocking self or a missing account is rejected", async () => {
   const prisma = { user: { findUnique: async () => null } };
   await withSocialApi(prisma, async base => {
@@ -369,6 +392,7 @@ test("blocking self or a missing account is rejected", async () => {
   });
 });
 
+// A user can reverse their own block, not erase a block created by someone else.
 test("unblock can remove only a block created by the authenticated account", async () => {
   let query;
   const prisma = { userBlock: { deleteMany: async args => { query = args; return { count: 1 }; } } };
@@ -381,6 +405,7 @@ test("unblock can remove only a block created by the authenticated account", asy
 });
 
 // Blocks are symmetric for visibility even though each block record has a single owner.
+// A block in either direction removes the relationship from discovery results.
 test("friend discovery feed excludes accounts blocked in either direction", async () => {
   let feedQuery;
   const prisma = {
@@ -395,6 +420,7 @@ test("friend discovery feed excludes accounts blocked in either direction", asyn
   assert.deepEqual(feedQuery.where, { userId: { in: ["user-a", "user-c"] } });
 });
 
+// Blocking prevents new requests even when the requester is not the blocker.
 test("friend requests are not created when either account has blocked the other", async () => {
   let writes = 0;
   const prisma = {
@@ -411,6 +437,7 @@ test("friend requests are not created when either account has blocked the other"
   assert.equal(writes, 0);
 });
 
+// The API verifies visibility and derives the reporter from authentication instead of trusting the payload.
 test("reports can be filed only against a visible post and store no reporter-supplied identity", async () => {
   let create;
   const prisma = {
@@ -432,6 +459,7 @@ test("reports can be filed only against a visible post and store no reporter-sup
   });
 });
 
+// Strict validation blocks spoofed report metadata and reports against content the user cannot see.
 test("reports reject unknown fields, self-reports and invisible posts", async () => {
   let writes = 0;
   const prisma = {
@@ -453,6 +481,7 @@ test("reports reject unknown fields, self-reports and invisible posts", async ()
 });
 
 
+// Blocking overrides public discoverability so profile privacy remains mutual.
 test("a block hides a public profile even when it is otherwise discoverable", async () => {
   const prisma = {
     user: { findUnique: async () => ({ id: "user-b", username: "open-runner", displayName: "Open Runner", bio: null, privateAccount: false }) },
@@ -465,6 +494,7 @@ test("a block hides a public profile even when it is otherwise discoverable", as
 });
 
 
+// Feed pagination stays bounded and applies friendship plus block visibility in the database query.
 test("GET feed returns a bounded cursor page and scopes it to visible friends", async () => {
   let query;
   const rows = [{ id: "post-new" }, { id: "post-next" }, { id: "lookahead" }];
@@ -486,6 +516,7 @@ test("GET feed returns a bounded cursor page and scopes it to visible friends", 
   assert.equal(query.take, 3);
 });
 
+// Comment pages are available only after the parent post passes the feed visibility rules.
 test("GET post comments returns a bounded cursor page only for visible posts", async () => {
   let postQuery, commentQuery;
   const rows = [{ id: "comment-1" }, { id: "comment-2" }, { id: "comment-lookahead" }];
@@ -508,6 +539,7 @@ test("GET post comments returns a bounded cursor page only for visible posts", a
   assert.equal(commentQuery.take, 3);
 });
 
+// Hidden posts and malformed cursors fail safely without leaking comment counts or content.
 test("GET post comments hides unavailable posts and rejects invalid pagination", async () => {
   let reads = 0;
   const prisma = {
@@ -527,6 +559,7 @@ test("GET post comments hides unavailable posts and rejects invalid pagination",
   assert.equal(reads, 0);
 });
 
+// Reject malformed pagination before it can trigger an unbounded or ambiguous query.
 test("GET feed rejects invalid cursors and page sizes before querying", async () => {
   let reads = 0;
   const prisma = {
@@ -545,6 +578,7 @@ test("GET feed rejects invalid cursors and page sizes before querying", async ()
 
 
 
+// Comment ownership and current post visibility are both required for edits.
 test("PATCH comments edits only the author's comment on a currently visible post", async () => {
   let updateArgs, lookupArgs;
   const comment = { id: "comment-a", text: "Updated support", user: { id: "user-a", username: "alice" } };
@@ -569,6 +603,7 @@ test("PATCH comments edits only the author's comment on a currently visible post
   assert.deepEqual(lookupArgs.include.user.select, { id: true, username: true });
 });
 
+// Do not expose another person's comment through mutation responses or accept unexpected fields.
 test("PATCH comments hides other authors' comments and rejects invalid payloads", async () => {
   let writes = 0;
   const prisma = {
@@ -592,6 +627,7 @@ test("PATCH comments hides other authors' comments and rejects invalid payloads"
   assert.equal(writes, 1);
 });
 
+// A comment can be removed only by its author while its parent post remains visible.
 test("DELETE comments removes only the author's comment on a currently visible post", async () => {
   let query;
   const prisma = {
@@ -607,6 +643,7 @@ test("DELETE comments removes only the author's comment on a currently visible p
   assert.deepEqual(query.where, { id: "comment-a", userId: "user-a", post: { userId: { in: ["user-a"] } } });
 });
 
+// The response does not distinguish an unowned comment from one attached to hidden content.
 test("DELETE comments returns not found for another author or a post outside the current feed", async () => {
   const prisma = {
     friendConnection: { findMany: async () => [] },
@@ -619,6 +656,7 @@ test("DELETE comments returns not found for another author or a post outside the
   });
 });
 
+// Moderator access comes from deployment configuration, not user-editable profile data.
 test("moderation capability is derived from the server-side moderator allowlist", async () => {
   const prisma = {};
   await withSocialApi(prisma, async base => {
@@ -635,6 +673,7 @@ test("moderation capability is derived from the server-side moderator allowlist"
   } finally { await new Promise(resolve => server.close(resolve)); }
 });
 
+// Reject unauthorized moderators before touching private report records.
 test("moderation queue is inaccessible to non-moderators and does not query reports", async () => {
   let reads = 0;
   const prisma = { contentReport: { findMany: async () => { reads += 1; return []; } } };
@@ -645,6 +684,7 @@ test("moderation queue is inaccessible to non-moderators and does not query repo
   assert.equal(reads, 0);
 });
 
+// The review queue returns only needed fields and limits each page.
 test("moderator queue filters status, uses bounded cursor pagination and safe identity projections", async () => {
   let query;
   const reports = [{ id: "report-1" }, { id: "report-2" }];
@@ -666,6 +706,7 @@ test("moderator queue filters status, uses bounded cursor pagination and safe id
   assert.deepEqual(query.select.reportedUser.select, { id: true, username: true, displayName: true });
 });
 
+// Resolution needs a valid state transition and an audit note rather than an unexplained status flip.
 test("moderator decisions require a valid transition and an explanatory note to close", async () => {
   let update;
   const prisma = { contentReport: {
@@ -692,6 +733,7 @@ test("moderator decisions require a valid transition and an explanatory note to 
   assert.equal(update.data.resolutionNote, "Reviewed and action taken.");
 });
 
+// Strict payloads and conditional updates prevent mass assignment and stale moderator decisions.
 test("moderator decision rejects unknown fields and detects concurrent status changes", async () => {
   let update;
   const prisma = { contentReport: {
@@ -717,6 +759,7 @@ test("moderator decision rejects unknown fields and detects concurrent status ch
 });
 
 
+// Toggling off deletes only the signed-in user's reaction row.
 test("POST reactions toggles the current reaction off without touching another account", async () => {
   let deleted;
   const prisma = {
@@ -741,6 +784,7 @@ test("POST reactions toggles the current reaction off without touching another a
   assert.deepEqual(deleted.where, { userId: "user-a", postId: "post-a", value: "like" });
 });
 
+// A new reaction value updates the existing per-user choice instead of creating a duplicate.
 test("POST reactions changes the current account's selected reaction", async () => {
   let upserted;
   const prisma = {
@@ -763,6 +807,7 @@ test("POST reactions changes the current account's selected reaction", async () 
   assert.deepEqual(upserted.update, { value: "strong" });
 });
 
+// Reactions cannot be used to interact with hidden or inaccessible posts.
 test("POST reactions rejects posts outside the current visible feed", async () => {
   let reads = 0;
   const prisma = {

@@ -226,6 +226,12 @@ router.put("/routines/:id", async (req, res, next) => {
 // schema's SetNull relation removes the routine link rather than deleting logs.
 router.delete("/routines/:id", async (req, res, next) => {
   try {
+    const referencedByPlan = await prismaClient.trainingPlanDay.count({
+      where: { routineId: req.params.id, plan: { is: { userId: req.userId } } }
+    });
+    if (referencedByPlan > 0) {
+      return res.status(409).json({ error: "This routine is part of a training plan. Update or delete that plan before deleting the routine." });
+    }
     const result = await prismaClient.workoutRoutine.deleteMany({
       where: { id: req.params.id, userId: req.userId }
     });
@@ -238,6 +244,106 @@ router.delete("/routines/:id", async (req, res, next) => {
 
 // Personal records are calculated from all completed sets owned by this account.
 // The API does not infer a load for bodyweight movements or include abandoned sets.
+// Training plans connect several owned workout routines into one weekly programme.
+const trainingPlanInput = z.object({
+  name: z.string().trim().min(1).max(80),
+  goal: z.enum(["general", "strength", "muscle"]),
+  daysPerWeek: z.number().int().min(2).max(6),
+  experience: z.enum(["beginner", "intermediate", "experienced"]),
+  equipment: z.enum(["bodyweight", "dumbbells", "gym"]),
+  days: z.array(z.object({
+    dayNumber: z.number().int().min(1).max(6),
+    label: z.string().trim().min(1).max(40),
+    routineId: z.string().min(1)
+  })).min(2).max(6)
+}).superRefine((input, context) => {
+  if (input.days.length !== input.daysPerWeek) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ["days"], message: "Add one workout day for each available training day." });
+  }
+  const dayNumbers = input.days.map(day => day.dayNumber);
+  if (new Set(dayNumbers).size !== dayNumbers.length) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ["days"], message: "Each training day must have a unique position." });
+  }
+});
+
+const trainingPlanInclude = {
+  days: {
+    orderBy: { dayNumber: "asc" },
+    include: { routine: { include: { exercises: { include: { exercise: true }, orderBy: { sortOrder: "asc" } } } } }
+  }
+};
+
+async function ownedRoutineIds(prismaClient, userId, days) {
+  const routineIds = [...new Set(days.map(day => day.routineId))];
+  const routines = await prismaClient.workoutRoutine.findMany({
+    where: { id: { in: routineIds }, userId },
+    select: { id: true }
+  });
+  return routines.length === routineIds.length;
+}
+
+router.get("/training-plans", async (req, res, next) => {
+  try {
+    const plans = await prismaClient.trainingPlan.findMany({
+      where: { userId: req.userId },
+      include: trainingPlanInclude,
+      orderBy: { updatedAt: "desc" }
+    });
+    return res.json({ plans });
+  } catch (error) { return next(error); }
+});
+
+router.post("/training-plans", async (req, res, next) => {
+  try {
+    const input = trainingPlanInput.parse(req.body);
+    if (!await ownedRoutineIds(prismaClient, req.userId, input.days)) {
+      return res.status(400).json({ error: "One or more selected routines are unavailable." });
+    }
+    const plan = await prismaClient.trainingPlan.create({
+      data: {
+        userId: req.userId, name: input.name, goal: input.goal,
+        daysPerWeek: input.daysPerWeek, experience: input.experience, equipment: input.equipment,
+        days: { create: input.days.map(day => ({ ...day })) }
+      },
+      include: trainingPlanInclude
+    });
+    return res.status(201).json({ plan });
+  } catch (error) { return next(error); }
+});
+
+router.put("/training-plans/:id", async (req, res, next) => {
+  try {
+    const input = trainingPlanInput.parse(req.body);
+    const existing = await prismaClient.trainingPlan.findFirst({
+      where: { id: req.params.id, userId: req.userId }, select: { id: true }
+    });
+    if (!existing) return res.status(404).json({ error: "Training plan not found." });
+    if (!await ownedRoutineIds(prismaClient, req.userId, input.days)) {
+      return res.status(400).json({ error: "One or more selected routines are unavailable." });
+    }
+    const plan = await prismaClient.trainingPlan.update({
+      where: { id: existing.id },
+      data: {
+        name: input.name, goal: input.goal, daysPerWeek: input.daysPerWeek,
+        experience: input.experience, equipment: input.equipment,
+        days: { deleteMany: {}, create: input.days.map(day => ({ ...day })) }
+      },
+      include: trainingPlanInclude
+    });
+    return res.json({ plan });
+  } catch (error) { return next(error); }
+});
+
+router.delete("/training-plans/:id", async (req, res, next) => {
+  try {
+    const result = await prismaClient.trainingPlan.deleteMany({
+      where: { id: req.params.id, userId: req.userId }
+    });
+    if (result.count === 0) return res.status(404).json({ error: "Training plan not found." });
+    return res.json({ deleted: true });
+  } catch (error) { return next(error); }
+});
+
 router.get("/personal-records", async (req, res, next) => {
   try {
     const sets = await prismaClient.workoutSet.findMany({

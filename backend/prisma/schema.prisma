@@ -23,6 +23,7 @@ model User {
   updatedAt      DateTime            @updatedAt
   dailyLogs      DailyLog[]
   routines       WorkoutRoutine[]
+  trainingPlans  TrainingPlan[]
   sessions       WorkoutSession[]
   plannedSessions PlannedSession[]
   coachEvents    CoachEvent[]
@@ -135,6 +136,7 @@ model WorkoutRoutine {
   exercises   RoutineExercise[]
   sessions    WorkoutSession[]
   plannedSessions PlannedSession[]
+  trainingPlanDays TrainingPlanDay[]
 }
 
 // The join model stores the intended order of exercises inside a routine.
@@ -147,6 +149,37 @@ model RoutineExercise {
   exercise   Exercise       @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
 
   @@unique([routineId, exerciseId])
+}
+
+// A training plan groups reusable workout routines into a repeatable weekly structure.
+model TrainingPlan {
+  id          String            @id @default(cuid())
+  userId      String
+  name        String
+  goal        String
+  daysPerWeek Int
+  experience  String
+  equipment   String
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  days        TrainingPlanDay[]
+
+  @@index([userId, updatedAt])
+}
+
+// Each day points to an existing routine so programmes use the normal workout flow.
+model TrainingPlanDay {
+  id        String       @id @default(cuid())
+  planId    String
+  dayNumber Int
+  label     String
+  routineId String
+  plan      TrainingPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  routine   WorkoutRoutine @relation(fields: [routineId], references: [id], onDelete: Cascade)
+
+  @@unique([planId, dayNumber])
+  @@index([routineId])
 }
 
 // A session can exist without a routine so one-off workouts remain possible.

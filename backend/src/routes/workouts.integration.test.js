@@ -37,6 +37,8 @@ function makePrisma(overrides = {}) {
   return {
     exercise: { findMany: async () => [], ...overrides.exercise },
     workoutRoutine: { findMany: async () => [], findFirst: async () => null, update: async args => ({ id: args.where.id, ...args.data }), deleteMany: async () => ({ count: 0 }), ...overrides.workoutRoutine },
+    trainingPlan: { findMany: async () => [], findFirst: async () => null, create: async args => ({ id: "plan-a", ...args.data }), update: async args => ({ id: args.where.id, ...args.data }), deleteMany: async () => ({ count: 0 }), ...overrides.trainingPlan },
+    trainingPlanDay: { count: async () => 0, ...overrides.trainingPlanDay },
     workoutSession: { findMany: async () => [], findFirst: async () => null, create: async args => ({ id: "session-a", ...args.data }), ...overrides.workoutSession },
     workoutSet: { findMany: async () => [], ...overrides.workoutSet },
     muscle: { findMany: async () => [], ...overrides.muscle }
@@ -440,4 +442,125 @@ test("POST sessions handles simultaneous offline retries with the unique databas
     assert.equal((await response.json()).session.id, "session-from-other-tab");
   });
   assert.equal(lookupCount, 2);
+});
+
+test("GET training plans returns only the authenticated account's programmes", async () => {
+  let query;
+  const prisma = makePrisma({ trainingPlan: { findMany: async args => { query = args; return [{ id: "plan-a", days: [] }]; } } });
+  await withWorkoutApi(prisma, async baseUrl => {
+    const response = await fetch(baseUrl + "/api/workouts/training-plans");
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { plans: [{ id: "plan-a", days: [] }] });
+  });
+  assert.deepEqual(query.where, { userId: "user-a" });
+  assert.ok(query.include.days.include.routine.include.exercises);
+});
+
+test("POST training plans creates ordered days from routines owned by the caller", async () => {
+  let routineLookup; let createArgs;
+  const prisma = makePrisma({
+    workoutRoutine: { findMany: async args => { routineLookup = args; return [{ id: "routine-a" }, { id: "routine-b" }]; } },
+    trainingPlan: { create: async args => { createArgs = args; return { id: "plan-a", ...args.data }; } }
+  });
+  const payload = { name: "Three day strength", goal: "strength", daysPerWeek: 2, experience: "beginner", equipment: "gym",
+    days: [{ dayNumber: 1, label: "Full body A", routineId: "routine-a" }, { dayNumber: 2, label: "Full body B", routineId: "routine-b" }] };
+  await withWorkoutApi(prisma, async baseUrl => {
+    const response = await fetch(baseUrl + "/api/workouts/training-plans", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) });
+    assert.equal(response.status, 201);
+    assert.equal((await response.json()).plan.id, "plan-a");
+  });
+  assert.deepEqual(routineLookup.where, { id: { in: ["routine-a", "routine-b"] }, userId: "user-a" });
+  assert.equal(createArgs.data.userId, "user-a");
+  assert.equal(createArgs.data.days.create.length, 2);
+  assert.deepEqual(createArgs.data.days.create.map(day => day.dayNumber), [1, 2]);
+});
+
+test("POST training plans rejects routines owned by another account", async () => {
+  let writes = 0;
+  const prisma = makePrisma({
+    workoutRoutine: { findMany: async () => [{ id: "routine-a" }] },
+    trainingPlan: { create: async () => { writes += 1; return {}; } }
+  });
+  await withWorkoutApi(prisma, async baseUrl => {
+    const response = await fetch(baseUrl + "/api/workouts/training-plans", { method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ name: "Private plan", goal: "general", daysPerWeek: 2, experience: "beginner", equipment: "gym",
+        days: [{ dayNumber: 1, label: "Day 1", routineId: "routine-a" }, { dayNumber: 2, label: "Day 2", routineId: "other-user-routine" }] }) });
+    assert.equal(response.status, 400);
+  });
+  assert.equal(writes, 0);
+});
+
+test("POST training plans rejects a mismatch between available days and plan days", async () => {
+  let lookups = 0;
+  const prisma = makePrisma({ workoutRoutine: { findMany: async () => { lookups += 1; return []; } } });
+  await withWorkoutApi(prisma, async baseUrl => {
+    const response = await fetch(baseUrl + "/api/workouts/training-plans", { method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ name: "Incomplete plan", goal: "general", daysPerWeek: 3, experience: "beginner", equipment: "gym",
+        days: [{ dayNumber: 1, label: "Day 1", routineId: "routine-a" }, { dayNumber: 2, label: "Day 2", routineId: "routine-b" }] }) });
+    assert.equal(response.status, 400);
+  });
+  assert.equal(lookups, 0);
+});
+
+test("PUT training plans updates only an owned plan and replaces its days", async () => {
+  let lookup; let update;
+  const prisma = makePrisma({
+    trainingPlan: { findFirst: async args => { lookup = args; return { id: "plan-a" }; }, update: async args => { update = args; return { id: "plan-a", ...args.data }; } },
+    workoutRoutine: { findMany: async () => [{ id: "routine-a" }, { id: "routine-b" }] }
+  });
+  await withWorkoutApi(prisma, async baseUrl => {
+    const response = await fetch(baseUrl + "/api/workouts/training-plans/plan-a", { method: "PUT", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ name: "Updated plan", goal: "muscle", daysPerWeek: 2, experience: "intermediate", equipment: "dumbbells",
+        days: [{ dayNumber: 1, label: "Upper", routineId: "routine-a" }, { dayNumber: 2, label: "Lower", routineId: "routine-b" }] }) });
+    assert.equal(response.status, 200);
+  });
+  assert.deepEqual(lookup.where, { id: "plan-a", userId: "user-a" });
+  assert.deepEqual(update.data.days.deleteMany, {});
+  assert.equal(update.data.days.create.length, 2);
+});
+
+test("PUT training plans does not disclose a plan owned by another account", async () => {
+  let routineLookups = 0;
+  const prisma = makePrisma({ trainingPlan: { findFirst: async () => null }, workoutRoutine: { findMany: async () => { routineLookups += 1; return []; } } });
+  await withWorkoutApi(prisma, async baseUrl => {
+    const response = await fetch(baseUrl + "/api/workouts/training-plans/other-plan", { method: "PUT", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ name: "Attempted edit", goal: "general", daysPerWeek: 2, experience: "beginner", equipment: "gym",
+        days: [{ dayNumber: 1, label: "Day 1", routineId: "routine-a" }, { dayNumber: 2, label: "Day 2", routineId: "routine-b" }] }) });
+    assert.equal(response.status, 404);
+  });
+  assert.equal(routineLookups, 0);
+});
+
+test("DELETE training plans scopes deletion to the authenticated account", async () => {
+  let deletion;
+  const prisma = makePrisma({ trainingPlan: { deleteMany: async args => { deletion = args; return { count: 1 }; } } });
+  await withWorkoutApi(prisma, async baseUrl => {
+    const response = await fetch(baseUrl + "/api/workouts/training-plans/plan-a", { method: "DELETE" });
+    assert.equal(response.status, 200);
+  });
+  assert.deepEqual(deletion.where, { id: "plan-a", userId: "user-a" });
+});
+
+test("DELETE training plans returns not found for an unowned plan", async () => {
+  const prisma = makePrisma({ trainingPlan: { deleteMany: async () => ({ count: 0 }) } });
+  await withWorkoutApi(prisma, async baseUrl => {
+    const response = await fetch(baseUrl + "/api/workouts/training-plans/missing", { method: "DELETE" });
+    assert.equal(response.status, 404);
+  });
+});
+
+test("DELETE routines prevents removing a routine referenced by the caller's plan", async () => {
+  let routineDeletes = 0;
+  const prisma = makePrisma({
+    trainingPlanDay: { count: async args => {
+      assert.deepEqual(args.where, { routineId: "routine-a", plan: { is: { userId: "user-a" } } });
+      return 1;
+    } },
+    workoutRoutine: { deleteMany: async () => { routineDeletes += 1; return { count: 1 }; } }
+  });
+  await withWorkoutApi(prisma, async baseUrl => {
+    const response = await fetch(baseUrl + "/api/workouts/routines/routine-a", { method: "DELETE" });
+    assert.equal(response.status, 409);
+  });
+  assert.equal(routineDeletes, 0);
 });

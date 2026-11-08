@@ -75,6 +75,17 @@ test("account deletion removes owned records and private exercises while preserv
       }
     });
 
+    await prisma.trainingPlan.create({
+      data: {
+        userId: owner.id, name: "Deletion fixture plan", goal: "general", daysPerWeek: 2,
+        experience: "beginner", equipment: "bodyweight",
+        days: { create: [
+          { dayNumber: 1, label: "Day one", routineId: routine.id },
+          { dayNumber: 2, label: "Day two", routineId: routine.id }
+        ] }
+      }
+    });
+
     const post = await prisma.feedPost.create({
       data: { userId: owner.id, type: "update", text: "Deletion fixture post" }
     });
@@ -140,6 +151,8 @@ test("account deletion removes owned records and private exercises while preserv
       routines,
       sessions,
       plannedSessions,
+      trainingPlans,
+      trainingPlanDays,
       coachEvents,
       coachPreferences,
       coachConversations,
@@ -160,6 +173,8 @@ test("account deletion removes owned records and private exercises while preserv
       prisma.workoutRoutine.count({ where: { userId: owner.id } }),
       prisma.workoutSession.count({ where: { userId: owner.id } }),
       prisma.plannedSession.count({ where: { userId: owner.id } }),
+      prisma.trainingPlan.count({ where: { userId: owner.id } }),
+      prisma.trainingPlanDay.count({ where: { plan: { is: { userId: owner.id } } } }),
       prisma.coachEvent.count({ where: { userId: owner.id } }),
       prisma.coachPreference.count({ where: { userId: owner.id } }),
       prisma.coachConversation.count({ where: { userId: owner.id } }),
@@ -183,7 +198,7 @@ test("account deletion removes owned records and private exercises while preserv
 
     assert.equal(deletedUser, null);
     for (const count of [
-      dailyLogs, routines, sessions, plannedSessions, coachEvents, coachPreferences,
+      dailyLogs, routines, sessions, plannedSessions, trainingPlans, trainingPlanDays, coachEvents, coachPreferences,
       coachConversations, coachMessages, posts, friendships, reactions, comments,
       blocksInvolvingOwner, reportsFiledByOwner, privateExercises
     ]) {

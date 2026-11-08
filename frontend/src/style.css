@@ -843,3 +843,8 @@ footer { padding: 22px 0 0; border-top: 1px solid #202c25; }
 .progression-status { border-radius: 999px; padding: 4px 8px; background: #25372a; color: #d7e8d6; font-size: .68rem; }
 .progression-status.consider_small_increase { background: #35432a; color: #e0edbd; }
 .progression-status.repeat_or_reduce { background: #45352c; color: #f0d2bb; }
+
+/* Make the source of the latest coach reply visible without implying that saved history stores this metadata. */
+.coach-reply-mode { display: grid; gap: 3px; margin: 0; padding: 9px 11px; border: 1px solid #465a42; border-radius: 9px; color: #dce9d9; background: #1a2921; font-size: .74rem; font-weight: 700; }
+.coach-reply-mode.ai_generated { border-color: #657b48; }
+.coach-reply-mode span { color: #aebdaf; font-size: .68rem; font-weight: 400; line-height: 1.45; }

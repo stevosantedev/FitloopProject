@@ -112,6 +112,8 @@ export default function App() {
   const [coachConversations, setCoachConversations] = useState<CoachConversation[]>([]);
   const [activeCoachConversationId, setActiveCoachConversationId] = useState("");
   const [coachChatMessages, setCoachChatMessages] = useState<CoachChatMessage[]>([]);
+  // Keep the processing mode for the latest reply visible; older stored messages do not retain this metadata.
+  const [coachReplyMode, setCoachReplyMode] = useState<"ai_generated" | "guided_rules" | null>(null);
   const [coachDraft, setCoachDraft] = useState("");
   const [coachChatLoading, setCoachChatLoading] = useState(false);
   const [coachChatSending, setCoachChatSending] = useState(false);
@@ -598,6 +600,7 @@ export default function App() {
     try {
       const data = await request("/api/coach/conversations/" + conversationId + "/messages");
       setCoachChatMessages(data.messages);
+      setCoachReplyMode(null);
     } catch (error) {
       setCoachChatError(error instanceof Error ? error.message : "Could not load this conversation.");
     } finally { setCoachChatLoading(false); }
@@ -609,6 +612,7 @@ export default function App() {
       setCoachConversations(current => [data.conversation, ...current]);
       setActiveCoachConversationId(data.conversation.id);
       setCoachChatMessages([]);
+      setCoachReplyMode(null);
       setCoachChatError("");
     } catch (error) {
       setCoachChatError(error instanceof Error ? error.message : "Could not start a conversation.");
@@ -632,6 +636,7 @@ export default function App() {
       });
       setActiveCoachConversationId(conversationId);
       setCoachChatMessages(current => [...current, ...data.messages]);
+      setCoachReplyMode(data.responseMode === "ai_generated" ? "ai_generated" : "guided_rules");
       setCoachDraft("");
       await loadCoachConversations();
     } catch (error) {
@@ -648,6 +653,7 @@ export default function App() {
       if (activeCoachConversationId === conversationId) {
         setActiveCoachConversationId(remaining[0]?.id ?? "");
         setCoachChatMessages([]);
+        setCoachReplyMode(null);
       }
       setNotice("Coach conversation deleted.");
     } catch (error) {
@@ -1772,12 +1778,16 @@ export default function App() {
             {coachChatMessages.length === 0 && <div className="coach-chat-empty"><strong>What would you like help with?</strong><p className="muted">Try asking about your recent progress, a training plan or an exercise in your library.</p></div>}
             {coachChatMessages.map(message => <article className={"coach-chat-bubble " + message.role} key={message.id}><span>{message.role === "assistant" ? "FitLoop Coach" : "You"}</span><p>{message.content}</p></article>)}
           </div>
+          {coachReplyMode && <p className={"coach-reply-mode " + coachReplyMode} role="status">
+            {coachReplyMode === "ai_generated" ? "AI-generated reply" : "Guided reply"}
+            <span>{coachReplyMode === "ai_generated" ? "Your optional AI setting was enabled and the provider returned a reply." : "Rule-guided response used. This also happens when AI is off or the provider is unavailable."}</span>
+          </p>}
           <form className="coach-chat-form" onSubmit={sendCoachMessage}>
             <label className="sr-only" htmlFor="coach-message">Message your coach</label>
             <textarea id="coach-message" value={coachDraft} onChange={event => setCoachDraft(event.target.value)} placeholder="Ask your coach something…" maxLength={2000} rows={3} />
             <button disabled={!coachDraft.trim() || coachChatSending}>{coachChatSending ? "Thinking…" : "Send message"}</button>
           </form>
-          <p className="coach-disclosure">Early guided version: replies currently use transparent, rule-based coaching rather than a generative AI model. It is not medical advice. Model-provider integration will follow privacy, consent and safety review.</p>
+          <p className="coach-disclosure">FitLoop uses guided coaching by default. AI-generated replies are optional, require your consent and a configured provider, and fall back to guided replies if the provider is unavailable. Coaching is not medical advice.</p>
           <p className="coach-context-disclosure"><strong>What informs a reply:</strong> When you send a message, FitLoop shares your message, coaching tone/focus preferences and up to five of your most recent logged workout sessions, including dates, routine names and completed exercise reps and loads. Private session notes, daily wellbeing logs and account identifiers are excluded.</p>
         </section>
       </div>

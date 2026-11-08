@@ -108,6 +108,7 @@ model Muscle {
   @@index([bodyRegion, sortOrder])
 }
 
+// Keep role values constrained so volume summaries can distinguish prime movers from supporting muscles.
 enum MuscleRole {
   PRIMARY
   SECONDARY
@@ -218,6 +219,7 @@ model WorkoutSet {
 }
 
 // Planned sessions let the coach notice missed workouts without changing a user's plan.
+// A planned entry can link to one actual session, allowing completion without rewriting the schedule.
 model PlannedSession {
   id          String   @id @default(cuid())
   userId      String
@@ -227,6 +229,7 @@ model PlannedSession {
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   routine     WorkoutRoutine? @relation(fields: [routineId], references: [id], onDelete: SetNull)
   session     WorkoutSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  // A nullable unique link lets uncompleted plans remain independent of workout history.
   sessionId   String?  @unique
 
   @@index([userId, scheduledAt, status])
@@ -324,6 +327,7 @@ model ContentReport {
 }
 
 // Reactions are limited to one per user and post to keep the feed predictable.
+// The unique user/post pair below makes a reaction a single current choice rather than an event history.
 model Reaction {
   id        String   @id @default(cuid())
   userId    String
@@ -335,6 +339,7 @@ model Reaction {
   @@unique([userId, postId])
 }
 
+// Comments have a fixed length limit so the feed can render and moderate them predictably.
 model FeedComment {
   id        String   @id @default(cuid())
   userId    String
@@ -361,6 +366,7 @@ model CoachConversation {
 }
 
 // Messages are stored separately so a conversation can be paginated and evaluated.
+// The content limit bounds stored conversation size and keeps message pagination manageable.
 model CoachMessage {
   id             String           @id @default(cuid())
   conversationId String

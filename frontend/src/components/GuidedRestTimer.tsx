@@ -21,6 +21,7 @@ type Props = {
  * The full-screen stage keeps the active set, progress and rest controls
  * visible without exposing the editing form as competing primary content.
  */
+  // The timer owns a working snapshot of the uncompleted sets; edits to the builder do not reorder an active session.
 export default function GuidedRestTimer({ items, onSetComplete }: Props) {
   const [queue, setQueue] = useState<GuidedRestItem[]>([]);
   const [index, setIndex] = useState<number | null>(null);
@@ -36,6 +37,7 @@ export default function GuidedRestTimer({ items, onSetComplete }: Props) {
 
   // Each timeout represents one second. Cleanup prevents an old countdown
   // from advancing the queue after pause, skip, stop or component unmount.
+  // Schedule one timeout at a time. Cleanup prevents an old countdown from advancing after pause or unmount.
   useEffect(() => {
     if (phase !== "rest" || remaining === null || paused) return;
     const timeout = window.setTimeout(() => {
@@ -43,6 +45,7 @@ export default function GuidedRestTimer({ items, onSetComplete }: Props) {
         setRemaining(value => value === null ? null : value - 1);
         return;
       }
+      // When the final rest period ends, finish the session instead of reading past the queue.
       const nextIndex = index === null ? queue.length : index + 1;
       if (nextIndex >= queue.length) {
         setIndex(null);
@@ -58,6 +61,7 @@ export default function GuidedRestTimer({ items, onSetComplete }: Props) {
     return () => window.clearTimeout(timeout);
   }, [phase, remaining, paused, index, queue]);
 
+  // Start from the sets still marked incomplete; already-finished work should not be repeated.
   function start() {
     const sequence = items.filter(item => !item.completed);
     if (sequence.length === 0) {
@@ -72,6 +76,7 @@ export default function GuidedRestTimer({ items, onSetComplete }: Props) {
     setMessage("");
   }
 
+  // Reset every timer field together so a later start cannot inherit stale pause or countdown state.
   function stop() {
     setQueue([]);
     setIndex(null);
@@ -81,6 +86,7 @@ export default function GuidedRestTimer({ items, onSetComplete }: Props) {
     setMessage("Guided workout stopped.");
   }
 
+  // Move to the next set without marking it complete; skipping is different from confirming the work was done.
   function advance() {
     const nextIndex = (index ?? -1) + 1;
     if (nextIndex >= queue.length) {
@@ -95,9 +101,11 @@ export default function GuidedRestTimer({ items, onSetComplete }: Props) {
     setPhase("set");
   }
 
+  // Notify the parent immediately so the workout draft records completion even if the user ends the timer during rest.
   function completeCurrentSet() {
     if (!current) return;
     onSetComplete(current.exerciseId, current.setId);
+    // A zero-rest set advances directly; otherwise the configured rest belongs to the set just completed.
     if (current.restSeconds > 0) {
       setRemaining(current.restSeconds);
       setPhase("rest");
@@ -107,6 +115,7 @@ export default function GuidedRestTimer({ items, onSetComplete }: Props) {
     advance();
   }
 
+  // Skipping rest changes the timer phase, not the completed status of the next set.
   function skipRest() {
     setPaused(false);
     advance();

@@ -2,6 +2,7 @@ const CACHE_PREFIX = "fitloop-shell-";
 const CACHE_NAME = "fitloop-shell-v1";
 const APP_SHELL = ["/", "/manifest.webmanifest", "/icons/fitloop.svg"];
 
+// Pre-cache only the small public app shell. Authenticated data is deliberately fetched at runtime.
 self.addEventListener("install", event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
@@ -10,6 +11,7 @@ self.addEventListener("install", event => {
   );
 });
 
+// Remove older FitLoop shell versions after a new worker takes over, but leave unrelated origin caches alone.
 self.addEventListener("activate", event => {
   event.waitUntil(
     caches.keys()
@@ -20,6 +22,7 @@ self.addEventListener("activate", event => {
   );
 });
 
+// Use network-first navigation so users see current app code when online and a cached shell when offline.
 self.addEventListener("fetch", event => {
   const request = event.request;
   const url = new URL(request.url);
@@ -29,6 +32,7 @@ self.addEventListener("fetch", event => {
     return;
   }
 
+  // Navigations prefer the server response; the cached root is the fallback when the network is unavailable.
   if (request.mode === "navigate") {
     event.respondWith(
       fetch(request)
@@ -45,6 +49,9 @@ self.addEventListener("fetch", event => {
     return;
   }
 
+  // Static assets use cache-first behaviour because their URLs are versioned by the build and safe to reuse.
+  event.respondWith(
+    caches.match(request).then(cached => {
   event.respondWith(
     caches.match(request).then(cached => {
       if (cached) return cached;

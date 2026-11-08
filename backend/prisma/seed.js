@@ -10,6 +10,7 @@ import { prisma } from "../src/prisma.js";
 
 // Anatomy records are deliberately separate from exercise labels. One canonical
 // muscle can be shared by many exercises and can later be drawn in both map views.
+// Canonical slugs are stable join keys shared by the exercise catalogue and both anatomy views.
 const muscles = [
   ["pectoralis-major", "Pectoralis major", "Chest", "front"],
   ["anterior-deltoid", "Anterior deltoid", "Shoulders", "front"],
@@ -46,6 +47,7 @@ const muscles = [
 
 // Each entry includes prime movers and supporting muscles. The exercise
 // instructions describe general technique, not individual medical advice.
+// Catalogue entries are authored independently of user-created exercises; IDs are resolved during seeding.
 const exercises = [
   { slug: "push-up", name: "Push-up", muscleGroup: "Chest", equipment: "Bodyweight", category: "Strength", movementPattern: "Horizontal push", bodyRegion: "Upper body", difficulty: "Beginner", instructions: ["Start in a high plank with hands just wider than shoulder width.", "Lower your chest under control while keeping your body in a straight line.", "Press the floor away to return to the start."], primary: ["pectoralis-major"], secondary: ["triceps-brachii", "anterior-deltoid", "rectus-abdominis"] },
   { slug: "bench-press", name: "Bench press", muscleGroup: "Chest", equipment: "Barbell", category: "Strength", movementPattern: "Horizontal push", bodyRegion: "Upper body", difficulty: "Intermediate", instructions: ["Lie with eyes beneath the bar and feet planted.", "Lower the bar towards the mid-chest with wrists stacked over elbows.", "Press upwards without bouncing the bar."], primary: ["pectoralis-major"], secondary: ["triceps-brachii", "anterior-deltoid"] },
@@ -156,6 +158,7 @@ const exercises = [
 // Curated guide content for frequently used movements. Keep these notes tied
 // to the actual setup and execution of each movement rather than filling every
 // catalogue record with the same generic coaching language.
+// Technique guidance is keyed by the same stable exercise slugs, keeping descriptions and cues attached to the correct movement.
 const exerciseGuides = {
   "push-up": {
     description: "A bodyweight horizontal press performed from a rigid plank, using the chest, triceps and front shoulders to move the body.",
@@ -501,22 +504,26 @@ for (const exercise of exercises) {
  * Stable unique slugs and resolvable muscle links are required because both are
  * used as identifiers by the API, filters, analytics and anatomy interface.
  */
+  // Reject whitespace-only values as well as missing arrays; these fields are shown directly in search and exercise detail.
 function hasNonEmptyStrings(values, minimum = 1) {
   return Array.isArray(values) &&
     values.length >= minimum &&
     values.every((value) => typeof value === "string" && value.trim().length > 0);
 }
 
+  // Compare normalized text so capitalization differences do not create duplicate aliases or coaching cues.
 function hasUniqueStrings(values) {
   if (!hasNonEmptyStrings(values)) return false;
   const normalised = values.map((value) => value.trim().toLocaleLowerCase("en-GB"));
   return new Set(normalised).size === normalised.length;
 }
 
+  // The minimum length helps prevent placeholder descriptions from passing as finished exercise guidance.
 function hasUsefulDescription(value) {
   return typeof value === "string" && value.trim().length >= 60;
 }
 
+  // Keep the same quality bar for catalogue records and any guide entry supplied separately.
 function validateGuideContent(slug, guide, label = "Exercise") {
   if (!hasUsefulDescription(guide.description) ||
       !hasUniqueStrings(guide.aliases) ||
@@ -528,13 +535,16 @@ function validateGuideContent(slug, guide, label = "Exercise") {
   }
 }
 
+  // Run all cross-record checks before opening a write transaction, so bad seed data cannot partially update the catalogue.
 function validateCatalogue() {
   const muscleSlugs = new Set(muscles.map(([slug]) => slug));
   if (muscleSlugs.size !== muscles.length) {
     throw new Error("The muscle catalogue contains duplicate slugs.");
   }
 
+  // Stable exercise slugs are used by the app and seed matching; duplicate keys would make later lookups ambiguous.
   const exerciseSlugs = new Set();
+  // Check every target against the canonical muscle list before creating relation rows.
   for (const exercise of exercises) {
     if (exerciseSlugs.has(exercise.slug)) {
       throw new Error(`Duplicate exercise slug: ${exercise.slug}`);
@@ -594,6 +604,7 @@ function validateCatalogue() {
 
 validateCatalogue();
 
+// Seed parent muscle records before exercise links because the join table requires both sides to exist.
 async function seedCatalogue() {
   // Upsert anatomy rows first because exercise links depend on their stable slugs.
   for (const [slug, name, bodyRegion, view] of muscles) {
@@ -606,6 +617,7 @@ async function seedCatalogue() {
 
   // Enrich matching starter records in place so an existing database does not
   // acquire duplicate copies of its original fourteen exercise definitions.
+  // Match public starter exercises by name and ownership flags so repeated runs enrich the same records.
   for (const definition of exercises) {
     const existing = await prisma.exercise.findFirst({
       where: { name: definition.name, isCustom: false, ownerId: null }
@@ -617,6 +629,7 @@ async function seedCatalogue() {
 
     // Upsert each target separately so rerunning the seed updates roles without
     // deleting links that may have been curated manually in the database.
+    // Store primary and secondary links separately; the role affects the muscle-volume summary later.
     for (const [slugs, role] of [[primary, "PRIMARY"], [secondary, "SECONDARY"]]) {
       for (const muscleSlug of slugs) {
         const muscle = await prisma.muscle.findUnique({ where: { slug: muscleSlug } });
@@ -630,6 +643,7 @@ async function seedCatalogue() {
   }
 }
 
+// Always close Prisma, including when validation or a database write fails.
 seedCatalogue()
   .then(() => console.log(`Seeded ${exercises.length} exercises and ${muscles.length} muscle definitions.`))
   .catch(error => {

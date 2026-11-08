@@ -6,6 +6,8 @@ process.env.DATABASE_URL ??= "postgresql://fitloop:fitloop@localhost:5432/fitloo
 process.env.JWT_SECRET ??= "fitloop-route-test-secret-at-least-32-characters";
 const { createCoachRouter } = await import("./coach.js");
 
+// Build a real HTTP boundary around the injected dependencies so tests cover Express parsing,
+// route validation and response codes without a live database or external coaching provider.
 async function withApi(prisma, fetchImpl, run) {
   const app = express();
   app.use(express.json());
@@ -22,6 +24,7 @@ async function withApi(prisma, fetchImpl, run) {
   finally { await new Promise((resolve, reject) => server.close(error => error ? reject(error) : resolve())); }
 }
 
+// This fixture also verifies the prompt context is minimal: private notes and wellbeing logs must not be forwarded.
 test("POST message persists a user and guided coach reply in an owned conversation", async () => {
   const writes = [];
   let servicePayload;
@@ -89,6 +92,7 @@ test("POST message persists a user and guided coach reply in an owned conversati
   assert.equal(writes.find(item => item.type === "conversation").args.data.title, "Can you review my progress?");
 });
 
+// Ownership must be checked before reading workout history, not merely before saving the reply.
 test("POST message does not query training data for a conversation owned by another account", async () => {
   let sessionReads = 0;
   const prisma = {
@@ -105,6 +109,7 @@ test("POST message does not query training data for a conversation owned by anot
   assert.equal(sessionReads, 0);
 });
 
+// A failed provider call must not leave an orphaned user message that looks like a completed exchange.
 test("POST message leaves history unchanged when the coaching service is unavailable", async () => {
   let transactions = 0;
   const prisma = {
@@ -137,6 +142,7 @@ test("POST message rejects blank content before querying conversation", async ()
 });
 
 
+// Exercise the actual preference route through HTTP to protect the default, opt-in and revocation contract.
 test("Coach AI preference defaults off and can be enabled then revoked by its owner", async () => {
   let savedPreference = null;
   const prisma = {

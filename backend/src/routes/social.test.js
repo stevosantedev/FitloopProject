@@ -4,6 +4,8 @@ import express from "express";
 import { once } from "node:events";
 import { createSocialRouter } from "./social.js";
 
+// Each test gets an isolated HTTP server and injected Prisma behaviour, allowing privacy rules
+// and failure paths to be checked without shared database state.
 async function withSocialApi(prisma, run) {
   const app = express();
   app.use(express.json());
@@ -20,6 +22,7 @@ async function withSocialApi(prisma, run) {
   finally { await new Promise((resolve, reject) => server.close(error => error ? reject(error) : resolve())); }
 }
 
+// Verify the server derives the author from authenticated context and stores trimmed text.
 test("POST posts creates a friends-only update for the authenticated author", async () => {
   let args;
   const post = { id: "post-a", userId: "user-a", type: "update", text: "First training update" };
@@ -164,6 +167,7 @@ test("PATCH profile rejects empty, overlong and unexpected profile fields", asyn
   assert.equal(writes, 0);
 });
 
+// A private profile should be indistinguishable from an unavailable profile to non-friends.
 test("private profile lookup is hidden from non-friends", async () => {
   const prisma = {
     user: { findUnique: async () => ({ id: "user-b", username: "private-runner", displayName: "Private Runner", bio: null, privateAccount: true }) },
@@ -335,6 +339,7 @@ test("removing a pending or unrelated connection returns not found", async () =>
 });
 
 
+// Blocking must update both sides of the social relationship in one transaction.
 test("block atomically removes existing connections and creates an owner-scoped block", async () => {
   const calls = [];
   const tx = {
@@ -375,6 +380,7 @@ test("unblock can remove only a block created by the authenticated account", asy
   assert.deepEqual(query.where, { blockerId: "user-a", blockedUserId: "user-b" });
 });
 
+// Blocks are symmetric for visibility even though each block record has a single owner.
 test("friend discovery feed excludes accounts blocked in either direction", async () => {
   let feedQuery;
   const prisma = {

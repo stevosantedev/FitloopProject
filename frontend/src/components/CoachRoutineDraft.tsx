@@ -71,6 +71,7 @@ const movementTerms: Record<Movement, string[]> = {
 };
 const fullBody: Movement[] = ["squat", "hinge", "horizontalPush", "verticalPush", "horizontalPull", "verticalPull", "core"];
 
+// Choose a weekly split from the number of days the user can realistically train.
 function splitFor(days: number): Array<{ label: string; movements: Movement[] }> {
   if (days === 2) return [{ label: "Full body A", movements: fullBody }, { label: "Full body B", movements: fullBody }];
   if (days === 3) return [1, 2, 3].map(number => ({ label: "Full body " + String.fromCharCode(64 + number), movements: fullBody }));
@@ -97,6 +98,7 @@ function splitFor(days: number): Array<{ label: string; movements: Movement[] }>
   ];
 }
 
+// Filter out movements that require equipment the user said they do not have.
 function equipmentAllowed(exercise: ExerciseOption, equipment: Equipment) {
   const value = (exercise.equipment ?? "").toLowerCase();
   if (equipment === "gym") return true;
@@ -104,6 +106,7 @@ function equipmentAllowed(exercise: ExerciseOption, equipment: Equipment) {
   return ["bodyweight", "dumbbell", "bench"].includes(value);
 }
 
+// Lower scores keep the starting plan accessible for the selected experience level.
 function difficultyScore(exercise: ExerciseOption, experience: Experience) {
   const difficulty = (exercise.difficulty ?? "beginner").toLowerCase();
   if (experience === "beginner") return difficulty === "beginner" ? 0 : difficulty === "intermediate" ? 2 : 8;
@@ -111,6 +114,7 @@ function difficultyScore(exercise: ExerciseOption, experience: Experience) {
   return difficulty === "advanced" ? 0 : difficulty === "intermediate" ? 1 : 2;
 }
 
+// Prefer exercises that match the stated goal without making the result depend on arbitrary list order.
 function goalScore(exercise: ExerciseOption, goal: Goal) {
   const equipment = (exercise.equipment ?? "").toLowerCase();
   if (goal === "strength") return equipment === "barbell" ? 0 : equipment === "machine" ? 1 : 2;
@@ -118,11 +122,13 @@ function goalScore(exercise: ExerciseOption, goal: Goal) {
   return 0;
 }
 
+// Match catalogue movement patterns to the slots in the selected weekly split.
 function matchesMovement(exercise: ExerciseOption, movement: Movement) {
   const pattern = (exercise.movementPattern ?? "").toLowerCase();
   return movementTerms[movement].some(term => pattern.includes(term));
 }
 
+// This builder creates an editable starting point from catalogue data; it does not claim to replace a qualified coach.
 export default function CoachRoutineDraft({ exercises, plans, plansLoading, saving, onSavePlan, onUpdatePlan, onDeletePlan, onStartDay }: Props) {
   const [goal, setGoal] = useState<Goal>("general");
   const [days, setDays] = useState("3");
@@ -134,19 +140,23 @@ export default function CoachRoutineDraft({ exercises, plans, plansLoading, savi
   const [saveError, setSaveError] = useState("");
   const [editingPlanId, setEditingPlanId] = useState<string | null>(null);
 
+  // Recalculate eligible movements only when the library or one of the selection filters changes.
   const eligible = useMemo(
     () => exercises.filter(exercise => equipmentAllowed(exercise, equipment) && difficultyScore(exercise, experience) < 8),
     [exercises, equipment, experience]
   );
 
+  // Generate each day from movement slots, avoiding duplicate exercises within a day and spreading choices across the week.
   function buildDraft() {
     const used = new Set<string>();
     const nextDraft = splitFor(Number(days)).map((template, index) => {
       const selected: ExerciseOption[] = [];
+      // A slot may have no matching catalogue exercise; in that case leave it empty for the user to review.
       for (const movement of template.movements) {
         const candidates = eligible
           .filter(exercise => !selected.some(item => item.id === exercise.id))
           .filter(exercise => matchesMovement(exercise, movement));
+        // Prefer movements not already used elsewhere, then use experience and goal scores as tie-breakers.
         candidates.sort((a, b) =>
           Number(used.has(a.id)) - Number(used.has(b.id)) ||
           difficultyScore(a, experience) - difficultyScore(b, experience) ||
@@ -165,6 +175,7 @@ export default function CoachRoutineDraft({ exercises, plans, plansLoading, savi
     setGenerated(true);
   }
 
+  // Update only the selected day so changes to one session do not overwrite the rest of the draft.
   function toggleExercise(dayNumber: number, exercise: ExerciseOption, checked: boolean) {
     setDraft(current => current.map(day => {
       if (day.dayNumber !== dayNumber) return day;
@@ -173,6 +184,7 @@ export default function CoachRoutineDraft({ exercises, plans, plansLoading, savi
     }));
   }
 
+  // Convert the visible draft into the API shape, including explicit day and exercise ordering.
   async function saveDraft() {
     setSaveError("");
     const input: CoachPlanInput = {
@@ -184,7 +196,9 @@ export default function CoachRoutineDraft({ exercises, plans, plansLoading, savi
         exercises: day.exercises.map((exercise, sortOrder) => ({ exerciseId: exercise.id, sortOrder }))
       }))
     };
+    // Keep the review on screen after an error; losing a hand-edited plan would be frustrating and unsafe.
     try {
+      if (editingPlanId)    try {
       if (editingPlanId) await onUpdatePlan(editingPlanId, input);
       else await onSavePlan(input);
       setGenerated(false);
@@ -195,6 +209,7 @@ export default function CoachRoutineDraft({ exercises, plans, plansLoading, savi
     }
   }
 
+  // Reconstruct the editable draft from the saved routines so the same builder can update an existing plan.
   function editSavedPlan(plan: TrainingPlanView) {
     const movementOptions: Movement[] = ["squat", "hinge", "horizontalPush", "verticalPush", "horizontalPull", "verticalPull", "kneeFlexion", "core"];
     setGoal(plan.goal);

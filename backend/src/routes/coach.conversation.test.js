@@ -135,3 +135,42 @@ test("POST message rejects blank content before querying conversation", async ()
   });
   assert.equal(lookups, 0);
 });
+
+
+test("Coach AI preference defaults off and can be enabled then revoked by its owner", async () => {
+  let savedPreference = null;
+  const prisma = {
+    coachPreference: {
+      findUnique: async () => savedPreference,
+      upsert: async ({ create, update }) => {
+        savedPreference = { ...(savedPreference ?? create), ...update };
+        return savedPreference;
+      }
+    }
+  };
+
+  await withApi(prisma, async () => { throw new Error("Coach service should not be called."); }, async base => {
+    const readPreference = async () => {
+      const response = await fetch(base + "/api/coach/preferences");
+      assert.equal(response.status, 200);
+      return (await response.json()).preference;
+    };
+    assert.equal((await readPreference()).aiEnabled, false);
+
+    const enable = await fetch(base + "/api/coach/preferences", {
+      method: "PUT", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ style: "direct", focus: "consistency", aiEnabled: true })
+    });
+    assert.equal(enable.status, 200);
+    assert.equal((await enable.json()).preference.aiEnabled, true);
+    assert.equal((await readPreference()).aiEnabled, true);
+
+    const revoke = await fetch(base + "/api/coach/preferences", {
+      method: "PUT", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ style: "direct", focus: "consistency", aiEnabled: false })
+    });
+    assert.equal(revoke.status, 200);
+    assert.equal((await revoke.json()).preference.aiEnabled, false);
+    assert.equal((await readPreference()).aiEnabled, false);
+  });
+});

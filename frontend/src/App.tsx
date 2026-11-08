@@ -1626,6 +1626,7 @@ export default function App() {
             <button disabled={!coachDraft.trim() || coachChatSending}>{coachChatSending ? "Thinking…" : "Send message"}</button>
           </form>
           <p className="coach-disclosure">Early guided version: replies currently use transparent, rule-based coaching rather than a generative AI model. It is not medical advice. Model-provider integration will follow privacy, consent and safety review.</p>
+          <p className="coach-context-disclosure"><strong>What informs a reply:</strong> When you send a message, FitLoop shares your message, coaching tone/focus preferences and up to five of your most recent logged workout sessions, including dates, routine names and completed exercise reps and loads. Private session notes, daily wellbeing logs and account identifiers are excluded.</p>
         </section>
       </div>
     </section>}

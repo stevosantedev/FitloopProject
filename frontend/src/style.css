@@ -649,6 +649,8 @@ footer { padding: 22px 0 0; border-top: 1px solid #202c25; }
 .coach-chat-form textarea { width: 100%; resize: vertical; }
 .coach-chat-form button { justify-self: end; width: auto; min-width: 140px; }
 .coach-disclosure { margin: 0; color: #829287; font-size: .68rem; line-height: 1.5; }
+.coach-context-disclosure { margin: 0; padding: 10px 12px; border: 1px solid #34473b; border-radius: 10px; color: #aebdaf; background: #1a2921; font-size: .72rem; line-height: 1.55; }
+.coach-context-disclosure strong { color: #d9e8d8; }
 @media (max-width: 820px) {
   .coach-chat-layout { grid-template-columns: 1fr; }
   .coach-chat-messages { max-height: 48vh; }

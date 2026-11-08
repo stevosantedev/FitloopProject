@@ -25,6 +25,7 @@ The existing Python rule-based coach remains a useful baseline and fallback. A l
    - [x] Build the dedicated responsive Coach destination with conversation history, message composer, loading/error states, retry action and deletion.
    - [x] Add a first message/reply pipeline using a clearly disclosed, deterministic rule-guided service; only a small summary of recent completed training is sent to it.
    - [x] Keep the existing check-in suggestion flow available alongside conversations.
+   - [x] Disclose the exact categories of training context sent with each message, including the five-session limit and the exclusion of private notes, wellbeing logs and account identifiers; verify the disclosure in the Coach browser journey.
    - [ ] Integrate a generative model through a provider-neutral server adapter only after model/provider choice, explicit user consent, data-protection review, safety evaluation and cost controls.
    - The current conversation feature is a guided rules-based preview, not a generative AI coach. The interface discloses this distinction.
 

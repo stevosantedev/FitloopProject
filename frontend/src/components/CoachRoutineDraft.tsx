@@ -52,6 +52,7 @@ type Props = {
   plansLoading: boolean;
   saving: boolean;
   onSavePlan: (input: CoachPlanInput) => Promise<void>;
+  onUpdatePlan: (planId: string, input: CoachPlanInput) => Promise<void>;
   onDeletePlan: (planId: string) => void;
   onStartDay: (routine: TrainingPlanView["days"][number]["routine"]) => void;
 };
@@ -122,7 +123,7 @@ function matchesMovement(exercise: ExerciseOption, movement: Movement) {
   return movementTerms[movement].some(term => pattern.includes(term));
 }
 
-export default function CoachRoutineDraft({ exercises, plans, plansLoading, saving, onSavePlan, onDeletePlan, onStartDay }: Props) {
+export default function CoachRoutineDraft({ exercises, plans, plansLoading, saving, onSavePlan, onUpdatePlan, onDeletePlan, onStartDay }: Props) {
   const [goal, setGoal] = useState<Goal>("general");
   const [days, setDays] = useState("3");
   const [equipment, setEquipment] = useState<Equipment>("gym");
@@ -131,6 +132,7 @@ export default function CoachRoutineDraft({ exercises, plans, plansLoading, savi
   const [draft, setDraft] = useState<DraftDay[]>([]);
   const [generated, setGenerated] = useState(false);
   const [saveError, setSaveError] = useState("");
+  const [editingPlanId, setEditingPlanId] = useState<string | null>(null);
 
   const eligible = useMemo(
     () => exercises.filter(exercise => equipmentAllowed(exercise, equipment) && difficultyScore(exercise, experience) < 8),
@@ -172,7 +174,8 @@ export default function CoachRoutineDraft({ exercises, plans, plansLoading, savi
   }
 
   async function saveDraft() {
-    await onSavePlan({
+    setSaveError("");
+    const input: CoachPlanInput = {
       name: planName.trim(), goal, daysPerWeek: Number(days), experience, equipment,
       days: draft.map(day => ({
         dayNumber: day.dayNumber,
@@ -180,9 +183,38 @@ export default function CoachRoutineDraft({ exercises, plans, plansLoading, savi
         routineName: planName.trim() + " · " + day.label,
         exercises: day.exercises.map((exercise, sortOrder) => ({ exerciseId: exercise.id, sortOrder }))
       }))
-    });
-    setGenerated(false);
-    setDraft([]);
+    };
+    try {
+      if (editingPlanId) await onUpdatePlan(editingPlanId, input);
+      else await onSavePlan(input);
+      setGenerated(false);
+      setDraft([]);
+      setEditingPlanId(null);
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : "Could not save this programme. Your review is still here.");
+    }
+  }
+
+  function editSavedPlan(plan: TrainingPlanView) {
+    const movementOptions: Movement[] = ["squat", "hinge", "horizontalPush", "verticalPush", "horizontalPull", "verticalPull", "kneeFlexion", "core"];
+    setGoal(plan.goal);
+    setDays(String(plan.daysPerWeek));
+    setEquipment(plan.equipment);
+    setExperience(plan.experience);
+    setPlanName(plan.name);
+    setDraft(plan.days.map(day => {
+      const selected = day.routine.exercises.map(item => item.exercise);
+      const movements = movementOptions.filter(movement => selected.some(exercise => matchesMovement(exercise, movement)));
+      return {
+        dayNumber: day.dayNumber,
+        label: day.label,
+        movements: movements.length ? movements : fullBody,
+        exercises: selected
+      };
+    }));
+    setEditingPlanId(plan.id);
+    setSaveError("");
+    setGenerated(true);
   }
 
   return (
@@ -215,10 +247,10 @@ export default function CoachRoutineDraft({ exercises, plans, plansLoading, savi
         </label>
       </div>
       <p className="coach-routine-note">The draft uses a full-body structure for 2–3 days, upper/lower for 4 days, and a push/pull/legs-based split for 5–6 days. It is a starting layout, not a personalised clinical prescription.</p>
-      <button type="button" className="secondary" onClick={buildDraft} disabled={eligible.length === 0}>Generate weekly programme</button>
+      <button type="button" className="secondary" onClick={() => { setEditingPlanId(null); setSaveError(""); buildDraft(); }} disabled={eligible.length === 0}>Generate weekly programme</button>
       {generated && <div className="coach-routine-preview" aria-live="polite">
         <label className="coach-plan-name">Programme name<input value={planName} onChange={event => setPlanName(event.target.value)} maxLength={80} /></label>
-        <div className="section-heading-row"><h3>Review your {days}-day programme</h3><span>{draft.reduce((total, day) => total + day.exercises.length, 0)} movement slots filled</span></div>
+        <div className="section-heading-row"><h3>{editingPlanId ? "Edit your saved programme" : "Review your " + days + "-day programme"}</h3><span>{draft.reduce((total, day) => total + day.exercises.length, 0)} movement slots filled</span></div>
         <div className="coach-plan-day-grid">
           {draft.map(day => <article className="coach-plan-day" key={day.dayNumber}>
             <div className="section-heading-row"><h4>Day {day.dayNumber} · {day.label}</h4><span>{day.exercises.length} movements</span></div>
@@ -237,20 +269,21 @@ export default function CoachRoutineDraft({ exercises, plans, plansLoading, savi
         <p className="muted">Review the exercise choices, technique and training load before starting. You can remove or add matching movements to each day.</p>
         {saveError && <p className="load-error" role="alert">{saveError}</p>}
         <button type="button" onClick={() => void saveDraft()} disabled={saving || !planName.trim() || draft.some(day => day.exercises.length < 2)}>
-          {saving ? "Saving programme…" : "Save weekly programme"}
+          {saving ? "Saving programme…" : editingPlanId ? "Save programme changes" : "Save weekly programme"}
         </button>
         {draft.some(day => day.exercises.length < 2) && <p role="status">Each training day needs at least two selected movements before this programme can be saved.</p>}
       </div>}
       <div className="coach-saved-plans">
         <div className="section-heading-row"><h3>Your programmes</h3><span>{plans.length} saved</span></div>
         {plansLoading ? <p className="muted" role="status">Loading your programmes…</p> : plans.length === 0 ? <p className="muted">Your saved weekly programmes will appear here.</p> : plans.map(plan => <article className="coach-saved-plan" key={plan.id}>
-          <div className="section-heading-row"><div><h4>{plan.name}</h4><p className="muted">{plan.daysPerWeek} days · {plan.goal} · {plan.experience}</p></div><button type="button" className="small-button" onClick={() => onDeletePlan(plan.id)}>Delete</button></div>
+          <div className="section-heading-row"><div><h4>{plan.name}</h4><p className="muted">{plan.daysPerWeek} days · {plan.goal} · {plan.experience}</p></div><div className="button-row"><button type="button" className="small-button secondary" onClick={() => editSavedPlan(plan)}>Edit</button><button type="button" className="small-button" onClick={() => onDeletePlan(plan.id)}>Delete</button></div></div>
           <div className="coach-saved-plan-days">{plan.days.map(day => <div key={day.id}>
             <div><strong>Day {day.dayNumber} · {day.label}</strong><small>{day.routine.exercises.length} movements</small></div>
             <button type="button" className="secondary small-button" onClick={() => onStartDay(day.routine)}>Start {day.label}</button>
           </div>)}</div>
         </article>)}
       </div>
+      {generated && editingPlanId && <button type="button" className="secondary" onClick={() => { setGenerated(false); setDraft([]); setEditingPlanId(null); setSaveError(""); }}>Cancel editing</button>}
       <p className="coach-routine-disclosure">This programme is assembled from catalogue movement patterns and your selected preferences. It is not a generative AI recommendation or medical assessment. The Coach does not know your injuries, recovery needs or clinical history; adjust the programme to your circumstances.</p>
     </section>
   );

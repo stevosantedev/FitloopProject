@@ -258,6 +258,25 @@ export default function App() {
     }
   }
 
+  // Replace the programme's day records with newly reviewed routines. Existing routines
+  // are left intact so completed sessions keep their original movement history.
+  async function updateTrainingPlan(planId: string, input: CoachPlanInput) {
+    setTrainingPlanSaving(true);
+    try {
+      const data = await request("/api/workouts/training-plans/" + planId, {
+        method: "PUT",
+        body: JSON.stringify(input)
+      });
+      setTrainingPlans(current => current.map(plan => plan.id === planId ? data.plan : plan));
+      setNotice("Weekly programme updated. Your completed workout history is unchanged.");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Could not update your training programme.");
+      throw error;
+    } finally {
+      setTrainingPlanSaving(false);
+    }
+  }
+
   async function deleteTrainingPlan(planId: string) {
     if (!window.confirm("Delete this weekly programme? Its workout history will be kept.")) return;
     try {
@@ -1704,6 +1723,7 @@ export default function App() {
         plansLoading={trainingPlansLoading}
         saving={trainingPlanSaving}
         onSavePlan={saveTrainingPlan}
+        onUpdatePlan={updateTrainingPlan}
         onDeletePlan={deleteTrainingPlan}
         onStartDay={startTrainingPlanDay}
       />

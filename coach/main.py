@@ -338,7 +338,7 @@ def check_in(payload: CheckInRequest):
 
     # Consistency prompts are based on logging frequency, not a judgement about missed targets.
     # Offer a logging-habit prompt only when no measured trend has already produced advice.
-    if not messages and payload.focus == "consistency"    if not messages and payload.focus == "consistency" and 1 <= len(logs) < 5:
+    if not messages and payload.focus == "consistency" and 1 <= len(logs) < 5:
         messages.append({
             "kind": "consistency_reflection",
             "message": wording("You have logged a few check-ins. A small routine that fits your week may make it easier to keep the habit going.", payload.style),

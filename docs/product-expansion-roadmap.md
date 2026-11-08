@@ -79,7 +79,7 @@ The current friends-only feed, workout posts, reactions and comments provide a s
    - [x] Present machine-readable post timestamps and a clearly labelled comment count/section on each feed card.
    - [x] Add cursor-based pagination with a bounded page size, deterministic ordering, a look-ahead query and server-side visibility checks on every page.
    - [x] Complete deliberate loading, empty, error and retry states for the feed journey; browser coverage verifies initial-load failure recovery to a genuine empty state, failed first-page refresh recovery and older-post/comment pagination retries.
-   - [ ] Add optimistic reactions only where failures can be rolled back accurately.
+   - [x] Add optimistic reactions with immediate selected/count updates, per-post request locking, server-response reconciliation and rollback that restores only the current account's previous reaction after a failure. Browser coverage holds a request open to verify the immediate update, then simulates a server error and verifies the original count and selection return.
    - Image uploads remain out of scope until private media storage, file validation, metadata stripping, access control and deletion are implemented.
 
 2. **Profiles and relationships**

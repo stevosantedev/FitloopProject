@@ -103,7 +103,7 @@ The current friends-only feed, workout posts, reactions and comments provide a s
 
 - [x] Users can create friends-only text updates; authors can delete their own posts.
 - [x] Users can view, select/change/remove their own reactions, and comment on permitted posts; cursor-based pagination loads older visible posts.
-- [ ] Finish polished feed presentation and comprehensive loading/error/retry states; workout summary cards, comment management, comment pagination, reaction toggles and accessible profile previews are delivered.
+- [ ] Finish polished feed presentation and comprehensive loading/error/retry states; workout summary cards, comment management, comment pagination, reaction toggles and accessible profile previews, keyboard focus containment and privacy-safe unavailable-profile handling are delivered.
 - Feed and profile APIs enforce audience and relationship rules on the server, not just in the UI.
 - [x] Users can manage their profile and relationships and can report or block another account.
 - Pagination, media failure, empty states and permission changes are tested.

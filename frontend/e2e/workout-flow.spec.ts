@@ -337,6 +337,43 @@ test("Community profile previews respect the profile API response", async ({ pag
   expect(profileRequests).toBe(2);
 });
 
+
+test("Community profile previews handle private or unavailable profiles safely", async ({ page }) => {
+  const socialPosts = await mockApplicationApi(page);
+  socialPosts.push({
+    id: "post-private-profile", createdAt: "2026-11-07T10:00:00.000Z", text: "A friend's update",
+    user: { id: "user-2", username: "friend", displayName: "Friend" }, reactions: [], comments: []
+  });
+  let profileRequests = 0;
+  await page.route("http://localhost:4000/api/social/profile/user-2", async route => {
+    profileRequests += 1;
+    await route.fulfill({
+      status: 404,
+      contentType: "application/json",
+      body: JSON.stringify({ error: "This profile is private or unavailable." })
+    });
+  });
+  await page.goto("/");
+  await page.getByLabel("Email").fill("tester@example.com");
+  await page.getByLabel("Password").fill("test-password");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.locator(".sidebar-nav").getByRole("button", { name: "Community" }).click();
+  const trigger = page.locator(".feed-profile-link");
+  await trigger.click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole("alert")).toContainText("This profile is private or unavailable.");
+  await expect(dialog).toContainText("Only profile information allowed by this member's privacy settings is shown.");
+  await expect(dialog).not.toContainText("@friend");
+  await expect(dialog).not.toContainText("private bio");
+  const close = dialog.getByRole("button", { name: "Close" });
+  await expect(close).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+  await expect(trigger).toBeFocused();
+  expect(profileRequests).toBe(1);
+});
+
 test("Community reactions can be selected, changed and toggled off", async ({ page }) => {
   const socialPosts = await mockApplicationApi(page);
   let selected: string | null = null;

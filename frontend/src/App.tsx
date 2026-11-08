@@ -1749,8 +1749,8 @@ export default function App() {
         {viewedProfile && <>
           <p className="profile-dialog-username">@{viewedProfile.username}</p>
           <p className="profile-dialog-bio">{viewedProfile.bio || "This member hasn't added a bio yet."}</p>
-          <p id="community-profile-privacy" className="profile-dialog-privacy">Only profile information allowed by this member's privacy settings is shown. Private workout notes and account details are not part of a community profile.</p>
         </>}
+        <p id="community-profile-privacy" className="profile-dialog-privacy">Only profile information allowed by this member's privacy settings is shown. Private workout notes and account details are not part of a community profile.</p>
       </section>
     </div>}
     {notice && <p role="status" className="notice">{notice}</p>}

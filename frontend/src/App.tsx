@@ -95,6 +95,7 @@ type CoachChatMessage = { id: string; role: "user" | "assistant"; content: strin
 type CoachPreference = { style: "gentle" | "direct"; focus: "energy" | "consistency" | "recovery" };
 type PersonalRecord = { exerciseId: string; exerciseName: string; heaviestLoad: { value: number; date: string | null; sessionId: string | null } | null; mostReps: { value: number; date: string | null; sessionId: string | null } | null; highestSetVolume: { value: number; date: string | null; sessionId: string | null } | null };
 
+type ProgressionSuggestion = { exerciseId: string; exerciseName: string; recommendation: "maintain" | "consider_small_increase" | "repeat_or_reduce"; reason: string; latest: { reps: number; weightKg: number | null; date: string }; previous: { reps: number; weightKg: number | null; date: string } };
 // Keep the API origin configurable for deployments while making local development
 // work without an extra environment variable.
 const API = import.meta.env.VITE_API_URL ?? "http://localhost:4000";
@@ -135,6 +136,9 @@ export default function App() {
   const [sessions, setSessions] = useState<WorkoutSession[]>([]);
   const [pendingWorkoutCount, setPendingWorkoutCount] = useState(0);
   const [personalRecords, setPersonalRecords] = useState<PersonalRecord[]>([]);
+  const [progressionSuggestions, setProgressionSuggestions] = useState<ProgressionSuggestion[]>([]);
+  const [progressionLoading, setProgressionLoading] = useState(false);
+  const [progressionError, setProgressionError] = useState("");
   const [selectedSessionId, setSelectedSessionId] = useState("");
   const [connections, setConnections] = useState<FriendConnection[]>([]);
   const [blockedAccounts, setBlockedAccounts] = useState<BlockedAccount[]>([]);
@@ -359,6 +363,19 @@ export default function App() {
 
   // Refresh all workout data in parallel. The exercise list is also used by the
   // routine builder, so initialise its selection when the user has none yet.
+  async function loadProgressionSuggestions() {
+    setProgressionLoading(true);
+    setProgressionError("");
+    try {
+      const data = await request("/api/workouts/progression-suggestions");
+      setProgressionSuggestions(data.suggestions);
+    } catch (error) {
+      setProgressionError(error instanceof Error ? error.message : "Could not load progression guidance.");
+    } finally {
+      setProgressionLoading(false);
+    }
+  }
+
   async function loadWorkouts() {
     setWorkoutsLoading(true);
     setWorkoutsError("");
@@ -1154,6 +1171,7 @@ export default function App() {
     if (token && activeTab === "coach") {
       void loadCoachConversations();
       void loadTrainingPlans();
+      void loadProgressionSuggestions();
     }
   }, [token, activeTab]);
 
@@ -1710,6 +1728,19 @@ export default function App() {
 
     {activeTab === "coach" && <section className="page-section">
       <div className="welcome compact"><p className="eyebrow">YOUR TRAINING COMPANION</p><h1>Meet your coach.</h1><p className="muted">Ask about your logged training, exercise technique or how to shape your next routine.</p></div>
+      <section className="panel progression-guidance" aria-labelledby="progression-guidance-title">
+        <div><p className="eyebrow">BASED ON YOUR LOGGED WORKOUTS</p><h2 id="progression-guidance-title">Training progression</h2>
+          <p className="muted">Suggestions compare your two latest completed sessions for each movement. They are optional guidance, not instructions to train through discomfort.</p></div>
+        {progressionLoading && <p role="status" className="muted">Reviewing your recent completed sets…</p>}
+        {progressionError && <div className="load-error" role="alert"><span>{progressionError}</span><button type="button" className="secondary" onClick={() => void loadProgressionSuggestions()}>Try again</button></div>}
+        {!progressionLoading && !progressionError && progressionSuggestions.length === 0 && <p className="muted">Complete at least two sessions for a movement to receive a comparison here.</p>}
+        <div className="progression-guidance-list">{progressionSuggestions.map(item => <article className="progression-guidance-card" key={item.exerciseId}>
+          <div className="section-heading-row"><strong>{item.exerciseName}</strong><span className={"progression-status " + item.recommendation}>{item.recommendation === "consider_small_increase" ? "Consider a small increase" : item.recommendation === "repeat_or_reduce" ? "Repeat or reduce" : "Maintain"}</span></div>
+          <p>{item.reason}</p>
+          <small>Latest: {item.latest.reps} reps at {item.latest.weightKg == null ? "bodyweight / unweighted" : item.latest.weightKg + " kg"} · Previous: {item.previous.reps} reps at {item.previous.weightKg == null ? "bodyweight / unweighted" : item.previous.weightKg + " kg"}</small>
+        </article>)}</div>
+        <button type="button" className="secondary-action" onClick={() => void loadProgressionSuggestions()} disabled={progressionLoading}>Refresh progression guidance</button>
+      </section>
       <CoachRoutineDraft
         exercises={exercises}
         plans={trainingPlans}

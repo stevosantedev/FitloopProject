@@ -831,3 +831,15 @@ footer { padding: 22px 0 0; border-top: 1px solid #202c25; }
 .coach-saved-plan-days button { flex: 0 0 auto; }
 @media (max-width: 760px) { .coach-plan-day-grid { grid-template-columns: 1fr; } }
 @media (max-width: 420px) { .coach-plan-adjustment-list { grid-template-columns: 1fr; } .coach-saved-plan-days > div { align-items: start; flex-direction: column; } }
+
+
+/* Present workout comparisons as optional guidance inside the Coach workspace. */
+.progression-guidance { display: grid; gap: 12px; margin-bottom: 16px; }
+.progression-guidance h2 { margin: 0 0 5px; }
+.progression-guidance-list { display: grid; gap: 9px; }
+.progression-guidance-card { display: grid; gap: 8px; padding: 12px; border: 1px solid #34483a; border-radius: 11px; background: #111b15; }
+.progression-guidance-card p { margin: 0; color: #c4d1c6; font-size: .82rem; line-height: 1.5; }
+.progression-guidance-card small { color: #92a394; font-size: .72rem; }
+.progression-status { border-radius: 999px; padding: 4px 8px; background: #25372a; color: #d7e8d6; font-size: .68rem; }
+.progression-status.consider_small_increase { background: #35432a; color: #e0edbd; }
+.progression-status.repeat_or_reduce { background: #45352c; color: #f0d2bb; }

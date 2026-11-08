@@ -144,6 +144,14 @@ async function mockApplicationApi(page: Page, onSessionSave?: (body: any) => voi
       } else {
         body = { sessions: [] };
       }
+    } else if (url.pathname === "/api/workouts/progression-suggestions") {
+      body = { suggestions: [{
+        exerciseId: "exercise-1", exerciseName: "Goblet squat",
+        recommendation: "consider_small_increase",
+        reason: "You completed at least two more reps at the same load. If the sets felt controlled, consider the smallest available load increase next time.",
+        latest: { reps: 10, weightKg: 20, date: "2026-11-08T10:00:00.000Z" },
+        previous: { reps: 8, weightKg: 20, date: "2026-11-06T10:00:00.000Z" }
+      }] };
     } else if (url.pathname === "/api/workouts/personal-records") {
       body = { records: [{
         exerciseId: "exercise-1",
@@ -1389,4 +1397,20 @@ test("Coach shows a seven-day recovery-aware layout for saved weekly programmes"
   await expect(schedule.locator(".coach-week-cell").nth(3)).toContainText("Day 2");
   await expect(schedule.locator(".coach-week-cell").nth(1)).toContainText("Rest");
   await expect(schedule.locator(".coach-week-cell").nth(6)).toContainText("Rest");
+});
+
+
+test("Coach displays evidence and explanation for workout progression guidance", async ({ page }) => {
+  await mockApplicationApi(page);
+  await page.goto("/");
+  await page.getByLabel("Email").fill("tester@example.com");
+  await page.getByLabel("Password").fill("test-password");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.locator(".sidebar-nav").getByRole("button", { name: "Coach" }).click();
+  const panel = page.getByRole("region", { name: "Training progression" });
+  await expect(panel).toBeVisible();
+  await expect(panel.getByText("Goblet squat")).toBeVisible();
+  await expect(panel.getByText("Consider a small increase")).toBeVisible();
+  await expect(panel.getByText(/two more reps at the same load/)).toBeVisible();
+  await expect(panel.getByText(/Latest: 10 reps at 20 kg · Previous: 8 reps at 20 kg/)).toBeVisible();
 });

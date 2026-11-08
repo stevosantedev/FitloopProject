@@ -15,6 +15,8 @@ const postInput = z.object({ text: z.string().trim().min(1).max(500) }).strict()
 const reactionInput = z.object({ value: z.enum(["like", "strong", "clap"]).default("like") });
 // Report submissions are limited per authenticated account to reduce spam without relying on client-side throttling.
 const reportLimiter = rateLimit({ windowMs: 60 * 60 * 1000, limit: 5, standardHeaders: true, legacyHeaders: false, keyGenerator: req => req.userId });
+// Search is more expensive than reading an existing connection and could be used to enumerate usernames.
+const friendDiscoveryLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 30, standardHeaders: true, legacyHeaders: false, keyGenerator: req => req.userId });
 const reportInput = z.object({
   targetType: z.enum(["user", "post"]),
   targetId: z.string().min(1).max(64),
@@ -108,7 +110,7 @@ async function friendIds(userId) {
 }
 
 // Search returns only identity fields; private profile details remain behind the existing profile route.
-router.get("/friends/discover", async (req, res, next) => {
+router.get("/friends/discover", friendDiscoveryLimiter, async (req, res, next) => {
   try {
     const input = z.object({ q: z.string().trim().min(3).max(24) }).parse(req.query);
 

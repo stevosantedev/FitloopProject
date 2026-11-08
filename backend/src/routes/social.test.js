@@ -448,6 +448,22 @@ test("friend discovery returns a bounded identity-only list excluding relationsh
   assert.equal(searchQuery.take, 10);
 });
 
+test("friend discovery is rate-limited per authenticated account", async () => {
+  const prisma = {
+    friendConnection: { findMany: async () => [] },
+    userBlock: { findMany: async () => [] },
+    user: { findMany: async () => [] }
+  };
+  await withSocialApi(prisma, async base => {
+    const responses = [];
+    for (let attempt = 0; attempt < 31; attempt += 1) {
+      responses.push(await fetch(base + "/api/social/friends/discover?q=run"));
+    }
+    assert.equal(responses.slice(0, 30).every(response => response.status === 200), true);
+    assert.equal(responses[30].status, 429);
+  });
+});
+
 test("friend discovery rejects short search terms before reading account relationships", async () => {
   let reads = 0;
   const prisma = {

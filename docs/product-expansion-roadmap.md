@@ -88,7 +88,8 @@ The current friends-only feed, workout posts, reactions and comments provide a s
    - [ ] Add uploaded avatars and chosen training highlights only after private media storage, file validation, metadata stripping and deletion controls are ready.
    - [x] Profile visibility controls with private-by-default handling; public profile payloads expose only display identity and bio, while private profiles are limited to owners and accepted friends.
    - [x] Add incoming-request decline, outgoing-request cancellation and accepted-friend removal, with server-enforced ownership/status checks and Community actions.
-   - [ ] Friend discovery/search and suggestions; request, accepted-connection and pending-state management is implemented.
+   - [x] Add authenticated, rate-limited username/display-name discovery with a ten-result cap, identity-only responses and exclusions for self, existing relationships and blocks.
+   - [ ] Add opt-in friend suggestions after discovery preferences and wider moderation/audit controls are agreed; request, accepted-connection and pending-state management is implemented.
    - Follow relationships only if they add value beyond the existing friend model; avoid duplicating relationship concepts without a product decision.
 
 3. **Post creation and media**
@@ -103,7 +104,7 @@ The current friends-only feed, workout posts, reactions and comments provide a s
    - [x] Restrict report queue and decisions to deployment-allowlisted moderators; expose only minimal reporter/target identities.
    - [x] Block/unblock accounts; blocking removes existing connections and hides each account's profiles, feed posts and new friend requests from the other.
    - [x] Build allowlisted moderator review, status triage and resolution API/UI with reviewer timestamps and required resolution notes; retain a full immutable event ledger as future hardening.
-   - Add moderation status and an auditable handling process before opening discovery beyond accepted friends.
+   - The current search is a bounded, signed-in lookup that returns only basic identity fields and excludes blocked pairs; wider public discovery and suggestions remain gated on further moderation/audit hardening.
    - Rate-limit post, comment, reaction, friend-request and report endpoints.
 
 ### Community MVP exit criteria

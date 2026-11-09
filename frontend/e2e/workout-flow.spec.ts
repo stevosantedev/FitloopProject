@@ -1733,6 +1733,25 @@ test("Coach settings disclose optional AI processing and keep consent off by def
 
 // The overview should offer direct destinations without making users hunt through navigation.
 // The Home screen should keep the first useful actions visible before the longer check-in form.
+// Account deletion and Coach preferences are important, but they should not lengthen the everyday Home screen.
+test("account controls open in a separate settings sheet", async ({ page }) => {
+  await mockApplicationApi(page);
+  await page.goto("/");
+  await page.getByLabel("Email").fill("tester@example.com");
+  await page.getByLabel("Password").fill("test-password");
+  await page.getByRole("button", { name: "Sign in" }).click();
+
+  await expect(page.getByRole("heading", { name: "Delete your account" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Open account settings" }).click();
+  const settings = page.getByRole("dialog", { name: "Settings" });
+  await expect(settings).toBeVisible();
+  await expect(settings.getByRole("heading", { name: "Delete your account" })).toBeVisible();
+  await expect(settings.getByText("Use AI-generated coaching replies")).toBeVisible();
+  await settings.getByRole("button", { name: "Close" }).click();
+  await expect(settings).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Your week", exact: true })).toBeVisible();
+});
+
 test("Home shows a seven-day activity strip without filling unlogged days", async ({ page }) => {
   await mockApplicationApi(page);
   await page.goto("/");

@@ -6,11 +6,11 @@ process.env.DATABASE_URL ??= "postgresql://fitloop:fitloop@localhost:5432/fitloo
 process.env.JWT_SECRET ??= "fitloop-route-test-secret-at-least-32-characters";
 const { createCoachRouter } = await import("./coach.js");
 
-async function withCoachApi(prisma, run) {
+async function withCoachApi(prisma, run, fetchImpl = fetch) {
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => { req.userId = "user-a"; next(); });
-  app.use("/api/coach", createCoachRouter(prisma));
+  app.use("/api/coach", createCoachRouter(prisma, fetchImpl));
   app.use((error, _req, res, _next) => {
     if (error?.name === "ZodError") return res.status(400).json({ error: "Invalid request." });
     return res.status(500).json({ error: "Unexpected test error." });
@@ -159,6 +159,13 @@ test("POST conversation messages enforces the hourly per-account limit", async (
     });
     assert.equal(limited.status, 429);
     assert.match((await limited.json()).error, /hourly Coach message limit/);
+  }, async () => {
+    providerCalls += 1;
+    return {
+      ok: true,
+      json: async () => ({ message: "Keep the next step manageable.", responseMode: "guided_rules" })
+    };
   });
   assert.equal(messageId, 60);
+  assert.equal(providerCalls, 30);
 });

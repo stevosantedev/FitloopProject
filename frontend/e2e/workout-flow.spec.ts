@@ -240,6 +240,8 @@ async function clickWorkspaceDestination(page: Page, workspace: "social" | "you"
   const workspaceButton = page.locator(".workspace-switch-bar").getByRole("button", { name: workspace === "social" ? "Social" : "You" });
   if (await workspaceButton.getAttribute("aria-pressed") !== "true") {
     await workspaceButton.click();
+    // React updates the selected workspace asynchronously; wait before reading its navigation.
+    await expect(workspaceButton).toHaveAttribute("aria-pressed", "true");
   }
 
   const navigation = page.locator((page.viewportSize()?.width ?? 1280) <= 820 ? ".mobile-nav" : ".sidebar-nav");
@@ -1207,7 +1209,6 @@ test("community block and report controls call the moderation API", async ({ pag
   await page.getByLabel("Email").fill("tester@example.com");
   await page.getByLabel("Password").fill("test-password");
   await page.getByRole("button", { name: "Sign in" }).click();
-  await page.locator(".workspace-switch-bar").getByRole("button", { name: "Social" }).click();
   await clickWorkspaceDestination(page, "social", "Explore");
   await expect(page.locator('.community-page[data-social-view="explore"]')).toBeVisible();
   await expect(page.getByRole("heading", { name: "Discover the community" })).toBeVisible();
@@ -2150,7 +2151,6 @@ test("the member profile shows the signed-in user's own shared workout posts", a
   await page.getByLabel("Email").fill("tester@example.com");
   await page.getByLabel("Password").fill("test-password");
   await page.getByRole("button", { name: "Sign in" }).click();
-  await page.locator(".workspace-switch-bar").getByRole("button", { name: "Social" }).click();
   await clickWorkspaceDestination(page, "social", "Profile");
 
   await expect(page.locator(".profile-identity h2")).toHaveText("tester");
@@ -2158,7 +2158,7 @@ test("the member profile shows the signed-in user's own shared workout posts", a
   await expect(page.locator(".profile-posts")).toContainText("1 posts");
   await expect(page.locator(".profile-stats")).toContainText("1");
   await expect(page.locator(".profile-stats")).toContainText("Completed sets");
-  await expect(page.locator(".profile-posts")).toContainText("10");
+  await expect(page.locator(".profile-posts")).toContainText("1/1 sets");
   await expect(page.locator(".profile-posts")).toContainText("Goblet squat");
 });
 

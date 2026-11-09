@@ -191,3 +191,22 @@ The responsive PWA is being redesigned around phone use. Five matching destinati
 - [ ] Complete device, keyboard and screen-reader checks.
 
 A screen is not complete because it fits the viewport or passes an overflow test. The phone layout needs a clear task hierarchy, usable touch controls and a practical route to secondary features.
+
+
+## Social / You navigation and member profile
+
+The app shell is moving from one mixed navigation model to two workspaces. The top switch selects Social or You, and the lower navigation changes to match the selected area.
+
+- [x] Add Social destinations for Feed, Explore, Pings and Profile.
+- [x] Keep the existing friends-only feed, composer, reactions, comments and activity inbox under Feed.
+- [x] Use the existing bounded friend-discovery workflow as the first Explore experience. This is people discovery only; public post and video discovery still needs its own audience model and API.
+- [x] Add a signed-in member profile with editable display name/bio and a view of the member's shared feed posts and workout summaries.
+- [x] Connect Profile Settings to the existing account settings sheet.
+- [x] Add You destinations for Home, Workout, Stats, Plan and Library. Plan opens the existing weekly programme and progression workspace, with Coach guidance available there and from Home.
+- [ ] Build secure one-to-one Pings messaging, including request handling, blocking integration, abuse reporting, notification preferences and retention rules.
+- [ ] Add workout photo/video uploads with secure object storage, file validation, ownership checks, deletion, audience controls and moderation.
+- [ ] Build public post/video Explore only after a clear public/private audience model and server-side visibility checks are agreed.
+- [ ] Add a media-rich profile grid once uploads and post-media relationships exist.
+- [ ] Complete phone, tablet, desktop, keyboard and screen-reader QA for the new workspace navigation.
+
+The current Profile can show only posts returned by the existing signed-in community feed. It is not yet a complete media portfolio. Pings is intentionally shown as unavailable rather than presenting a non-functional chat screen. Club is not part of the current navigation; consider it only if group challenges, club leaderboards or organised group training become a distinct product requirement.

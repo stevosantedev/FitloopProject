@@ -30,14 +30,15 @@ The muscle map is a training reference, not a clinical anatomy diagram. Set-volu
 ### Social and community
 
 - Account profiles with display names, short bios and visibility controls, plus a dedicated signed-in profile view backed by an owner-scoped, cursor-paginated history of the member's own shared posts and workout summaries.
-- Social workspace navigation with Feed, Explore, Pings and Profile destinations. Explore combines bounded people discovery with a paginated public post feed containing text updates and workout summaries. Pings remains a clearly labelled placeholder because private messaging is not implemented.
+- Social workspace navigation with Feed, Explore, Pings and Profile destinations. Explore combines bounded people discovery with a paginated public post feed containing text updates and workout summaries.
+- Pings request-based one-to-one messaging: introductory message requests, recipient-only accept/decline, private-profile friend boundaries, participant-scoped conversation history, rate-limited replies, block checks and read receipts.
 - Friend discovery, requests, accepted connections and relationship management.
 - A friends-oriented activity feed with workout summaries and text updates.
 - Reactions, comments, pagination and author controls for editing or deleting eligible posts and comments.
 - Blocking and reporting controls, with server-side audience and relationship checks.
 - A private in-app activity inbox for friend requests, accepted requests, reactions and comments.
 
-The current feed supports text updates and workout activity. Image uploads, private media storage and push/email notifications are not implemented.
+The current feed supports text updates and workout activity. Pings now has a working request-and-reply flow, but unread counts, message-level reporting, inbox notifications, delivery preferences and retention rules still need implementation and review. Image uploads, private media storage and push/email notifications are not implemented.
 
 ### Coach
 
@@ -138,6 +139,7 @@ The current authentication implementation uses bearer tokens stored by the front
 ## Known gaps
 
 - Complete the phone-first redesign and inspect real browser screenshots across phone, tablet and desktop sizes.
+- Finish Pings with unread counts, message-level reporting, notification preferences, retention rules and a dedicated privacy/security review.
 - Finish keyboard, screen-reader, contrast and touch-target checks against WCAG 2.2 AA.
 - Run usability sessions with appropriate ethics approval and record the findings.
 - Have the exercise instructions and muscle mappings reviewed for accuracy; source and license any exercise media before adding it.

@@ -994,3 +994,22 @@ footer { border-color: #2b322b; }
  .panel { padding: 17px 0; }
  .account-danger { padding: 15px; }
 }
+
+
+/* The overview opens with useful actions instead of leaving the first screen as a title block. */
+.overview-welcome { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; padding-bottom: 26px; }
+.overview-welcome-copy { min-width: 0; }
+.overview-welcome h1 { margin-bottom: 8px; }
+.overview-actions { display: flex; flex: 0 0 auto; align-items: center; gap: 9px; }
+.overview-actions button { display: inline-flex; align-items: center; justify-content: center; gap: 12px; width: auto; min-height: 46px; margin: 0; padding: 0 17px; border: 1px solid var(--fitloop-accent); border-radius: 7px; background: var(--fitloop-accent); color: #142018; font-size: .82rem; font-weight: 800; }
+.overview-actions button span { font-size: 1rem; }
+.overview-actions .overview-secondary-action { border-color: var(--fitloop-border); background: transparent; color: var(--fitloop-text); }
+.overview-actions .overview-secondary-action:hover { border-color: var(--fitloop-accent); color: var(--fitloop-accent); }
+@media (max-width: 700px) {
+ .overview-welcome { align-items: stretch; flex-direction: column; gap: 18px; padding-bottom: 22px; }
+ .overview-actions { display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
+ .overview-actions button { min-height: 48px; padding: 0 10px; }
+}
+@media (max-width: 380px) {
+ .overview-actions { grid-template-columns: 1fr; }
+}

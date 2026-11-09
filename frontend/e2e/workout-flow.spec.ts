@@ -2384,6 +2384,8 @@ test("Pings supports message requests, acceptance, private history and replies",
   await expect(page.locator(".ping-message-list").getByText("Thanks, that means a lot.")).toBeVisible();
   expect(sentReply).toEqual({ message: "Thanks, that means a lot." });
 
+  await page.getByRole("button", { name: "Report message" }).click();
+  await expect(page.getByText("Report submitted privately. Thank you for helping keep the community safe.")).toBeVisible();
   await page.getByRole("button", { name: "Report member" }).click();
   await expect(page.getByText("Report submitted privately. Thank you for helping keep the community safe.")).toBeVisible();
   page.on("dialog", dialog => dialog.accept());

@@ -158,3 +158,10 @@ The previous visual-review run exposed a strict heading assertion and an extra d
 - Added visible keyboard focus treatment and dark form controls.
 - This is a first cohesive visual pass, not a final sign-off. It still needs real browser screenshots at 320px, 390px, 430px, tablet and desktop, followed by visual fixes based on those captures.
 - The design direction uses high-contrast dark surfaces, visual workout content and clear hierarchy. It does not copy another product's screens or branding.
+
+
+## Profile presentation follow-up
+
+- Added a compact profile activity summary for loaded posts, shared workout posts and completed sets.
+- The labels deliberately describe the currently loaded page rather than implying lifetime totals. Older posts remain available through pagination.
+- Added browser assertions for the summary so the counts remain connected to the actual profile data.

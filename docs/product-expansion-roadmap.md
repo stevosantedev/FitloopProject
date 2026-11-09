@@ -172,3 +172,19 @@ A slice is complete only when its user journey works end-to-end; API ownership a
 - [ ] Add browser coverage for the 3-, 5- and 6-day structures and review split balance across the full catalogue.
 - [ ] Add set/rep/load prescriptions, weekday scheduling and programme completion tracking.
 - The current split is transparent catalogue guidance, not generative AI or a clinical prescription.
+
+
+## Phone-first screen redesign
+
+The responsive PWA is being redesigned around phone use. The bottom tab bar and safe-area support are in place, and the desktop workspace header is hidden on narrow screens. The captured first-pass screens still show long, web-like content flows, so the visual redesign remains open.
+
+- [x] Add real Playwright captures for the four primary destinations at desktop and phone sizes.
+- [x] Make the mobile tab bar fixed and reserve space for device safe areas.
+- [ ] Rework Overview around recent training and a compact daily check-in, with account administration moved out of the main journey.
+- [ ] Rework Workouts around quick session start and gym-floor set logging. Keep exercise discovery, routine editing, muscle map and history accessible without forcing every tool into one long page.
+- [ ] Rework Community so the friends feed and post composer lead, while profile and relationship controls sit in secondary areas.
+- [ ] Rework Coach so the conversation is the primary mobile task and progression/programme tools have a clear secondary route.
+- [ ] Review each captured screen at 320px, 390px, 430px, tablet and desktop widths, then fix the actual visual issues found.
+- [ ] Complete device, keyboard and screen-reader checks.
+
+A screen is not complete because it fits the viewport or passes an overflow test. The phone layout needs a clear task hierarchy, usable touch controls and a practical route to secondary features.

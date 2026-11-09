@@ -146,3 +146,6 @@ The current authentication implementation uses bearer tokens stored by the front
 - Complete the assessment report, architecture and data-model diagrams, test evidence, demo script and presentation.
 
 Do not describe the current branch as production-ready. It is a substantial university-project MVP that still needs evaluation, security work and submission evidence.
+
+
+The latest interface pass gives the phone layouts a consistent charcoal and orange theme, a persistent workspace switch, and more focused feed, workout and profile surfaces. Responsive browser coverage checks the navigation at 320px, 360px, 390px and 430px. These changes are still under visual review; passing layout tests alone does not mean the redesign is finished.

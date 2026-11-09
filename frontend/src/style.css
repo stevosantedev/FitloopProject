@@ -1691,3 +1691,47 @@ footer { border-color: #2b322b; }
   .coach-page .coach-chat-layout { padding: 0 14px; }
   .coach-page .coach-chat-panel { border: 0; background: transparent; }
 }
+
+
+/* Progress uses compact metrics and paired charts so the new destination feels like a quick review,
+   not another long dashboard. The full chart labels remain available to screen readers. */
+.progress-page > .stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0 20px 14px;
+}
+.progress-page > .stats article {
+  min-width: 0;
+  padding: 14px;
+  border-radius: 14px;
+}
+.progress-page > .stats article strong { font-size: 1.65rem; }
+.progress-page > .panel { margin: 0 20px 14px; }
+.progress-page .mini-charts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.progress-page .mini-chart { padding: 10px; }
+.progress-page .progress-context { padding: 20px; }
+.progress-preview { display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+.progress-preview h2 { margin-bottom: 6px; }
+.progress-preview p { margin-top: 0; }
+.progress-preview button { flex: 0 0 auto; width: auto; margin: 0; }
+
+@media (max-width: 700px) {
+  /* Five destinations share the same bottom bar; compact labels prevent a horizontal scroll. */
+  .mobile-nav { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .mobile-nav button { min-width: 0; padding-right: 2px; padding-left: 2px; font-size: .68rem; }
+  .progress-page > .stats { margin-right: 14px; margin-left: 14px; gap: 7px; }
+  .progress-page > .stats article { padding: 11px 8px; }
+  .progress-page > .stats article span { font-size: .72rem; line-height: 1.25; }
+  .progress-page > .stats article strong { font-size: 1.35rem; }
+  .progress-page > .panel { margin-right: 14px; margin-left: 14px; }
+  .progress-page .mini-charts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .progress-page .mini-chart > strong { font-size: .78rem; }
+  .progress-preview { align-items: flex-start; flex-direction: column; }
+  .progress-preview button { width: 100%; }
+}
+@media (max-width: 360px) {
+  .mobile-nav button { font-size: .62rem; }
+  .mobile-nav .nav-icon { width: 18px; height: 18px; }
+  .progress-page > .stats article { padding: 9px 6px; }
+}

@@ -1233,6 +1233,7 @@ test("Community members can search for people and send a friend request from a r
   await page.getByLabel("Password").fill("test-password");
   await page.getByRole("button", { name: "Sign in" }).click();
   await page.locator(".workspace-switch-bar").getByRole("button", { name: "Social" }).click();
+  await page.locator(".mobile-nav").getByRole("button", { name: "Explore" }).click();
 
   await page.getByLabel("Search by username or display name").fill("runner");
   await page.getByRole("button", { name: "Search people" }).click();
@@ -1840,12 +1841,11 @@ test("Social opens on activity and Plan leads with weekly planning", async ({ pa
   await page.locator(".workspace-switch-bar").getByRole("button", { name: "Social" }).click();
   await expect(page.getByRole("heading", { name: "Your feed.", exact: true })).toBeVisible();
   await expect(page.getByText("Friend requests, reactions and comments will appear here.")).toBeVisible();
-  await expect(page.locator(".community-page > .panel:has(.feed-section-heading)")).toHaveCSS("order", "1");
-  await expect(page.locator(".community-page > .community-composer")).toHaveCSS("order", "2");
-  await expect(page.locator(".community-page > .activity-inbox")).toHaveCSS("order", "3");
-  await expect(page.locator(".community-page > .content-grid")).toHaveCSS("order", "4");
-  await expect(page.locator(".community-page > .community-profile-form")).toHaveCSS("order", "5");
-  await expect(page.locator(".community-page > .community-blocked-panel")).toHaveCSS("order", "6");
+  await expect(page.locator(".community-composer")).toBeVisible();
+  await expect(page.locator(".feed-section-heading")).toBeVisible();
+  await page.locator(".sidebar-nav").getByRole("button", { name: "Explore" }).click();
+  await expect(page.getByRole("heading", { name: "Discover the community" })).toBeVisible();
+  await expect(page.locator(".community-composer")).toHaveCount(0);
 
   await page.locator(".workspace-switch-bar").getByRole("button", { name: "You" }).click();
   await page.locator(".sidebar-nav").getByRole("button", { name: "Coach" }).click();
@@ -1987,7 +1987,7 @@ test("captures current FitLoop screens for visual review", async ({ page }, test
   const desktopScreens = [
     { name: "overview", ready: page.getByRole("heading", { name: "Your week", exact: true }) },
     { name: "workouts", button: "Workouts", ready: page.getByRole("heading", { name: "Build a workout" }) },
-    { name: "community", ready: page.getByRole("heading", { name: "Activity", exact: true }) },
+    { name: "community", ready: page.getByRole("heading", { name: "Your feed.", exact: true }) },
     { name: "coach", button: "Coach", ready: page.locator(".coach-chat-panel") }
   ];
 
@@ -2015,7 +2015,7 @@ test("captures current FitLoop screens for visual review", async ({ page }, test
   const mobileScreens = [
     { name: "overview", button: "Home", ready: page.getByRole("heading", { name: "Your week", exact: true }) },
     { name: "workouts", button: "Workouts", ready: page.getByRole("heading", { name: "Build a workout" }) },
-    { name: "community", button: "Community", ready: page.getByRole("heading", { name: "Activity", exact: true }) },
+    { name: "community", button: "Community", ready: page.getByRole("heading", { name: "Your feed.", exact: true }) },
     { name: "coach", button: "Coach", ready: page.locator(".coach-chat-panel") }
   ];
 
@@ -2088,7 +2088,7 @@ test("Social and You switch between the correct destinations", async ({ page }) 
   await expect(page.getByText(/Private messaging is not available yet/)).toBeVisible();
 
   await page.locator(".mobile-nav").getByRole("button", { name: "Explore" }).click();
-  await expect(page.getByRole("heading", { name: "Explore your circle." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Discover the community" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Find friends" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Friends and requests" })).toBeVisible();
 

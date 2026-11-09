@@ -1586,7 +1586,11 @@ function signOut() {
             setSelectedRoutine(event.target.value);
             setSelectedExerciseIds(routine ? routine.exercises.map(item => item.exercise.id) : []);
           }}><option value="">One-off workout</option>{routines.map(routine => <option key={routine.id} value={routine.id}>{routine.name}</option>)}</select></label>
-          <label>Search exercises<input value={exerciseSearch} onChange={event => setExerciseSearch(event.target.value)} placeholder="Search exercises, technique or equipment" /></label>
+          <div className="exercise-library-heading">
+            <div><p className="eyebrow">EXERCISE LIBRARY</p><h3>Choose movements</h3></div>
+            <p className="muted">Find an exercise by name, muscle, equipment or technique.</p>
+          </div>
+          <label>Search exercises<input type="search" value={exerciseSearch} onChange={event => setExerciseSearch(event.target.value)} placeholder="Search exercises, technique or equipment" /></label>
           <div className="exercise-filter-row">
             <label>Muscle group<select value={exerciseMuscleFilter} onChange={event => setExerciseMuscleFilter(event.target.value)}><option value="all">All muscles</option>{muscleStats.map(muscle => <option key={muscle.id} value={muscle.slug}>{muscle.name}</option>)}</select></label>
             <label>Equipment<select value={exerciseEquipmentFilter} onChange={event => setExerciseEquipmentFilter(event.target.value)}><option value="all">Any equipment</option>{Array.from(new Set(exercises.map(exercise => exercise.equipment ?? "Other"))).sort().map(equipment => <option key={equipment} value={equipment}>{equipment}</option>)}</select></label>
@@ -1595,6 +1599,7 @@ function signOut() {
           </div>
           <div className="exercise-results-summary" aria-live="polite">
             <span>Showing <strong>{visibleExercises.length}</strong> of <strong>{exercises.length}</strong> movements</span>
+            <span className="exercise-selected-count"><strong>{selectedExerciseIds.length}</strong> selected</span>
             {hasActiveExerciseFilters && <button type="button" className="text-button" onClick={clearExerciseFilters}>Clear filters</button>}
           </div>
           <div className="exercise-picker exercise-choice-grid" aria-label="Select exercises for this session">
@@ -1604,7 +1609,7 @@ function signOut() {
                 <span className="exercise-choice-copy"><strong>{exercise.name}</strong><small>{exercise.muscleGroup} · {exercise.equipment ?? "Equipment varies"}</small>{exercise.movementPattern && <small>{exercise.movementPattern}</small>}</span>
                 <span className="exercise-choice-indicator" aria-hidden="true">{selectedExerciseIds.includes(exercise.id) ? "✓" : "+"}</span>
               </label>
-              <button type="button" className="exercise-detail-trigger" onClick={() => setExerciseDetailId(current => current === exercise.id ? "" : exercise.id)} aria-expanded={exerciseDetailId === exercise.id}>Details</button>
+              <button type="button" className="exercise-detail-trigger" onClick={() => setExerciseDetailId(current => current === exercise.id ? "" : exercise.id)} aria-expanded={exerciseDetailId === exercise.id}>{exerciseDetailId === exercise.id ? "Close guide" : "Guide"}</button>
             </article>)}
             {visibleExercises.length === 0 && workoutsLoading && <p className="muted exercise-empty-state" role="status">Loading the exercise library…</p>}
             {visibleExercises.length === 0 && !workoutsLoading && (!workoutsError || exercises.length > 0) && <p className="muted exercise-empty-state">No movements match your search and filters. Try a different term or clear the filters.</p>}

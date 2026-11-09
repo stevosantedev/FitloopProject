@@ -443,7 +443,7 @@ router.post("/reports", reportLimiter, async (req, res, next) => {
     const report = await prismaClient.contentReport.create({
       data: {
         reporterId: req.userId,
-        reportedUserId: input.targetType === "user" ? reportTarget.id : reportTarget.userId,
+        reportedUserId: input.targetType === "user" ? reportTarget.id : input.targetType === "message" ? reportTarget.senderId : reportTarget.userId,
         postId: input.targetType === "post" ? reportTarget.id : null,
         messageId: input.targetType === "message" ? reportTarget.id : null,
         reason: input.reason,

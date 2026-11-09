@@ -2310,12 +2310,12 @@ function signOut() {
               <button disabled={!commentDrafts[post.id]?.trim()}>Send</button>
             </form>
             </section>
-      )}
 
           </article>})}</div>}
         {feedHasMore && <button type="button" className="small-button secondary feed-load-more" onClick={() => void loadMoreCommunityPosts()} disabled={feedLoadingMore}>{feedLoadingMore ? "Loading older posts…" : "Load older posts"}</button>}
         {feedLoadMoreError && <div className="load-error" role="alert"><span>{feedLoadMoreError}</span><button type="button" className="secondary" onClick={() => void loadMoreCommunityPosts()}>Try again</button></div>}
       </section>
+      )}
 
       {isModerator && <section className="panel section-gap" aria-labelledby="moderation-heading">
         <p className="eyebrow">PRIVATE OPERATIONS</p><h2 id="moderation-heading">Moderator review</h2>

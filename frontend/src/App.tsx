@@ -1567,9 +1567,9 @@ function signOut() {
       {workoutsLoading && <p className="load-state" role="status">Loading your training data…</p>}
       {workoutsError && <div className="load-error" role="alert"><span>{workoutsError}</span><button type="button" className="secondary" onClick={() => void loadWorkouts()}>Try again</button></div>}
       <div className="welcome compact"><p className="eyebrow">TRAINING</p><h1>Workouts</h1><p className="muted">Build routines, record sets and review your training history.</p></div>
-      <div className="content-grid">
-        <form className="panel" onSubmit={createRoutine}>
-          <p className="eyebrow">ROUTINE BUILDER</p><h2>{editingRoutineId ? "Edit routine" : "Create a routine"}</h2>
+      <div className="content-grid workout-workspace">
+        <form className="panel routine-builder-panel" onSubmit={createRoutine}>
+          <div className="workout-panel-heading"><div><p className="eyebrow">YOUR TEMPLATES</p><h2>{editingRoutineId ? "Edit routine" : "Create a routine"}</h2></div><span>Build once, reuse anytime</span></div>
           <label>Routine name<input required maxLength={80} value={routineName} onChange={event => setRoutineName(event.target.value)} placeholder="e.g. Full body" /></label>
           <p className="field-heading">Choose exercises</p>
           <div className="exercise-picker">{exercises.map(exercise => <label className="check-row" key={exercise.id}>
@@ -1578,9 +1578,9 @@ function signOut() {
           </label>)}</div>
           <div className="routine-editor-actions"><button disabled={!routineName.trim() || routineExerciseIds.length === 0}>{editingRoutineId ? "Save changes" : "Save routine"}</button>{editingRoutineId && <button type="button" className="secondary" onClick={() => { setEditingRoutineId(""); setRoutineName(""); setRoutineExerciseIds([]); }}>Cancel edit</button>}</div>
         </form>
-        <form className="panel" onSubmit={recordWorkout}>
-          <p className="eyebrow">WORKOUT BUILDER</p><h2>Build a workout</h2>
-          <p className="muted">Choose movements, edit each set and save the session together.</p>
+        <form className="panel workout-builder-panel" onSubmit={recordWorkout}>
+          <div className="workout-panel-heading"><div><p className="eyebrow">TODAY'S SESSION</p><h2>Build a workout</h2></div><span>Log sets as you train</span></div>
+          <p className="muted">Pick your movements, set reps and load, then record the work you complete.</p>
           <label>Routine (optional)<select value={selectedRoutine} onChange={event => {
             const routine = routines.find(item => item.id === event.target.value);
             setSelectedRoutine(event.target.value);

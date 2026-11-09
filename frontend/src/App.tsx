@@ -1442,7 +1442,8 @@ function signOut() {
   }
 
 
-  // Profile history is loaded on demand, without refetching the friends feed for every social tab.
+  useEffect(() => {
+    // Profile history is loaded on demand, without refetching the friends feed for every social tab.
     if (token && activeTab === "community" && socialView === "profile") void loadMyProfilePosts();
   }, [token, activeTab, socialView]);
 

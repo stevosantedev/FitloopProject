@@ -46,6 +46,9 @@ For each area below, check the initial load, a slow connection, a failed request
 - [ ] The friends' activity feed appears before profile editing, friend management and blocked-account controls.
 - [ ] The post composer remains easy to reach on desktop and mobile; character limits and friends-only audience copy are clear.
 - [ ] Profile previews, report actions, block/unblock and friend-request controls remain understandable at narrow widths.
+- [ ] Activity inbox shows friend requests, accepted requests, reactions and comments only to the recipient.
+- [ ] Unread count updates after individual and bulk mark-as-read actions.
+- [ ] Notifications from accounts blocked in either direction are hidden; deleting an account removes its received inbox.
 
 ### Coach
 

@@ -1217,6 +1217,9 @@ footer { border-color: #2b322b; }
   .coach-page .coach-chat-layout {
     grid-template-columns: minmax(0, 1fr);
   }
+  /* On phones, keep the active conversation above its history list. */
+  .coach-page .coach-chat-panel { order: 0; }
+  .coach-page .coach-conversation-list { order: 1; }
 }
 @media (max-width: 560px) {
   .community-page .feed-heading {

@@ -1715,6 +1715,22 @@ test("Coach settings disclose optional AI processing and keep consent off by def
 
 
 // The overview should offer direct destinations without making users hunt through navigation.
+// The Home screen should keep the first useful actions visible before the longer check-in form.
+test("Home shows a seven-day activity strip without filling unlogged days", async ({ page }) => {
+  await mockApplicationApi(page);
+  await page.goto("/");
+  await page.getByLabel("Email").fill("tester@example.com");
+  await page.getByLabel("Password").fill("test-password");
+  await page.getByRole("button", { name: "Sign in" }).click();
+
+  await expect(page.getByRole("heading", { name: "Your week", exact: true })).toBeVisible();
+  await expect(page.locator(".week-strip")).toContainText("This week");
+  await expect(page.locator(".week-day")).toHaveCount(7);
+  // Empty days remain visually unmarked; the strip never implies activity that was not recorded.
+  await expect(page.locator(".week-day-markers i.has-workout")).toHaveCount(0);
+  await expect(page.locator(".week-day-markers i.has-check-in")).toHaveCount(0);
+});
+
 test("overview quick actions open the workout builder and Coach", async ({ page }) => {
   await mockApplicationApi(page);
   await page.goto("/");

@@ -1124,9 +1124,11 @@ test("GET explore rejects invalid pagination", async () => {
 // Message requests store one introductory message and sort the pair so opposite-direction duplicates collide.
 test("POST pings requests creates a pending conversation for the authenticated sender", async () => {
   let createArgs;
+  let notificationArgs;
   const conversation = { id: "conversation-a", status: "pending" };
   const prisma = {
     userBlock: { findMany: async () => [] },
+    activityNotification: { create: async args => { notificationArgs = args; return {}; } },
     user: { findUnique: async args => {
       assert.deepEqual(args, { where: { username: "runner" }, select: { id: true, username: true, displayName: true, privateAccount: true } });
       return { id: "user-b", username: "runner", displayName: "Runner", privateAccount: false };
@@ -1149,6 +1151,7 @@ test("POST pings requests creates a pending conversation for the authenticated s
   assert.equal(createArgs.data.requesterId, "user-a");
   assert.equal(createArgs.data.status, "pending");
   assert.deepEqual(createArgs.data.messages, { create: { senderId: "user-a", body: "Hello, I saw your training update." } });
+  assert.deepEqual(notificationArgs.data, { recipientId: "user-b", actorId: "user-a", type: "ping_request" });
 });
 
 // Unknown, self and blocked recipients share the same response so the endpoint cannot be used to enumerate accounts.
@@ -1295,11 +1298,16 @@ test("POST pings messages rejects pending and blocked conversations", async () =
 test("POST pings messages stores the authenticated sender and updates last activity", async () => {
   let createArgs;
   let updateArgs;
+  let notificationArgs;
   const createdAt = new Date("2026-11-09T20:00:00.000Z");
   const message = { id: "message-a", createdAt, body: "Thanks for reaching out." };
   const prisma = {
     userBlock: { findMany: async () => [] },
-    directConversation: { findFirst: async () => ({ id: "conversation-a" }), update: async args => { updateArgs = args; return {}; } },
+    activityNotification: { create: async args => { notificationArgs = args; return {}; } },
+    directConversation: {
+      findFirst: async () => ({ id: "conversation-a", userAId: "user-a", userBId: "user-b" }),
+      update: async args => { updateArgs = args; return {}; }
+    },
     directMessage: { create: async args => { createArgs = args; return message; } }
   };
   await withSocialApi(prisma, async base => {
@@ -1312,6 +1320,7 @@ test("POST pings messages stores the authenticated sender and updates last activ
   });
   assert.deepEqual(createArgs.data, { conversationId: "conversation-a", senderId: "user-a", body: "Thanks for reaching out." });
   assert.deepEqual(updateArgs, { where: { id: "conversation-a" }, data: { lastMessageAt: createdAt } });
+  assert.deepEqual(notificationArgs.data, { recipientId: "user-b", actorId: "user-a", type: "ping_message" });
 });
 
 // Read receipts only update unread messages from the other participant in this conversation.

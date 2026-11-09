@@ -254,6 +254,8 @@ async function clickWorkspaceDestination(page: Page, workspace: "social" | "you"
   const destinationButton = navigation.getByRole("button", { name: accessibleName, exact: true });
   await expect(destinationButton).toBeVisible();
   await destinationButton.click();
+  // Wait for React to commit the selected destination before checking its screen content.
+  await expect(destinationButton).toHaveAttribute("aria-current", "page");
 }
 
 async function clickWorkoutsNavigation(page: Page) {
@@ -1218,7 +1220,6 @@ test("community block and report controls call the moderation API", async ({ pag
   await page.getByRole("button", { name: "Sign in" }).click();
   await clickWorkspaceDestination(page, "social", "Explore");
   // Assert the actual Explore content instead of depending on its outer layout wrapper.
-  await expect(page.getByRole("heading", { name: "Discover the community" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Discover the community" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Find friends" })).toBeVisible();
   await page.getByRole("button", { name: "Report account" }).click();

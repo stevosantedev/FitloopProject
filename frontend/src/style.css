@@ -1735,3 +1735,77 @@ footer { border-color: #2b322b; }
   .mobile-nav .nav-icon { width: 18px; height: 18px; }
   .progress-page > .stats article { padding: 9px 6px; }
 }
+
+
+/* The week strip is a quiet orientation aid. It shows only dates and activity the user has actually logged. */
+.week-strip {
+  margin: 0 0 22px;
+  padding: 15px 16px 13px;
+  border: 1px solid #26342b;
+  border-radius: 15px;
+  background: #101611;
+}
+.week-strip-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 13px;
+  color: #edf2e9;
+  font-size: .88rem;
+}
+.week-strip-heading span {
+  color: #829087;
+  font-size: .72rem;
+}
+.week-day-list {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+}
+.week-day {
+  display: flex;
+  min-width: 0;
+  min-height: 69px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border-radius: 10px;
+  color: #9aa69a;
+}
+.week-day-label {
+  font-size: .68rem;
+  line-height: 1;
+}
+.week-day > strong {
+  color: #e8eee5;
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+.week-day.is-today {
+  background: #202b1d;
+  color: var(--fitloop-accent);
+}
+.week-day.is-today > strong { color: var(--fitloop-accent); }
+.week-day-markers {
+  display: flex;
+  min-height: 5px;
+  align-items: center;
+  gap: 3px;
+}
+.week-day-markers i {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: transparent;
+}
+.week-day-markers i.has-workout { background: var(--fitloop-accent); }
+.week-day-markers i.has-check-in { background: #75a7d5; }
+@media (max-width: 360px) {
+  .week-strip { padding-right: 9px; padding-left: 9px; }
+  .week-day-list { gap: 2px; }
+  .week-day { min-height: 64px; }
+  .week-day-label { font-size: .62rem; }
+}

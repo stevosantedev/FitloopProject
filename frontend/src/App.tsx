@@ -1,12 +1,12 @@
 /**
  * Main FitLoop browser application.
  *
- * This component coordinates the signed-in app shell and its four main
- * destinations: Overview, Workouts, Community and Coach. It owns the screen
+ * This component coordinates the signed-in app shell and its five main
+ * destinations: Overview, Workouts, Progress, Community and Coach. It owns the screen
  * state and calls the Express API through request(), which applies the current
  * account token and gives private requests one consistent error path.
  *
- * The desktop sidebar and mobile bottom tabs lead to the same destinations.
+ * The desktop sidebar and mobile bottom tabs lead to the same five destinations.
  * Screen-specific layout rules live in style.css, while this component keeps
  * the underlying actions and account data shared across viewport sizes.
  */
@@ -1529,7 +1529,6 @@ function signOut() {
         <button aria-current={activeTab === "home" ? "page" : undefined} className={activeTab === "home" ? "active" : ""} onClick={() => setActiveTab("home")}><span className="nav-symbol"><svg className="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7"/><path d="M5 9.5V21h14V9.5"/><path d="M9 21v-7h6v7"/></svg></span><span>Overview</span></button>
         <button aria-current={activeTab === "workouts" ? "page" : undefined} className={activeTab === "workouts" ? "active" : ""} onClick={() => setActiveTab("workouts")}><span className="nav-symbol"><svg className="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5v14M18 5v14M3 9v6M21 9v6M6 12h12"/></svg></span><span>Workouts</span></button>
         <button aria-current={activeTab === "progress" ? "page" : undefined} className={activeTab === "progress" ? "active" : ""} onClick={() => setActiveTab("progress")}><span className="nav-symbol"><svg className="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V5M4 19h16"/><path d="m7 15 4-4 3 2 5-7"/></svg></span><span>Progress</span></button>
-        <button aria-current={activeTab === "progress" ? "page" : undefined} className={activeTab === "progress" ? "active" : ""} onClick={() => setActiveTab("progress")}><span><svg className="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V5M4 19h16"/><path d="m7 15 4-4 3 2 5-7"/></svg></span>Progress</button>
         <button aria-label={unreadNotificationCount > 0 ? `Community, ${unreadNotificationCount} unread ${unreadNotificationCount === 1 ? "notification" : "notifications"}` : "Community"} aria-current={activeTab === "community" ? "page" : undefined} className={activeTab === "community" ? "active" : ""} onClick={() => setActiveTab("community")}><span className="nav-symbol"><svg className="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M20 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><span>Community</span>{unreadNotificationCount > 0 && <span className="nav-unread-count" aria-hidden="true">{unreadNotificationCount > 99 ? "99+" : unreadNotificationCount}</span>}</button>
         <button aria-current={activeTab === "coach" ? "page" : undefined} className={activeTab === "coach" ? "active" : ""} onClick={() => setActiveTab("coach")}><span className="nav-symbol"><svg className="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 1.9 5.8L20 11l-6.1 2.2L12 19l-1.9-5.8L4 11l6.1-2.2L12 3Z"/><path d="m19 14 1.1 2.9L23 18l-2.9 1.1L19 22l-1.1-2.9L15 18l2.9-1.1L19 14Z"/></svg></span><span>Coach</span></button>
       </nav>
@@ -1550,6 +1549,7 @@ function signOut() {
       <nav className="mobile-nav" aria-label="Main sections">
         <button aria-current={activeTab === "home" ? "page" : undefined} className={activeTab === "home" ? "active" : ""} onClick={() => setActiveTab("home")}><span><svg className="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7"/><path d="M5 9.5V21h14V9.5"/><path d="M9 21v-7h6v7"/></svg></span>Home</button>
         <button aria-current={activeTab === "workouts" ? "page" : undefined} className={activeTab === "workouts" ? "active" : ""} onClick={() => setActiveTab("workouts")}><span><svg className="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5v14M18 5v14M3 9v6M21 9v6M6 12h12"/></svg></span>Workouts</button>
+        <button aria-current={activeTab === "progress" ? "page" : undefined} className={activeTab === "progress" ? "active" : ""} onClick={() => setActiveTab("progress")}><span><svg className="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V5M4 19h16"/><path d="m7 15 4-4 3 2 5-7"/></svg></span>Progress</button>
         <button aria-label={unreadNotificationCount > 0 ? `Community, ${unreadNotificationCount} unread ${unreadNotificationCount === 1 ? "notification" : "notifications"}` : "Community"} aria-current={activeTab === "community" ? "page" : undefined} className={activeTab === "community" ? "active" : ""} onClick={() => setActiveTab("community")}><span><svg className="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M20 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><span className="mobile-nav-label">Community{unreadNotificationCount > 0 && <span className="nav-unread-count" aria-hidden="true">{unreadNotificationCount > 99 ? "99+" : unreadNotificationCount}</span>}</span></button>
         <button aria-current={activeTab === "coach" ? "page" : undefined} className={activeTab === "coach" ? "active" : ""} onClick={() => setActiveTab("coach")}><span><svg className="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 1.9 5.8L20 11l-6.1 2.2L12 19l-1.9-5.8L4 11l6.1-2.2L12 3Z"/><path d="m19 14 1.1 2.9L23 18l-2.9 1.1L19 22l-1.1-2.9L15 18l2.9-1.1L19 14Z"/></svg></span>Coach</button>
       </nav>

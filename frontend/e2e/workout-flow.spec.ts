@@ -320,6 +320,22 @@ test("guided workout progress counts performed sets rather than skipped sets", a
   await expect(page.getByText("1 of 3 sets completed in guided mode")).toBeVisible();
 });
 
+// A zero-rest final set completes synchronously, so its count must be included before the screen changes.
+test("guided workout counts the final set when no rest period is configured", async ({ page }) => {
+  await mockApplicationApi(page);
+  await signInAndOpenWorkouts(page);
+
+  await page.getByLabel("Rest (seconds)").fill("0");
+  await page.getByRole("button", { name: "Start guided workout" }).click();
+  for (let setNumber = 1; setNumber <= 3; setNumber += 1) {
+    await expect(page.getByText(`Next set: Goblet squat · Set ${setNumber}`)).toBeVisible();
+    await page.getByRole("button", { name: "Set complete — start rest" }).click();
+  }
+
+  await expect(page.getByRole("status").filter({ hasText: "All guided sets are complete." })).toBeVisible();
+  await expect(page.getByText("3 of 3 sets completed in guided mode")).toBeVisible();
+});
+
 // Prevent an empty or entirely skipped session from appearing as a completed workout.
 test("the workout cannot be saved until at least one set is completed", async ({ page }) => {
   await mockApplicationApi(page);

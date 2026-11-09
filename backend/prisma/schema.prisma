@@ -399,3 +399,12 @@ model CoachMessage {
 
   @@index([conversationId, createdAt])
 }
+
+// Shared hourly Coach limits survive API restarts and apply across multiple instances.
+model CoachRateLimitBucket {
+  key     String   @id
+  hits    Int      @default(0)
+  resetAt DateTime @db.Timestamptz(3)
+
+  @@index([resetAt])
+}

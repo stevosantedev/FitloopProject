@@ -23,10 +23,19 @@ test("Coach rate-limit buckets are shared across store instances and expire clea
     assert.ok(first.resetTime instanceof Date);
     assert.equal(second.resetTime.getTime(), first.resetTime.getTime());
 
+    // Parallel requests from separate instances must receive distinct positions in one shared count.
+    const concurrent = await Promise.all(Array.from({ length: 10 }, (_, index) =>
+      (index % 2 === 0 ? firstInstance : secondInstance).increment(key)
+    ));
+    assert.deepEqual(
+      concurrent.map(result => result.totalHits).sort((left, right) => left - right),
+      Array.from({ length: 10 }, (_, index) => index + 3)
+    );
+
     // Decrement and reset are part of the store contract used by express-rate-limit.
     await secondInstance.decrement(key);
     const afterDecrement = await firstInstance.increment(key);
-    assert.equal(afterDecrement.totalHits, 2);
+    assert.equal(afterDecrement.totalHits, 12);
 
     await secondInstance.resetKey(key);
     const afterReset = await firstInstance.increment(key);

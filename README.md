@@ -38,7 +38,7 @@ The muscle map is a training reference, not a clinical anatomy diagram. Set-volu
 - Blocking and reporting controls, with server-side audience and relationship checks.
 - A private in-app activity inbox for friend requests, accepted requests, reactions and comments.
 
-The current feed supports text updates and workout activity. Pings now has a working request-and-reply flow with unread counts and member-level report/block controls, but inbox notifications, delivery preferences and retention rules still need implementation and review. Image uploads, private media storage and push/email notifications are not implemented.
+The current feed supports text updates and workout activity. Pings now has a working request-and-reply flow with unread counts and member-level report/block controls, but notification delivery preferences, retention rules and privacy review still need implementation. Image uploads, private media storage and push/email notifications are not implemented.
 
 ### Coach
 

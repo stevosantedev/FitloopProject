@@ -16,7 +16,8 @@ test("app publishes an installable manifest and offline worker assets", async ({
   const workerResponse = await page.request.get("/sw.js");
   expect(workerResponse.ok()).toBeTruthy();
   const workerSource = await workerResponse.text();
-  expect(workerSource).toContain("fitloop-shell-v1");
+  expect(workerSource).toContain("fitloop-shell-v2");
+  expect(workerSource.match(/event\\.respondWith\\(/g)).toHaveLength(2);
   expect(workerSource).toContain('url.pathname.startsWith("/api/")');
   expect(workerSource).toContain('cache.put("/", response.clone())');
   expect(workerSource).toContain('cache.put(request, response.clone())');

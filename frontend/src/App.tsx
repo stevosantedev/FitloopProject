@@ -721,18 +721,18 @@ async function loadMoreCommunityPosts() {
   // The API rechecks the post's current friends/block visibility before returning any rows.
   // Track comment pagination per post because several feed cards can load replies independently.
 async function loadMoreComments(postId: string) {
-    const post = posts.find(item => item.id === postId);
+    // Explore and the friends feed share comment endpoints, so look in both loaded collections.
+    const post = [...posts, ...explorePosts].find(item => item.id === postId);
     const cursor = post?.comments[post.comments.length - 1]?.id;
     if (!post || !cursor || commentLoading[postId] || post.comments.length >= (post._count?.comments ?? post.comments.length)) return;
     setCommentLoading(current => ({ ...current, [postId]: true }));
     setCommentLoadErrors(current => ({ ...current, [postId]: "" }));
     try {
       const data = await request(`/api/social/posts/${postId}/comments?cursor=${encodeURIComponent(cursor)}`);
-      setPosts(current => current.map(item => {
-        if (item.id !== postId) return item;
+      updatePostCollections(postId, item => {
         const existing = new Set(item.comments.map(comment => comment.id));
         return { ...item, comments: [...item.comments, ...data.comments.filter((comment: FeedPost["comments"][number]) => !existing.has(comment.id))] };
-      }));
+      });
     } catch (error) {
       setCommentLoadErrors(current => ({ ...current, [postId]: error instanceof Error ? error.message : "Could not load older comments." }));
     } finally {
@@ -1200,11 +1200,18 @@ async function recordWorkout(event: React.FormEvent) {
     }
   }
 
+  // Keep a post in sync if it appears in both Explore and the friends feed.
+  // The same reaction or comment should not look different depending on which tab is open.
+  function updatePostCollections(postId: string, update: (post: FeedPost) => FeedPost) {
+    setPosts(current => current.map(post => post.id === postId ? update(post) : post));
+    setExplorePosts(current => current.map(post => post.id === postId ? update(post) : post));
+  }
+
   // Update the visible card before waiting for the network so a reaction feels immediate.
   // Keep the signed-in user's previous reaction so a failed request can restore it without
   // overwriting reactions other people may have added while the request was in flight.
   async function reactToPost(id: string, value: string) {
-    const post = posts.find(item => item.id === id);
+    const post = [...posts, ...explorePosts].find(item => item.id === id);
     if (!post || !user || reactionRequestsRef.current.has(id)) return;
 
     const previousUserReactions = post.reactions.filter(item => item.userId === user.id);
@@ -1212,9 +1219,7 @@ async function recordWorkout(event: React.FormEvent) {
     const nextUserReactions = alreadySelected ? [] : [{ userId: user.id, value }];
     reactionRequestsRef.current.add(id);
     setReactionSaving(current => ({ ...current, [id]: true }));
-    setPosts(current => current.map(item => item.id === id
-      ? { ...item, reactions: [...item.reactions.filter(reaction => reaction.userId !== user.id), ...nextUserReactions] }
-      : item));
+    updatePostCollections(id, item => ({ ...item, reactions: [...item.reactions.filter(reaction => reaction.userId !== user.id), ...nextUserReactions] }));
 
     try {
       const result = await request(`/api/social/posts/${id}/reactions`, {
@@ -1224,27 +1229,23 @@ async function recordWorkout(event: React.FormEvent) {
 
       // Reconcile with the server response instead of reloading the entire feed.
       // This preserves scroll position and avoids replacing comments or pagination state.
-      setPosts(current => current.map(item => item.id === id
-        ? {
-            ...item,
-            reactions: [
-              ...item.reactions.filter(reaction => reaction.userId !== user.id),
-              ...(result.reaction ? [{ userId: user.id, value: result.reaction.value }] : [])
-            ]
-          }
-        : item));
+      updatePostCollections(id, item => ({
+        ...item,
+        reactions: [
+          ...item.reactions.filter(reaction => reaction.userId !== user.id),
+          ...(result.reaction ? [{ userId: user.id, value: result.reaction.value }] : [])
+        ]
+      }));
       setNotice(result.removed ? "Reaction removed." : "Reaction saved.");
     } catch (error) {
       // Restore only this account's previous reaction; retain any other feed changes made meanwhile.
-      setPosts(current => current.map(item => item.id === id
-        ? {
-            ...item,
-            reactions: [
-              ...item.reactions.filter(reaction => reaction.userId !== user.id),
-              ...previousUserReactions
-            ]
-          }
-        : item));
+      updatePostCollections(id, item => ({
+        ...item,
+        reactions: [
+          ...item.reactions.filter(reaction => reaction.userId !== user.id),
+          ...previousUserReactions
+        ]
+      }));
       setNotice(error instanceof Error ? error.message : "Could not save your reaction.");
     } finally {
       reactionRequestsRef.current.delete(id);
@@ -1259,12 +1260,19 @@ async function recordWorkout(event: React.FormEvent) {
     const text = commentDrafts[postId]?.trim();
     if (!text) return;
     try {
-      await request(`/api/social/posts/${postId}/comments`, {
+      const data = await request(`/api/social/posts/${postId}/comments`, {
         method: "POST",
         body: JSON.stringify({ text })
       });
+      // Add the returned comment to the card immediately instead of refreshing an unrelated feed.
+      updatePostCollections(postId, post => ({
+        ...post,
+        comments: post.comments.some(comment => comment.id === data.comment.id)
+          ? post.comments
+          : [...post.comments, data.comment],
+        _count: { comments: (post._count?.comments ?? post.comments.length) + 1 }
+      }));
       setCommentDrafts(current => ({ ...current, [postId]: "" }));
-      await loadCommunity();
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Could not add your comment.");
     }
@@ -2187,6 +2195,31 @@ function signOut() {
           {post.text && <p>{post.text}</p>}
           {post.session && <div className="explore-workout-summary"><strong>{post.session.routine?.name || "Workout completed"}</strong><span>{post.session.sets.filter(set => set.completed).length} completed sets · {new Date(post.session.startedAt).toLocaleDateString()}</span><div>{[...new Set(post.session.sets.map(set => set.exercise.name))].slice(0,4).join(" · ")}</div></div>}
           <div className="explore-post-footer"><span>{post._count?.comments ?? post.comments.length} comments</span><button type="button" className="text-button danger-text" onClick={() => void reportCommunityTarget("post", post.id)}>Report post</button></div>
+          <div className="reaction-row" aria-label="Post reactions" aria-busy={Boolean(reactionSaving[post.id])}>
+            {([
+              { value: "like", label: "Like", emoji: "👏" },
+              { value: "strong", label: "Strong", emoji: "💪" },
+              { value: "clap", label: "Clap", emoji: "🙌" }
+            ] as const).map(reaction => {
+              const selected = post.reactions.some(item => item.userId === user?.id && item.value === reaction.value);
+              const count = post.reactions.filter(item => item.value === reaction.value).length;
+              return <button key={reaction.value} type="button" className={`reaction-button${selected ? " is-selected" : ""}`}
+                aria-pressed={selected} disabled={Boolean(reactionSaving[post.id])}
+                onClick={() => void reactToPost(post.id, reaction.value)}>
+                {reaction.emoji} {reaction.label} <span className="reaction-count">{count}</span>
+              </button>;
+            })}
+          </div>
+          <section className="feed-comments" aria-label={`Comments, ${post._count?.comments ?? post.comments.length} total`}>
+            <div className="feed-comments-heading"><strong>Comments</strong><span>{post._count?.comments ?? post.comments.length}</span></div>
+            {post.comments.map(comment => <div className="comment" key={comment.id}><strong>@{comment.user.username}</strong> {comment.text}</div>)}
+            {(post._count?.comments ?? post.comments.length) > post.comments.length && <button type="button" className="small-button secondary comment-load-more" onClick={() => void loadMoreComments(post.id)} disabled={Boolean(commentLoading[post.id])}>{commentLoading[post.id] ? "Loading older comments…" : "Load older comments"}</button>}
+            {commentLoadErrors[post.id] && <p className="muted" role="alert">{commentLoadErrors[post.id]}</p>}
+            <form className="comment-form" onSubmit={event => void commentOnPost(event, post.id)}>
+              <input aria-label="Write a comment" value={commentDrafts[post.id] ?? ""} onChange={event => setCommentDrafts(current => ({ ...current, [post.id]: event.target.value }))} placeholder="Write a supportive comment..." maxLength={500} />
+              <button disabled={!commentDrafts[post.id]?.trim()}>Send</button>
+            </form>
+          </section>
         </article>)}</div>
         {exploreHasMore && <button type="button" className="small-button secondary" onClick={() => void loadMoreExplorePosts()} disabled={exploreLoading}>{exploreLoading ? "Loading…" : "Load more posts"}</button>}
       </section>

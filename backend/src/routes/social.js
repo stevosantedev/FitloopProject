@@ -109,6 +109,83 @@ async function friendIds(userId) {
   return connections.map(item => item.requesterId === userId ? item.addresseeId : item.requesterId).filter(id => !blocked.has(id));
 }
 
+// Notifications are secondary to the social action; a failed inbox insert must not undo
+// a successful friend request, reaction or comment. The failure is logged for operations.
+async function recordActivityNotification(data) {
+  if (typeof prismaClient.activityNotification?.create !== "function") return;
+  try {
+    await prismaClient.activityNotification.create({ data });
+  } catch (error) {
+    console.error("Unable to record a FitLoop activity notification.", error);
+  }
+}
+
+// The inbox is private to its recipient. Blocked actors are filtered in both directions,
+// and pagination is stable so a new notification cannot reshuffle an older page.
+router.get("/notifications", async (req, res, next) => {
+  try {
+    const input = z.object({
+      cursor: z.string().min(1).max(64).optional(),
+      limit: z.coerce.number().int().min(1).max(50).default(20)
+    }).strict().parse(req.query);
+    const blocked = await blockedIds(req.userId);
+    const visibleActor = blocked.length
+      ? { OR: [{ actorId: null }, { actorId: { notIn: blocked } }] }
+      : {};
+    const where = { recipientId: req.userId, ...visibleActor };
+    const rows = await prismaClient.activityNotification.findMany({
+      where,
+      include: {
+        actor: { select: { id: true, username: true, displayName: true } },
+        post: { select: { id: true, text: true, type: true } }
+      },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      ...(input.cursor ? { cursor: { id: input.cursor }, skip: 1 } : {}),
+      take: input.limit + 1
+    });
+    const hasMore = rows.length > input.limit;
+    const notifications = hasMore ? rows.slice(0, input.limit) : rows;
+    const unreadCount = await prismaClient.activityNotification.count({
+      where: { ...where, readAt: null }
+    });
+    return res.json({
+      notifications,
+      unreadCount,
+      hasMore,
+      nextCursor: hasMore ? notifications[notifications.length - 1]?.id ?? null : null
+    });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+// A notification can only be marked read by its recipient; guessed IDs reveal nothing.
+router.patch("/notifications/:id/read", async (req, res, next) => {
+  try {
+    const result = await prismaClient.activityNotification.updateMany({
+      where: { id: req.params.id, recipientId: req.userId, readAt: null },
+      data: { readAt: new Date() }
+    });
+    if (result.count === 0) return res.status(404).json({ error: "Notification not found." });
+    return res.json({ read: true });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+// Marking the inbox read is one owner-scoped update, not a loop of client-supplied IDs.
+router.post("/notifications/read-all", async (req, res, next) => {
+  try {
+    const result = await prismaClient.activityNotification.updateMany({
+      where: { recipientId: req.userId, readAt: null },
+      data: { readAt: new Date() }
+    });
+    return res.json({ updated: result.count });
+  } catch (error) {
+    return next(error);
+  }
+});
+
 // Search returns only identity fields; private profile details remain behind the existing profile route.
 router.get("/friends/discover", friendDiscoveryLimiter, async (req, res, next) => {
   try {
@@ -195,6 +272,7 @@ router.post("/friends/request", async (req, res, next) => {
     const connection = await prismaClient.friendConnection.create({
       data: { requesterId: req.userId, addresseeId: target.id }
     });
+    await recordActivityNotification({ recipientId: target.id, actorId: req.userId, type: "friend_request" });
     return res.status(201).json({ connection });
   } catch (error) {
     return next(error);
@@ -204,11 +282,21 @@ router.post("/friends/request", async (req, res, next) => {
 router.post("/friends/:id/accept", async (req, res, next) => {
   try {
     // Only the person who received a request may accept it.
+    // Read the requester only when notification persistence is available (the production Prisma client).
+    const pending = typeof prismaClient.activityNotification?.create === "function"
+      ? await prismaClient.friendConnection.findFirst({
+          where: { id: req.params.id, addresseeId: req.userId, status: "pending" },
+          select: { requesterId: true }
+        })
+      : null;
     const result = await prismaClient.friendConnection.updateMany({
       where: { id: req.params.id, addresseeId: req.userId, status: "pending" },
       data: { status: "accepted" }
     });
     if (result.count === 0) return res.status(404).json({ error: "Pending request not found." });
+    if (pending?.requesterId) {
+      await recordActivityNotification({ recipientId: pending.requesterId, actorId: req.userId, type: "friend_accepted" });
+    }
     return res.json({ accepted: true });
   } catch (error) {
     return next(error);
@@ -525,7 +613,7 @@ router.post("/posts/:id/reactions", async (req, res, next) => {
     const ids = [req.userId, ...await friendIds(req.userId)];
 
     // A user can react only to a post they can already see in their friends-only feed.
-    const post = await prismaClient.feedPost.findFirst({ where: { id: req.params.id, userId: { in: ids } }, select: { id: true } });
+    const post = await prismaClient.feedPost.findFirst({ where: { id: req.params.id, userId: { in: ids } }, select: { id: true, userId: true } });
     if (!post) return res.status(404).json({ error: "Post not found." });
 
     const key = { userId: req.userId, postId: post.id };
@@ -545,6 +633,9 @@ router.post("/posts/:id/reactions", async (req, res, next) => {
       create: { ...key, value: input.value },
       update: { value: input.value }
     });
+    if (post.userId && post.userId !== req.userId) {
+      await recordActivityNotification({ recipientId: post.userId, actorId: req.userId, postId: post.id, type: "reaction" });
+    }
     return res.json({ reaction, removed: false });
   } catch (error) {
     return next(error);
@@ -588,13 +679,16 @@ router.post("/posts/:id/comments", async (req, res, next) => {
     const ids = [req.userId, ...await friendIds(req.userId)];
 
     // Re-check feed visibility before allowing a comment, rather than trusting a post ID from the browser.
-    const post = await prismaClient.feedPost.findFirst({ where: { id: req.params.id, userId: { in: ids } }, select: { id: true } });
+    const post = await prismaClient.feedPost.findFirst({ where: { id: req.params.id, userId: { in: ids } }, select: { id: true, userId: true } });
     if (!post) return res.status(404).json({ error: "Post not found." });
 
     const comment = await prismaClient.feedComment.create({
       data: { userId: req.userId, postId: post.id, text: input.text },
       include: { user: { select: { id: true, username: true } } }
     });
+    if (post.userId && post.userId !== req.userId) {
+      await recordActivityNotification({ recipientId: post.userId, actorId: req.userId, postId: post.id, type: "comment" });
+    }
     return res.status(201).json({ comment });
   } catch (error) {
     return next(error);

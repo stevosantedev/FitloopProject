@@ -885,3 +885,65 @@ test("POST reactions rejects posts outside the current visible feed", async () =
   });
   assert.equal(reads, 0);
 });
+
+
+// The inbox returns only the signed-in recipient's notifications and hides blocked actors.
+test("GET notifications is private, filters blocked actors and returns an unread count", async () => {
+  let query;
+  let countQuery;
+  const rows = [{ id: "notice-a", type: "comment", actor: { id: "friend-b", username: "friend" } }];
+  const prisma = {
+    userBlock: { findMany: async () => [{ blockerId: "user-a", blockedUserId: "blocked-user" }] },
+    activityNotification: {
+      findMany: async args => { query = args; return rows; },
+      count: async args => { countQuery = args; return 2; }
+    }
+  };
+  await withSocialApi(prisma, async base => {
+    const response = await fetch(base + "/api/social/notifications?limit=10");
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), {
+      notifications: rows, unreadCount: 2, hasMore: false, nextCursor: null
+    });
+  });
+  assert.deepEqual(query.where, {
+    recipientId: "user-a",
+    OR: [{ actorId: null }, { actorId: { notIn: ["blocked-user"] } }]
+  });
+  assert.deepEqual(query.include.actor.select, { id: true, username: true, displayName: true });
+  assert.deepEqual(countQuery.where, { ...query.where, readAt: null });
+});
+
+// A notification ID is not authority; the recipient ID is part of the update condition.
+test("PATCH notifications read only updates a notification owned by the authenticated account", async () => {
+  let query;
+  const prisma = {
+    activityNotification: {
+      updateMany: async args => { query = args; return { count: 1 }; }
+    }
+  };
+  await withSocialApi(prisma, async base => {
+    const response = await fetch(base + "/api/social/notifications/notice-a/read", { method: "PATCH" });
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { read: true });
+  });
+  assert.deepEqual(query.where, { id: "notice-a", recipientId: "user-a", readAt: null });
+  assert.ok(query.data.readAt instanceof Date);
+});
+
+// The bulk action uses one recipient-scoped write and cannot clear another account's inbox.
+test("POST notifications read-all marks only unread notifications for the authenticated account", async () => {
+  let query;
+  const prisma = {
+    activityNotification: {
+      updateMany: async args => { query = args; return { count: 4 }; }
+    }
+  };
+  await withSocialApi(prisma, async base => {
+    const response = await fetch(base + "/api/social/notifications/read-all", { method: "POST" });
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { updated: 4 });
+  });
+  assert.deepEqual(query.where, { recipientId: "user-a", readAt: null });
+  assert.ok(query.data.readAt instanceof Date);
+});

@@ -1119,3 +1119,214 @@ test("GET explore rejects invalid pagination", async () => {
   });
   assert.equal(reads, 0);
 });
+
+
+// Message requests store one introductory message and sort the pair so opposite-direction duplicates collide.
+test("POST pings requests creates a pending conversation for the authenticated sender", async () => {
+  let createArgs;
+  const conversation = { id: "conversation-a", status: "pending" };
+  const prisma = {
+    userBlock: { findMany: async () => [] },
+    user: { findUnique: async args => {
+      assert.deepEqual(args, { where: { username: "runner" }, select: { id: true, username: true, displayName: true } });
+      return { id: "user-b", username: "runner", displayName: "Runner" };
+    } },
+    directConversation: {
+      findUnique: async args => { assert.deepEqual(args.where.userAId_userBId, { userAId: "user-a", userBId: "user-b" }); return null; },
+      create: async args => { createArgs = args; return conversation; }
+    }
+  };
+  await withSocialApi(prisma, async base => {
+    const response = await fetch(base + "/api/social/pings/requests", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ username: "Runner", message: "Hello, I saw your training update." })
+    });
+    assert.equal(response.status, 201);
+    assert.deepEqual(await response.json(), { conversation });
+  });
+  assert.equal(createArgs.data.userAId, "user-a");
+  assert.equal(createArgs.data.userBId, "user-b");
+  assert.equal(createArgs.data.requesterId, "user-a");
+  assert.equal(createArgs.data.status, "pending");
+  assert.deepEqual(createArgs.data.messages, { create: { senderId: "user-a", body: "Hello, I saw your training update." } });
+});
+
+// Unknown, self and blocked recipients share the same response so the endpoint cannot be used to enumerate accounts.
+test("POST pings requests hides unknown, self and blocked recipients", async () => {
+  let creates = 0;
+  const prisma = {
+    userBlock: { findMany: async () => [{ blockerId: "user-a", blockedUserId: "user-b" }] },
+    user: { findUnique: async ({ where }) => where.username === "missing" ? null : ({ id: where.username === "self" ? "user-a" : "user-b" }) },
+    directConversation: { findUnique: async () => null, create: async () => { creates += 1; return {}; } }
+  };
+  await withSocialApi(prisma, async base => {
+    for (const username of ["missing", "self", "blocked"]) {
+      const response = await fetch(base + "/api/social/pings/requests", {
+        method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ username, message: "Hello" })
+      });
+      assert.equal(response.status, 404);
+      assert.deepEqual(await response.json(), { error: "This member is unavailable for a message request." });
+    }
+  });
+  assert.equal(creates, 0);
+});
+
+// A pair can have only one pending or accepted conversation, regardless of who tries to start it.
+test("POST pings requests rejects an existing conversation without creating another", async () => {
+  let creates = 0;
+  const prisma = {
+    userBlock: { findMany: async () => [] },
+    user: { findUnique: async () => ({ id: "user-b" }) },
+    directConversation: {
+      findUnique: async () => ({ id: "conversation-a", status: "pending" }),
+      create: async () => { creates += 1; return {}; }
+    }
+  };
+  await withSocialApi(prisma, async base => {
+    const response = await fetch(base + "/api/social/pings/requests", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ username: "runner", message: "Hello" })
+    });
+    assert.equal(response.status, 409);
+  });
+  assert.equal(creates, 0);
+});
+
+// Incoming requests exclude the signed-in sender and both directions of a block before pagination.
+test("GET pings requests returns only incoming unblocked requests", async () => {
+  let query;
+  const prisma = {
+    userBlock: { findMany: async () => [{ blockerId: "user-a", blockedUserId: "user-c" }] },
+    directConversation: { findMany: async args => { query = args; return [{ id: "request-a" }]; } }
+  };
+  await withSocialApi(prisma, async base => {
+    const response = await fetch(base + "/api/social/pings/requests?limit=5");
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { requests: [{ id: "request-a" }], hasMore: false, nextCursor: null });
+  });
+  assert.deepEqual(query.where, {
+    status: "pending", requesterId: { not: "user-a" },
+    OR: [{ userAId: "user-a" }, { userBId: "user-a" }],
+    AND: [{ userAId: { notIn: ["user-c"] } }, { userBId: { notIn: ["user-c"] } }]
+  });
+  assert.equal(query.take, 6);
+});
+
+// Only the recipient can accept a pending request; requester IDs are not sufficient authority.
+test("POST pings accept is restricted to the recipient", async () => {
+  let query;
+  let reads = 0;
+  const prisma = {
+    userBlock: { findMany: async () => [] },
+    directConversation: {
+      updateMany: async args => { query = args; return { count: 1 }; },
+      findUnique: async () => { reads += 1; return { id: "conversation-a", status: "accepted" }; }
+    }
+  };
+  await withSocialApi(prisma, async base => {
+    const response = await fetch(base + "/api/social/pings/requests/conversation-a/accept", { method: "POST" });
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { conversation: { id: "conversation-a", status: "accepted" } });
+  });
+  assert.equal(query.where.requesterId.not, "user-a");
+  assert.equal(query.where.status, "pending");
+  assert.deepEqual(query.data, { status: "accepted" });
+  assert.equal(reads, 1);
+});
+
+// Declining a request deletes its introductory text but retains a declined pair record to stop repeated contact.
+test("POST pings decline removes the introduction and retains the declined request", async () => {
+  let updateQuery;
+  let deleteQuery;
+  const prisma = {
+    directConversation: { updateMany: async args => { updateQuery = args; return { count: 1 }; } },
+    directMessage: { deleteMany: async args => { deleteQuery = args; return { count: 1 }; } }
+  };
+  await withSocialApi(prisma, async base => {
+    const response = await fetch(base + "/api/social/pings/requests/conversation-a/decline", { method: "POST" });
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { declined: true });
+  });
+  assert.equal(updateQuery.where.requesterId.not, "user-a");
+  assert.deepEqual(updateQuery.data, { status: "declined" });
+  assert.deepEqual(deleteQuery.where, { conversationId: "conversation-a" });
+});
+
+// Message history is available only to a participant and uses a bounded, stable cursor.
+test("GET pings messages checks participant access before reading history", async () => {
+  let conversationQuery;
+  let messageQuery;
+  const rows = [{ id: "message-a" }];
+  const prisma = {
+    userBlock: { findMany: async () => [] },
+    directConversation: { findFirst: async args => { conversationQuery = args; return { id: "conversation-a" }; } },
+    directMessage: { findMany: async args => { messageQuery = args; return rows; } }
+  };
+  await withSocialApi(prisma, async base => {
+    const response = await fetch(base + "/api/social/pings/conversations/conversation-a/messages?limit=10");
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { messages: rows, hasMore: false, nextCursor: null });
+  });
+  assert.deepEqual(conversationQuery.where.OR, [{ userAId: "user-a" }, { userBId: "user-a" }]);
+  assert.deepEqual(conversationQuery.where.status, { in: ["accepted", "pending"] });
+  assert.equal(messageQuery.take, 11);
+  assert.deepEqual(messageQuery.orderBy, [{ createdAt: "desc" }, { id: "desc" }]);
+});
+
+// A user cannot send a message until the other participant has accepted the request.
+test("POST pings messages rejects pending and blocked conversations", async () => {
+  let creates = 0;
+  const prisma = {
+    userBlock: { findMany: async () => [] },
+    directConversation: { findFirst: async () => null },
+    directMessage: { create: async () => { creates += 1; return {}; } }
+  };
+  await withSocialApi(prisma, async base => {
+    const response = await fetch(base + "/api/social/pings/conversations/conversation-a/messages", {
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ message: "Reply" })
+    });
+    assert.equal(response.status, 404);
+  });
+  assert.equal(creates, 0);
+});
+
+// Accepted participants can send a bounded message; the conversation ordering follows its newest message.
+test("POST pings messages stores the authenticated sender and updates last activity", async () => {
+  let createArgs;
+  let updateArgs;
+  const createdAt = new Date("2026-11-09T20:00:00.000Z");
+  const message = { id: "message-a", createdAt, body: "Thanks for reaching out." };
+  const prisma = {
+    userBlock: { findMany: async () => [] },
+    directConversation: { findFirst: async () => ({ id: "conversation-a" }), update: async args => { updateArgs = args; return {}; } },
+    directMessage: { create: async args => { createArgs = args; return message; } }
+  };
+  await withSocialApi(prisma, async base => {
+    const response = await fetch(base + "/api/social/pings/conversations/conversation-a/messages", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ message: "  Thanks for reaching out.  " })
+    });
+    assert.equal(response.status, 201);
+    assert.deepEqual(await response.json(), { message });
+  });
+  assert.deepEqual(createArgs.data, { conversationId: "conversation-a", senderId: "user-a", body: "Thanks for reaching out." });
+  assert.deepEqual(updateArgs, { where: { id: "conversation-a" }, data: { lastMessageAt: createdAt } });
+});
+
+// Read receipts only update unread messages from the other participant in this conversation.
+test("PATCH pings read updates only incoming unread messages", async () => {
+  let query;
+  const prisma = {
+    userBlock: { findMany: async () => [] },
+    directConversation: { findFirst: async () => ({ id: "conversation-a" }) },
+    directMessage: { updateMany: async args => { query = args; return { count: 2 }; } }
+  };
+  await withSocialApi(prisma, async base => {
+    const response = await fetch(base + "/api/social/pings/conversations/conversation-a/read", { method: "PATCH" });
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { read: 2 });
+  });
+  assert.deepEqual(query.where, { conversationId: "conversation-a", senderId: { not: "user-a" }, readAt: null });
+  assert.ok(query.data.readAt instanceof Date);
+});

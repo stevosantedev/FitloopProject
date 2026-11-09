@@ -170,6 +170,12 @@ export default function App() {
   const [moderationError, setModerationError] = useState("");
   const [moderationNoteDrafts, setModerationNoteDrafts] = useState<Record<string, string>>({});
   const [posts, setPosts] = useState<FeedPost[]>([]);
+  // Profile history has its own cursor so an active friends-feed page cannot hide older posts.
+  const [myProfilePosts, setMyProfilePosts] = useState<FeedPost[]>([]);
+  const [myProfilePostsCursor, setMyProfilePostsCursor] = useState<string | null>(null);
+  const [myProfilePostsHasMore, setMyProfilePostsHasMore] = useState(false);
+  const [myProfilePostsLoading, setMyProfilePostsLoading] = useState(false);
+  const [myProfilePostsError, setMyProfilePostsError] = useState("");
   // Keep the in-app inbox separate from feed posts so read state can update without refreshing activity cards.
   const [activityNotifications, setActivityNotifications] = useState<ActivityNotification[]>([]);
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
@@ -471,6 +477,26 @@ async function loadProgressionSuggestions() {
       }
     } finally {
       setWorkoutsLoading(false);
+    }
+  }
+
+  // Load only this account's shared posts. The API derives the owner from the signed-in token.
+  // Profile history has its own cursor because the friends feed can contain only a recent page.
+  async function loadMyProfilePosts(cursor?: string) {
+    setMyProfilePostsLoading(true);
+    setMyProfilePostsError("");
+    try {
+      const query = new URLSearchParams({ limit: "20", ...(cursor ? { cursor } : {}) });
+      const data = await request("/api/social/profile/me/posts?" + query.toString());
+      setMyProfilePosts(current => cursor
+        ? [...current, ...data.posts.filter((post: FeedPost) => !current.some(existing => existing.id === post.id))]
+        : data.posts);
+      setMyProfilePostsCursor(data.nextCursor ?? null);
+      setMyProfilePostsHasMore(Boolean(data.hasMore));
+    } catch (error) {
+      setMyProfilePostsError(error instanceof Error ? error.message : "Could not load your shared posts.");
+    } finally {
+      setMyProfilePostsLoading(false);
     }
   }
 
@@ -1351,12 +1377,14 @@ function signOut() {
     if (token && (activeTab === "workouts" || activeTab === "coach")) void loadWorkouts();
     // Switching tabs loads the latest social and coaching records instead of showing stale data.
     if (token && activeTab === "community") void loadCommunity();
+    // Fetch the complete signed-in history only when the member opens their own Profile.
+    if (token && activeTab === "community" && socialView === "profile") void loadMyProfilePosts();
     if (token && activeTab === "coach") {
       void loadCoachConversations();
       void loadTrainingPlans();
       void loadProgressionSuggestions();
     }
-  }, [token, activeTab]);
+  }, [token, activeTab, socialView]);
 
   useEffect(() => {
     if (token && activeTab === "coach" && activeCoachConversationId) void loadCoachChat(activeCoachConversationId);
@@ -2070,7 +2098,11 @@ function signOut() {
         </form>
         <section className="profile-posts panel">
           <div className="section-heading-row"><div><p className="eyebrow">YOUR ACTIVITY</p><h2>Shared workouts & posts</h2></div><span>{posts.filter(post => post.user.id === user?.id).length} posts</span></div>
-          {posts.filter(post => post.user.id === user?.id).length === 0 ? <p className="muted">Your shared workouts and updates will appear here. Complete a workout and share it with your friends to get started.</p> : <div className="feed-list">{posts.filter(post => post.user.id === user?.id).map(post => <article className="feed-card" key={post.id}><time dateTime={post.createdAt}>{new Date(post.createdAt).toLocaleDateString()}</time><p>{post.text || post.session?.routine?.name || "Completed a workout"}</p>{post.session && <div className="workout-post-summary"><div className="workout-post-metrics"><span><strong>{post.session.sets.filter(set => set.completed).length}</strong> sets completed</span><span><strong>{summariseWorkoutPost(post.session).length}</strong> movements</span></div><div className="workout-post-movements">{summariseWorkoutPost(post.session).slice(0, 4).map(movement => <div className="workout-post-movement" key={movement.exerciseId}><strong>{movement.name}</strong><span>{movement.completedSets}/{movement.totalSets} sets</span></div>)}</div></div>}</article>)}</div>}
+          {myProfilePostsLoading && myProfilePosts.length === 0 && <p className="muted" role="status">Loading your shared posts…</p>}
+          {myProfilePostsError && <div className="load-error" role="alert"><span>{myProfilePostsError}</span><button type="button" className="secondary" onClick={() => void loadMyProfilePosts()}>Try again</button></div>}
+          {!myProfilePostsLoading && myProfilePosts.length === 0 && !myProfilePostsError && <p className="muted">Your shared workouts and updates will appear here. Complete a workout and share it with your friends to get started.</p>}
+          {myProfilePosts.length > 0 && <div className="feed-list">{myProfilePosts.map(post => <article className="feed-card" key={post.id}><time dateTime={post.createdAt}>{new Date(post.createdAt).toLocaleDateString()}</time><p>{post.text || post.session?.routine?.name || "Completed a workout"}</p>{post.session && <div className="workout-post-summary"><div className="workout-post-metrics"><span><strong>{post.session.sets.filter(set => set.completed).length}</strong> sets completed</span><span><strong>{summariseWorkoutPost(post.session).length}</strong> movements</span></div><div className="workout-post-movements">{summariseWorkoutPost(post.session).slice(0, 4).map(movement => <div className="workout-post-movement" key={movement.exerciseId}><strong>{movement.name}</strong><span>{movement.completedSets}/{movement.totalSets} sets</span></div>)}</div></div>}</article>)}</div>}
+          {myProfilePostsHasMore && <button type="button" className="small-button secondary feed-load-more" onClick={() => void loadMyProfilePosts(myProfilePostsCursor ?? undefined)} disabled={myProfilePostsLoading}>{myProfilePostsLoading ? "Loading…" : "Load older posts"}</button>}
         </section>
       </section>}
       {socialView === "pings" && <section className="panel pings-placeholder"><span className="pings-symbol">↗</span><h2>Private conversations, done properly.</h2><p className="muted">Messaging is not switched on yet. It needs message privacy, blocking integration, request controls and notification handling before conversations are enabled.</p></section>}

@@ -42,6 +42,10 @@ model User {
   moderationReviews ContentReport[] @relation("ReportReviewer")
   notificationsReceived ActivityNotification[] @relation("NotificationRecipient")
   notificationsSent ActivityNotification[] @relation("NotificationActor")
+  directConversationsA DirectConversation[] @relation("DirectConversationA")
+  directConversationsB DirectConversation[] @relation("DirectConversationB")
+  directConversationRequests DirectConversation[] @relation("DirectConversationRequester")
+  sentDirectMessages DirectMessage[] @relation("DirectMessageSender")
 }
 
 // One row per user per calendar day keeps daily check-ins easy to query and update.
@@ -373,6 +377,44 @@ model FeedComment {
   @@index([postId, createdAt])
 }
 
+
+// Direct conversations start as message requests. Only the recipient can accept or decline;
+ // accepted conversations remain private to their two participants.
+model DirectConversation {
+  id          String   @id @default(cuid())
+  userAId     String
+  userBId     String
+  requesterId String
+  status      String   @default("pending")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  lastMessageAt DateTime @default(now())
+  userA       User     @relation("DirectConversationA", fields: [userAId], references: [id], onDelete: Cascade)
+  userB       User     @relation("DirectConversationB", fields: [userBId], references: [id], onDelete: Cascade)
+  requester   User     @relation("DirectConversationRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  messages    DirectMessage[]
+
+  @@unique([userAId, userBId])
+  @@index([userAId, status, lastMessageAt])
+  @@index([userBId, status, lastMessageAt])
+  @@index([requesterId, status])
+}
+
+// Messages are readable only through a participant-checked conversation query.
+// A read timestamp belongs to the message so unread state cannot leak across accounts.
+model DirectMessage {
+  id             String   @id @default(cuid())
+  conversationId String
+  senderId       String
+  body           String   @db.VarChar(2000)
+  createdAt      DateTime @default(now())
+  readAt         DateTime?
+  conversation   DirectConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         User     @relation("DirectMessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt, id])
+  @@index([senderId, createdAt])
+}
 
 // A conversation is private to its owner; deleting the account removes its history.
 model CoachConversation {

@@ -1421,9 +1421,6 @@ function signOut() {
     }
   }, [token, activeTab]);
 
-  useEffect(() => {
-    // Public discovery has its own API and list. The server decides which accounts are public
-  // and filters blocks, so changing tabs cannot expose private activity.
   async function loadExplorePosts() {
     setExploreLoading(true); setExploreError("");
     try {
@@ -1443,6 +1440,7 @@ function signOut() {
     } catch (error) { setExploreError(error instanceof Error ? error.message : "Could not load more public posts."); }
     finally { setExploreLoading(false); }
   }
+
 
   // Profile history is loaded on demand, without refetching the friends feed for every social tab.
     if (token && activeTab === "community" && socialView === "profile") void loadMyProfilePosts();

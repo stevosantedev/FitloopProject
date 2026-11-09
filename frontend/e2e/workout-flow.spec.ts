@@ -1665,9 +1665,10 @@ test("Community opens on activity and Coach opens on the conversation", async ({
   await expect(page.getByText("Friend requests, reactions and comments will appear here.")).toBeVisible();
   await expect(page.locator(".community-page > .panel:has(.feed-section-heading)")).toHaveCSS("order", "1");
   await expect(page.locator(".community-page > .community-composer")).toHaveCSS("order", "2");
-  await expect(page.locator(".community-page > .content-grid")).toHaveCSS("order", "3");
-  await expect(page.locator(".community-page > .community-profile-form")).toHaveCSS("order", "4");
-  await expect(page.locator(".community-page > .community-blocked-panel")).toHaveCSS("order", "5");
+  await expect(page.locator(".community-page > .activity-inbox")).toHaveCSS("order", "3");
+  await expect(page.locator(".community-page > .content-grid")).toHaveCSS("order", "4");
+  await expect(page.locator(".community-page > .community-profile-form")).toHaveCSS("order", "5");
+  await expect(page.locator(".community-page > .community-blocked-panel")).toHaveCSS("order", "6");
 
   await page.locator(".sidebar-nav").getByRole("button", { name: "Coach" }).click();
   await expect(page.locator(".coach-page > .coach-chat-layout")).toHaveCSS("order", "1");

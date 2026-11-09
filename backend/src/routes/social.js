@@ -605,6 +605,24 @@ router.get("/profile/me/posts", async (req, res, next) => {
 });
 
 // Build the visible friend set first, then fetch only posts allowed by friendship and block relationships.
+// Explore only includes posts from accounts that have explicitly made their profile public.
+// Both directions of a block are excluded before pagination so blocked members cannot discover each other.
+router.get("/explore", async (req, res, next) => {
+  try {
+    const input = z.object({ cursor: z.string().min(1).max(64).optional(), limit: z.coerce.number().int().min(1).max(30).default(12) }).strict().parse(req.query);
+    const blocked = await blockedIds(req.userId);
+    const rows = await prismaClient.feedPost.findMany({
+      where: { userId: { not: req.userId, ...(blocked.length ? { notIn: blocked } : {}) }, user: { privateAccount: false } },
+      include: { user: { select: { id: true, username: true, displayName: true, bio: true } }, session: { select: { id: true, startedAt: true, routine: { select: { name: true } }, sets: { select: { id: true, reps: true, weightKg: true, completed: true, exercise: { select: { id: true, name: true } } } } } }, reactions: { select: { value: true, userId: true } }, comments: { include: { user: { select: { id: true, username: true } } }, orderBy: [{ createdAt: "asc" }, { id: "asc" }], take: 10 }, _count: { select: { comments: true } } },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      ...(input.cursor ? { cursor: { id: input.cursor }, skip: 1 } : {}), take: input.limit + 1
+    });
+    const hasMore = rows.length > input.limit;
+    const posts = hasMore ? rows.slice(0, input.limit) : rows;
+    return res.json({ posts, hasMore, nextCursor: hasMore ? posts[posts.length - 1].id : null });
+  } catch (error) { return next(error); }
+});
+
 router.get("/feed", async (req, res, next) => {
   try {
     // Re-evaluate visibility for every page; a block or friendship change

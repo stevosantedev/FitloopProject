@@ -1057,6 +1057,8 @@ test("Community feed retries an initial failure and then shows a genuine empty s
   await page.locator(".sidebar-nav").getByRole("button", { name: "Community" }).click();
   const error = page.getByRole("alert").filter({ hasText: "Community feed is temporarily unavailable." });
   await expect(error).toBeVisible();
+  await expect(page.locator(".activity-inbox")).toContainText("Activity is unavailable until the community can be refreshed.");
+  await expect(page.locator(".activity-inbox")).not.toContainText("Friend requests, reactions and comments will appear here.");
   await expect(page.getByText("No shared workouts yet. Once you and your friends log a session, it can appear here.")).toHaveCount(0);
   await error.getByRole("button", { name: "Try again" }).click();
   await expect(page.getByText("No shared workouts yet. Once you and your friends log a session, it can appear here.")).toBeVisible();
@@ -1731,5 +1733,47 @@ test("Community activity inbox marks items read and paginates older notification
   await inbox.getByRole("button", { name: "Mark all read" }).click();
   await expect(inbox.locator(".activity-unread-count")).toHaveCount(0);
   await expect(inbox.locator(".activity-notification-list li.is-unread")).toHaveCount(0);
+});
+
+// A temporary failure while paging the inbox must preserve existing items and allow a retry.
+test("Community activity inbox preserves loaded notifications when an older page fails", async ({ page }) => {
+  const notifications = Array.from({ length: 21 }, (_, index) => ({
+    id: "notification-" + (index + 1),
+    type: "comment",
+    createdAt: new Date(Date.UTC(2026, 10, 8, 12, index)).toISOString(),
+    readAt: null,
+    actor: { id: "friend-1", username: "friend", displayName: "Friend" },
+    post: { id: "post-" + (index + 1), text: "Activity item " + (index + 1), type: "update" }
+  }));
+  await mockApplicationApi(page, undefined, 200, [], [exercise], undefined, notifications);
+  let failNextPage = true;
+  await page.route(/\/api\/social\/notifications\?cursor=notification-20$/, async route => {
+    if (failNextPage) {
+      failNextPage = false;
+      await route.fulfill({
+        status: 503,
+        contentType: "application/json",
+        body: JSON.stringify({ error: "Older activity is temporarily unavailable." })
+      });
+      return;
+    }
+    await route.fallback();
+  });
+
+  await page.goto("/");
+  await page.getByLabel("Email").fill("tester@example.com");
+  await page.getByLabel("Password").fill("test-password");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.locator(".sidebar-nav").getByRole("button", { name: "Community" }).click();
+  const inbox = page.locator(".activity-inbox");
+  await expect(inbox.locator(".activity-notification-list li")).toHaveCount(20);
+
+  await inbox.getByRole("button", { name: "Load older activity" }).click();
+  await expect(inbox.getByRole("alert")).toContainText("Older activity is temporarily unavailable.");
+  await expect(inbox.locator(".activity-notification-list li")).toHaveCount(20);
+
+  await inbox.getByRole("button", { name: "Try again" }).click();
+  await expect(inbox.locator(".activity-notification-list li")).toHaveCount(21);
+  await expect(inbox.getByRole("alert")).toHaveCount(0);
 });
 

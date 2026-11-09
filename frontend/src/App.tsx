@@ -2019,6 +2019,7 @@ function signOut() {
           {unreadNotificationCount > 0 && <button type="button" className="small-button secondary" onClick={() => void markAllActivityNotificationsRead()}>Mark all read</button>}
         </div>
         {communityLoading && activityNotifications.length === 0 ? <p className="muted" role="status">Loading your activity…</p> :
+          communityError && activityNotifications.length === 0 ? <p className="muted">Activity is unavailable until the community can be refreshed.</p> :
           activityNotifications.length === 0 ? <p className="muted">Friend requests, reactions and comments will appear here.</p> :
           <ul className="activity-notification-list">
             {activityNotifications.map(notification => {

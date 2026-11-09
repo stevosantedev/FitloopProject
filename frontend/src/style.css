@@ -849,6 +849,7 @@ footer { padding: 22px 0 0; border-top: 1px solid #202c25; }
 .coach-reply-mode.ai_generated { border-color: #657b48; }
 .coach-reply-mode span { color: #aebdaf; font-size: .68rem; font-weight: 400; line-height: 1.45; }
 
+/* Muted captions retain 4.5:1 contrast against the app's raised training surfaces. */
 /* FitLoop's training-first visual system: high-contrast numbers, quiet surfaces and controls built for quick gym-floor use. */
 :root {
  color-scheme: dark;
@@ -859,7 +860,7 @@ footer { padding: 22px 0 0; border-top: 1px solid #202c25; }
  --fitloop-border: #343c34;
  --fitloop-text: #f1f4ed;
  --fitloop-muted: #a0aa9e;
- --fitloop-subtle: #778276;
+ --fitloop-subtle: #89968b;
  --fitloop-accent: #d4ff62;
  --fitloop-accent-ink: #17200e;
  --fitloop-danger: #f0a69a;

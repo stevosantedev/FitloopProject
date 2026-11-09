@@ -453,6 +453,7 @@ test("the app uses persistent navigation on desktop and a bottom tab bar on mobi
   await expect(page.locator(".app-sidebar")).toBeHidden();
 
   // A narrow phone should keep every main destination inside the viewport without sideways scrolling.
+  await page.locator(".workspace-switch-bar").getByRole("button", { name: "You" }).click();
   await page.setViewportSize({ width: 320, height: 740 });
   const assertNoHorizontalOverflow = async () => {
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
@@ -1974,12 +1975,13 @@ test("captures current FitLoop screens for visual review", async ({ page }, test
   const desktopScreens = [
     { name: "overview", ready: page.getByRole("heading", { name: "Your week", exact: true }) },
     { name: "workouts", button: "Workouts", ready: page.getByRole("heading", { name: "Build a workout" }) },
-    { name: "community", button: "Community", ready: page.getByRole("heading", { name: "Activity", exact: true }) },
+    { name: "community", ready: page.getByRole("heading", { name: "Activity", exact: true }) },
     { name: "coach", button: "Coach", ready: page.locator(".coach-chat-panel") }
   ];
 
   for (const screen of desktopScreens) {
-    if (screen.button) await desktopNavigation.getByRole("button", { name: screen.button }).click();
+    if (screen.name === "community") await page.locator(".workspace-switch-bar").getByRole("button", { name: "Social" }).click();
+    else if (screen.button) await desktopNavigation.getByRole("button", { name: screen.button }).click();
     await expect(screen.ready).toBeVisible();
     await page.screenshot({ path: testInfo.outputPath(screen.name + "-desktop.png"), fullPage: true });
   }
@@ -1995,7 +1997,8 @@ test("captures current FitLoop screens for visual review", async ({ page }, test
   ];
 
   for (const screen of mobileScreens) {
-    await mobileNavigation.getByRole("button", { name: screen.button }).click();
+    if (screen.name === "community") await page.locator(".workspace-switch-bar").getByRole("button", { name: "Social" }).click();
+    else await mobileNavigation.getByRole("button", { name: screen.button }).click();
     await expect(screen.ready).toBeVisible();
 
     // The phone layout must use its own screen hierarchy, not show the desktop workspace bar.

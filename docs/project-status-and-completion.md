@@ -149,3 +149,12 @@ The previous visual-review run exposed a strict heading assertion and an extra d
 - Added backend coverage for profile-history ownership, cursor ordering, page limits and exclusion of private session notes, plus browser coverage for workspace switching, all destination labels, profile posts, Explore's current people-discovery scope and the Pings unavailable state.
 - The prior branch-head CI run [42666525207](https://github.com/stevosantedev/FitloopProject/actions/runs/42666525207) passed both jobs before this navigation refactor. CI for the current commits is required before this slice is marked verified.
 - The Club workspace remains intentionally out of the active navigation. It should only be introduced if distinct group training, challenges or club-level activity become part of the agreed scope.
+
+
+## Visual design pass
+
+- Applied a consistent charcoal-and-orange visual layer across the app shell, forms, workout summaries, charts, social feed, workspace switch and phone navigation.
+- Primary actions and active destinations use one warm orange accent. Secondary actions and content surfaces stay neutral so the main task remains clear.
+- Added visible keyboard focus treatment and dark form controls.
+- This is a first cohesive visual pass, not a final sign-off. It still needs real browser screenshots at 320px, 390px, 430px, tablet and desktop, followed by visual fixes based on those captures.
+- The design direction uses high-contrast dark surfaces, visual workout content and clear hierarchy. It does not copy another product's screens or branding.

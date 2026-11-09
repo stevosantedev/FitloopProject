@@ -1826,7 +1826,7 @@ test("Progress is a separate destination with compact weekly metrics", async ({ 
   await expect(page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).resolves.toBe(true);
 });
 
-test("Community opens on activity and Coach opens on the conversation", async ({ page }) => {
+test("Social opens on activity and Plan leads with weekly planning", async ({ page }) => {
   await mockApplicationApi(page);
   await page.goto("/");
   await page.getByLabel("Email").fill("tester@example.com");
@@ -1845,6 +1845,8 @@ test("Community opens on activity and Coach opens on the conversation", async ({
 
   await page.locator(".workspace-switch-bar").getByRole("button", { name: "You" }).click();
   await page.locator(".sidebar-nav").getByRole("button", { name: "Coach" }).click();
+  await expect(page.getByRole("heading", { name: "Build your week.", exact: true })).toBeVisible();
+  await expect(page.locator(".coach-page > .coach-routine-builder")).toHaveCSS("order", "1");
   await expect(page.locator(".coach-page > .coach-chat-layout")).toHaveCSS("order", "3");
   await expect(page.locator(".coach-page > .progression-guidance")).toHaveCSS("order", "2");
   await expect(page.locator(".coach-page > .coach-routine-builder")).toHaveCSS("order", "1");
@@ -2058,6 +2060,10 @@ test("Social and You switch between the correct destinations", async ({ page }) 
   await expect(page.locator(".mobile-nav")).toContainText("Stats");
   await expect(page.locator(".mobile-nav")).toContainText("Plan");
   await expect(page.locator(".mobile-nav")).toContainText("Library");
+  await page.locator(".mobile-nav").getByRole("button", { name: "Library" }).click();
+  await expect(page.locator(".mobile-nav button[aria-current=page]")).toHaveText("Library");
+  await page.locator(".mobile-nav").getByRole("button", { name: "Workouts" }).click();
+  await expect(page.locator(".mobile-nav button[aria-current=page]")).toHaveText("Workout");
 
   await workspaceSwitch.getByRole("button", { name: "Social" }).click();
   await expect(workspaceSwitch.getByRole("button", { name: "Social" })).toHaveAttribute("aria-pressed", "true");
@@ -2071,6 +2077,7 @@ test("Social and You switch between the correct destinations", async ({ page }) 
   await expect(page.getByRole("heading", { name: "Shared workouts & posts" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Edit profile" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Settings" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Blocked accounts" })).toBeVisible();
 
   await page.locator(".mobile-nav").getByRole("button", { name: "Pings" }).click();
   await expect(page.getByRole("heading", { name: "Private conversations, done properly." })).toBeVisible();
@@ -2079,6 +2086,7 @@ test("Social and You switch between the correct destinations", async ({ page }) 
   await page.locator(".mobile-nav").getByRole("button", { name: "Explore" }).click();
   await expect(page.getByRole("heading", { name: "Find your people." })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Find friends" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Friends and requests" })).toBeVisible();
 
   await workspaceSwitch.getByRole("button", { name: "You" }).click();
   await expect(page.getByRole("heading", { name: "Your week" })).toBeVisible();

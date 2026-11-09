@@ -1941,7 +1941,7 @@ function signOut() {
             })}</ul>}
         </section>
       </div>
-      <section className="panel section-gap">
+      <section className="panel section-gap community-blocked-panel">
         <p className="eyebrow">PRIVACY & SAFETY</p><h2>Blocked accounts</h2>
         {blockedAccounts.length === 0 ? <p className="muted">You haven't blocked anyone.</p> : <ul className="log-list">{blockedAccounts.map(account => <li key={account.id}><strong>{account.displayName || "@" + account.username}</strong><span>@{account.username}</span><button type="button" className="small-button secondary" onClick={() => void unblockCommunityUser(account.id)}>Unblock</button></li>)}</ul>}
       </section>

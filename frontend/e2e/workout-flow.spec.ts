@@ -2143,8 +2143,10 @@ test("Social and You switch between the correct destinations", async ({ page }) 
   await expect(page.getByRole("heading", { name: "Blocked accounts" })).toHaveCount(0);
 
   await clickWorkspaceDestination(page, "social", "Pings");
-  await expect(page.getByRole("heading", { name: "Private conversations, done properly." })).toBeVisible();
-  await expect(page.getByText(/Private messaging is not available yet/)).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Send a message request" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Message requests" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Conversations" })).toBeVisible();
+  await expect(page.getByText(/Private messaging is not available yet/)).toHaveCount(0);
 
   await clickWorkspaceDestination(page, "social", "Explore");
   await expect(page.getByRole("heading", { name: "Discover the community" })).toBeVisible();
@@ -2278,7 +2280,9 @@ test("Social bottom tabs show their own focused screen content", async ({ page }
   await expect(page.locator(".community-composer")).toHaveCount(0);
 
   await clickWorkspaceDestination(page, "social", "Pings");
-  await expect(page.locator(".pings-placeholder")).toBeVisible();
+  await expect(page.locator(".pings-page")).toBeVisible();
+  await expect(page.locator(".pings-request-panel")).toBeVisible();
+  await expect(page.locator(".pings-placeholder")).toHaveCount(0);
   await expect(page.locator(".profile-home")).toHaveCount(0);
   await expect(page.locator(".content-grid")).toHaveCount(0);
 });

@@ -182,6 +182,7 @@ The responsive PWA is being redesigned around phone use. Five matching destinati
 - [x] Make the mobile tab bar fixed and reserve space for device safe areas.
 - [x] Keep the five main destinations consistent across desktop and phone navigation.
 - [x] Add a data-backed weekly activity strip to Home and shortcut navigation within Training.
+- [x] Move account preferences and permanent deletion into a separate settings sheet.
 - [ ] Rework Overview around recent training and a compact daily check-in, with account administration moved out of the main journey.
 - [ ] Rework Workouts around quick session start and gym-floor set logging. Keep exercise discovery, routine editing, muscle map and history accessible without forcing every tool into one long page.
 - [ ] Rework Community so the friends feed and post composer lead, while profile and relationship controls sit in secondary areas.

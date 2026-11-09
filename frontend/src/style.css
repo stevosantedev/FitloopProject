@@ -1253,3 +1253,79 @@ footer { border-color: #2b322b; }
   .auth-card { padding: 16px 0; }
 }
 
+/* The activity inbox stays compact so it supports the feed without becoming a second dashboard. */
+.community-page > .activity-inbox { order: 3; }
+.community-page > .content-grid { order: 4; }
+.community-page > .community-profile-form { order: 5; }
+.community-page > .community-blocked-panel { order: 6; }
+.activity-inbox-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.activity-inbox-heading h2 {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0;
+}
+.activity-inbox-heading .eyebrow { margin-bottom: 5px; }
+.activity-inbox-heading > button { width: auto; margin: 0; }
+.activity-unread-count {
+  display: inline-grid;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  place-items: center;
+  border-radius: 99px;
+  background: var(--fitloop-accent);
+  color: var(--fitloop-accent-ink);
+  font-size: .72rem;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+.activity-notification-list {
+  display: grid;
+  gap: 0;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.activity-notification-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid var(--fitloop-border);
+}
+.activity-notification-list li.is-unread { border-left: 2px solid var(--fitloop-accent); padding-left: 10px; }
+.activity-notification-copy { min-width: 0; }
+.activity-notification-copy p { margin: 0; color: var(--fitloop-muted); font-size: .86rem; }
+.activity-notification-copy p strong { color: var(--fitloop-text); }
+.activity-notification-copy small {
+  display: block;
+  margin-top: 4px;
+  overflow: hidden;
+  color: var(--fitloop-subtle);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.activity-notification-copy time {
+  display: block;
+  margin-top: 5px;
+  color: var(--fitloop-subtle);
+  font-size: .68rem;
+}
+.activity-notification-list .text-button {
+  flex: 0 0 auto;
+  width: auto;
+  margin: 0;
+  padding: 7px;
+  font-size: .72rem;
+}
+@media (max-width: 560px) {
+  .activity-notification-list li { align-items: flex-start; }
+  .activity-notification-list .text-button { min-height: 36px; padding: 5px 2px; }
+}

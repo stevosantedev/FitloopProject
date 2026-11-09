@@ -61,6 +61,7 @@ type FriendConnection = {
 };
 type CommunityProfile = { id: string; username: string; displayName: string | null; bio: string | null };
 type FriendSearchResult = { id: string; username: string; displayName: string | null };
+type ActivityNotification = { id: string; type: "friend_request" | "friend_accepted" | "reaction" | "comment"; createdAt: string; readAt?: string | null; actor?: User | null; post?: { id: string; text?: string | null; type?: string } | null };
 type FeedPost = {
   id: string;
   createdAt: string;
@@ -165,6 +166,9 @@ export default function App() {
   const [moderationError, setModerationError] = useState("");
   const [moderationNoteDrafts, setModerationNoteDrafts] = useState<Record<string, string>>({});
   const [posts, setPosts] = useState<FeedPost[]>([]);
+  // Keep the in-app inbox separate from feed posts so read state can update without refreshing activity cards.
+  const [activityNotifications, setActivityNotifications] = useState<ActivityNotification[]>([]);
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
   // Disable every reaction on a post while its server update is pending; the ref closes the gap before React rerenders.
   const [reactionSaving, setReactionSaving] = useState<Record<string, boolean>>({});
   const reactionRequestsRef = useRef(new Set<string>());
@@ -453,16 +457,19 @@ async function loadCommunity() {
     setCommunityError("");
     try {
       // Friends and feed data use the same access-controlled API as the rest of the account.
-      const [friendData, feedData, blockData] = await Promise.all([
+      const [friendData, feedData, blockData, notificationData] = await Promise.all([
         request("/api/social/friends"),
         request("/api/social/feed"),
-        request("/api/social/blocks")
+        request("/api/social/blocks"),
+        request("/api/social/notifications")
       ]);
       setConnections(friendData.connections);
       setPosts(feedData.posts);
       setFeedCursor(feedData.nextCursor ?? null);
       setFeedHasMore(Boolean(feedData.hasMore));
       setBlockedAccounts(blockData.blocks.map((item: any) => item.blockedUser));
+      setActivityNotifications(notificationData.notifications);
+      setUnreadNotificationCount(notificationData.unreadCount);
       // A moderator-only request is made only after the server confirms this account's capability.
       try {
         const capability = await request("/api/social/moderation/capability");
@@ -558,6 +565,32 @@ async function refreshCommunityFeed() {
       setFeedRefreshError(error instanceof Error ? error.message : "Could not refresh the community feed.");
     } finally {
       setFeedRefreshing(false);
+    }
+  }
+
+  // Mark one inbox item read locally after the recipient-scoped API confirms the change.
+  async function markActivityNotificationRead(id: string) {
+    const target = activityNotifications.find(item => item.id === id);
+    if (!target || target.readAt) return;
+    try {
+      await request("/api/social/notifications/" + id + "/read", { method: "PATCH" });
+      setActivityNotifications(current => current.map(item => item.id === id ? { ...item, readAt: new Date().toISOString() } : item));
+      setUnreadNotificationCount(current => Math.max(0, current - 1));
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Could not update this notification.");
+    }
+  }
+
+  // Mark-all uses one server-side owner-scoped update, then clears the visible unread state.
+  async function markAllActivityNotificationsRead() {
+    if (unreadNotificationCount === 0) return;
+    try {
+      await request("/api/social/notifications/read-all", { method: "POST", body: JSON.stringify({}) });
+      const readAt = new Date().toISOString();
+      setActivityNotifications(current => current.map(item => ({ ...item, readAt: item.readAt ?? readAt })));
+      setUnreadNotificationCount(0);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Could not mark your activity as read.");
     }
   }
 
@@ -1951,6 +1984,31 @@ function signOut() {
         <textarea id="community-post" value={communityPostDraft} onChange={event => setCommunityPostDraft(event.target.value)} placeholder="Share a win, a goal or a training thought with your friends…" rows={3} maxLength={500} />
         <div className="composer-footer"><small>{communityPostDraft.trim().length}/500 · Shared with accepted friends</small><button disabled={!communityPostDraft.trim()}>Share update</button></div>
       </form>
+      <section className="panel section-gap activity-inbox" aria-labelledby="activity-inbox-heading">
+        <div className="activity-inbox-heading">
+          <div><p className="eyebrow">YOUR COMMUNITY</p><h2 id="activity-inbox-heading">Activity{unreadNotificationCount > 0 ? <span className="activity-unread-count">{unreadNotificationCount}</span> : null}</h2></div>
+          {unreadNotificationCount > 0 && <button type="button" className="small-button secondary" onClick={() => void markAllActivityNotificationsRead()}>Mark all read</button>}
+        </div>
+        {communityLoading && activityNotifications.length === 0 ? <p className="muted" role="status">Loading your activity…</p> :
+          activityNotifications.length === 0 ? <p className="muted">Friend requests, reactions and comments will appear here.</p> :
+          <ul className="activity-notification-list">
+            {activityNotifications.map(notification => {
+              const actorName = notification.actor?.displayName || (notification.actor ? "@" + notification.actor.username : "A former member");
+              const action = notification.type === "friend_request" ? "sent you a friend request"
+                : notification.type === "friend_accepted" ? "accepted your friend request"
+                : notification.type === "reaction" ? "reacted to your post"
+                : "commented on your post";
+              return <li className={notification.readAt ? "is-read" : "is-unread"} key={notification.id}>
+                <div className="activity-notification-copy">
+                  <p><strong>{actorName}</strong> {action}</p>
+                  {notification.post?.text && <small>{notification.post.text}</small>}
+                  <time dateTime={notification.createdAt}>{new Date(notification.createdAt).toLocaleString()}</time>
+                </div>
+                {!notification.readAt && <button type="button" className="text-button" onClick={() => void markActivityNotificationRead(notification.id)} aria-label={"Mark activity from " + actorName + " as read"}>Mark read</button>}
+              </li>;
+            })}
+          </ul>}
+      </section>
       <section className="panel section-gap">
         <div className="feed-section-heading">
           <div><p className="eyebrow">FRIENDS</p><h2>Friends' activity</h2></div>

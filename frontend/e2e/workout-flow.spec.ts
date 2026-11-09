@@ -1838,12 +1838,12 @@ test("Community opens on activity and Coach opens on the conversation", async ({
   await expect(page.locator(".community-page > .community-blocked-panel")).toHaveCSS("order", "6");
 
   await page.locator(".sidebar-nav").getByRole("button", { name: "Coach" }).click();
-  await expect(page.locator(".coach-page > .coach-chat-layout")).toHaveCSS("order", "1");
+  await expect(page.locator(".coach-page > .coach-chat-layout")).toHaveCSS("order", "3");
   await expect(page.locator(".coach-page > .progression-guidance")).toHaveCSS("order", "2");
-  await expect(page.locator(".coach-page > .coach-routine-builder")).toHaveCSS("order", "3");
+  await expect(page.locator(".coach-page > .coach-routine-builder")).toHaveCSS("order", "1");
 
   await page.setViewportSize({ width: 390, height: 844 });
-  await expect(page.locator(".coach-page > .coach-chat-layout")).toHaveCSS("order", "1");
+  await expect(page.locator(".coach-page > .coach-chat-layout")).toHaveCSS("order", "3");
   await expect(page.locator(".coach-page .coach-chat-panel")).toHaveCSS("order", "0");
   await expect(page.locator(".coach-page .coach-conversation-list")).toHaveCSS("order", "1");
   await expect(page.locator(".mobile-nav")).toBeVisible();

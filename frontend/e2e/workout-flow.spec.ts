@@ -1915,6 +1915,12 @@ test("captures current FitLoop screens for visual review", async ({ page }, test
     await expect(page.locator(".app-main > .topbar")).toBeHidden();
     await expect(mobileNavigation).toBeVisible();
     await expect(mobileNavigation).toHaveCSS("position", "fixed");
-    await page.screenshot({ path: testInfo.outputPath(screen.name + "-mobile.png"), fullPage: true });
+
+    // A phone preview should show the actual first viewport, including the tab bar,
+    // rather than flattening a long page into a screenshot that no phone user sees.
+    const tabBarBounds = await mobileNavigation.boundingBox();
+    expect(tabBarBounds).not.toBeNull();
+    expect(tabBarBounds!.y + tabBarBounds!.height).toBeLessThanOrEqual(844);
+    await page.screenshot({ path: testInfo.outputPath(screen.name + "-mobile.png"), fullPage: false });
   }
 });

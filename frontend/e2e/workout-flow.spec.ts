@@ -254,8 +254,9 @@ async function clickWorkspaceDestination(page: Page, workspace: "social" | "you"
   const destinationButton = navigation.getByRole("button", { name: accessibleName, exact: true });
   await expect(destinationButton).toBeVisible();
   await destinationButton.click();
-  // Wait for React to commit the selected destination before checking its screen content.
-  await expect(destinationButton).toHaveAttribute("aria-current", "page");
+  // The navigation is rebuilt when the workspace changes, so confirm the destination
+  // through the persistent page heading rather than retaining a locator for the old tab bar.
+  await expect(page.locator(".topbar strong")).toHaveText(destination);
 }
 
 async function clickWorkoutsNavigation(page: Page) {

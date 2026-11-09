@@ -230,6 +230,20 @@ async function mockApplicationApi(page: Page, onSessionSave?: (body: any) => voi
   return socialPosts;
 }
 
+
+// Choose the correct workspace first, then use the navigation that is actually visible
+// at the current viewport. This keeps the same journey valid on desktop and phones.
+async function clickWorkspaceDestination(page: Page, workspace: "social" | "you", destination: string) {
+  await page.locator(".workspace-switch-bar").getByRole("button", { name: workspace === "social" ? "Social" : "You" }).click();
+  const navigation = page.locator((page.viewportSize()?.width ?? 1280) <= 820 ? ".mobile-nav" : ".sidebar-nav");
+  const accessibleName = destination === "Feed" ? "Community"
+    : destination === "Workout" ? "Workouts"
+    : destination === "Stats" ? "Progress"
+    : destination === "Plan" ? "Coach"
+    : destination;
+  await navigation.getByRole("button", { name: accessibleName, exact: true }).click();
+}
+
 async function clickWorkoutsNavigation(page: Page) {
   // Wait for authentication to finish rendering the app before choosing a responsive navigation variant.
   await expect(page.locator(".app-shell")).toBeVisible();
@@ -448,7 +462,7 @@ test("the app uses persistent navigation on desktop and a bottom tab bar on mobi
   const mobileNavButton = page.locator(".mobile-nav button").first();
   await expect.poll(() => mobileNavButton.evaluate(element => getComputedStyle(element).minHeight)).toBe("52px");
   await expect.poll(() => page.locator(".mobile-nav").evaluate(element => getComputedStyle(element).position)).toBe("fixed");
-  await page.locator(".mobile-nav").getByRole("button", { name: "Progress" }).click();
+  await clickWorkspaceDestination(page, "you", "Stats");
   await expect(page.locator(".mobile-nav button[aria-current=page]")).toHaveText("Stats");
   await expect(page.getByRole("heading", { name: "Progress", exact: true })).toBeVisible();
   await page.locator(".workspace-switch-bar").getByRole("button", { name: "Social" }).click();
@@ -462,15 +476,15 @@ test("the app uses persistent navigation on desktop and a bottom tab bar on mobi
   const assertNoHorizontalOverflow = async () => {
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   };
-  await page.locator(".mobile-nav").getByRole("button", { name: "Home" }).click();
+  await clickWorkspaceDestination(page, "you", "Home");
   await assertNoHorizontalOverflow();
-  await page.locator(".mobile-nav").getByRole("button", { name: "Workouts" }).click();
+  await clickWorkspaceDestination(page, "you", "Workout");
   await assertNoHorizontalOverflow();
   await page.locator(".mobile-nav").getByRole("button", { name: "Progress" }).click();
   await assertNoHorizontalOverflow();
   await page.locator(".workspace-switch-bar").getByRole("button", { name: "Social" }).click();
   await assertNoHorizontalOverflow();
-  await page.locator(".sidebar-nav").getByRole("button", { name: "Coach" }).click();
+  await clickWorkspaceDestination(page, "you", "Plan");
   await assertNoHorizontalOverflow();
   await page.locator(".workspace-switch-bar").getByRole("button", { name: "Social" }).click();
   await expect(page.locator(".mobile-nav button")).toHaveCount(4);
@@ -1042,8 +1056,8 @@ test("dedicated coach workspace creates a conversation and displays a guided rep
   await page.getByLabel("Email").fill("tester@example.com");
   await page.getByLabel("Password").fill("test-password");
   await page.getByRole("button", { name: "Sign in" }).click();
-  await page.locator(".sidebar-nav").getByRole("button", { name: "Coach" }).click();
-  await expect(page.getByRole("heading", { name: "Ask about your training." })).toBeVisible();
+  await clickWorkspaceDestination(page, "you", "Plan");
+  await expect(page.getByRole("heading", { name: "Build your week." })).toBeVisible();
   // Keep the conversation as the first Coach task; secondary analysis and planning should not push it below the fold.
   const coachSectionOrder = await page.locator(".coach-page > .coach-chat-layout, .coach-page > .progression-guidance, .coach-page > .coach-routine-builder").evaluateAll(elements => elements.map(element => element.className));
   expect(coachSectionOrder).toEqual(["coach-chat-layout", "panel progression-guidance", "panel coach-routine-builder"]);
@@ -1184,7 +1198,7 @@ test("community block and report controls call the moderation API", async ({ pag
   await page.getByLabel("Password").fill("test-password");
   await page.getByRole("button", { name: "Sign in" }).click();
   await page.locator(".workspace-switch-bar").getByRole("button", { name: "Social" }).click();
-  await page.locator(".mobile-nav").getByRole("button", { name: "Explore" }).click();
+  await clickWorkspaceDestination(page, "social", "Explore");
   await expect(page.getByRole("heading", { name: "Friends and requests" })).toBeVisible();
   await page.getByRole("button", { name: "Report account" }).click();
   await expect(page.getByRole("status")).toContainText("Report submitted privately");
@@ -1233,7 +1247,7 @@ test("Community members can search for people and send a friend request from a r
   await page.getByLabel("Password").fill("test-password");
   await page.getByRole("button", { name: "Sign in" }).click();
   await page.locator(".workspace-switch-bar").getByRole("button", { name: "Social" }).click();
-  await page.locator(".mobile-nav").getByRole("button", { name: "Explore" }).click();
+  await clickWorkspaceDestination(page, "social", "Explore");
 
   await page.getByLabel("Search by username or display name").fill("runner");
   await page.getByRole("button", { name: "Search people" }).click();
@@ -1583,7 +1597,7 @@ test("Coach builds a weekly programme, saves it only after review and starts a s
   await page.getByLabel("Password").fill("test-password");
   await page.getByRole("button", { name: "Sign in" }).click();
   await page.locator(".sidebar-nav").getByRole("button", { name: "Coach" }).click();
-  await expect(page.getByRole("heading", { name: "Ask about your training." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Build your week." })).toBeVisible();
   const generate = page.getByRole("button", { name: "Generate weekly programme" });
   await expect(generate).toBeEnabled();
   await page.getByLabel("Days available each week").selectOption("2");
@@ -2077,7 +2091,7 @@ test("Social and You switch between the correct destinations", async ({ page }) 
   await expect(page.locator(".mobile-nav")).toContainText("Pings");
   await expect(page.locator(".mobile-nav")).toContainText("Profile");
 
-  await page.locator(".mobile-nav").getByRole("button", { name: "Profile" }).click();
+  await clickWorkspaceDestination(page, "social", "Profile");
   await expect(page.getByRole("heading", { name: "Shared workouts & posts" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Settings" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Edit profile" })).toBeVisible();
@@ -2122,7 +2136,7 @@ test("the member profile shows the signed-in user's own shared workout posts", a
   await page.getByLabel("Password").fill("test-password");
   await page.getByRole("button", { name: "Sign in" }).click();
   await page.locator(".workspace-switch-bar").getByRole("button", { name: "Social" }).click();
-  await page.locator(".mobile-nav").getByRole("button", { name: "Profile" }).click();
+  await clickWorkspaceDestination(page, "social", "Profile");
 
   await expect(page.getByRole("heading", { name: "tester" })).toBeVisible();
   await expect(page.getByText("A steady session before lectures.")).toBeVisible();
@@ -2202,20 +2216,20 @@ test("Social bottom tabs show their own focused screen content", async ({ page }
   await expect(page.locator(".feed-section-heading")).toBeVisible();
   await expect(page.locator(".content-grid")).toHaveCount(0);
 
-  await nav.getByRole("button", { name: "Explore" }).click();
+  await clickWorkspaceDestination(page, "social", "Explore");
   await expect(page.locator(".content-grid")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Find friends" })).toBeVisible();
   await expect(page.locator(".community-composer")).toHaveCount(0);
   await expect(page.locator(".activity-inbox")).toHaveCount(0);
   await expect(page.locator(".feed-section-heading")).toHaveCount(0);
 
-  await nav.getByRole("button", { name: "Profile" }).click();
+  await clickWorkspaceDestination(page, "social", "Profile");
   await expect(page.locator(".profile-home")).toBeVisible();
   await expect(page.locator(".community-profile-form")).toHaveCount(0);
   await expect(page.locator(".content-grid")).toHaveCount(0);
   await expect(page.locator(".community-composer")).toHaveCount(0);
 
-  await nav.getByRole("button", { name: "Pings" }).click();
+  await clickWorkspaceDestination(page, "social", "Pings");
   await expect(page.locator(".pings-placeholder")).toBeVisible();
   await expect(page.locator(".profile-home")).toHaveCount(0);
   await expect(page.locator(".content-grid")).toHaveCount(0);

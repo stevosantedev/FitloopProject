@@ -1446,6 +1446,23 @@ function signOut() {
   const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
   const sessionsThisWeek = sessions.filter(session => new Date(session.startedAt).getTime() >= sevenDaysAgo);
   const completedSetsThisWeek = sessionsThisWeek.flatMap(session => session.sets).filter(set => set.completed).length;
+  // Use local calendar dates for the week strip so a workout near midnight stays on the day the user logged it.
+  const localDayKey = (date: Date) => [date.getFullYear(), String(date.getMonth() + 1).padStart(2, "0"), String(date.getDate()).padStart(2, "0")].join("-");
+  const today = new Date();
+  const mondayOffset = (today.getDay() + 6) % 7;
+  const monday = new Date(today.getFullYear(), today.getMonth(), today.getDate() - mondayOffset);
+  const weekDays = Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + index);
+    const key = localDayKey(date);
+    return {
+      key,
+      label: date.toLocaleDateString(undefined, { weekday: "short" }),
+      day: date.getDate(),
+      isToday: key === localDayKey(today),
+      hasWorkout: sessions.some(session => localDayKey(new Date(session.startedAt)) === key),
+      hasCheckIn: logs.some(log => localDayKey(new Date(log.date)) === key)
+    };
+  });
   // Count completed sets by the exercise's primary muscle group. This is a
   // simple training-volume proxy, not a measure of muscle growth or recovery.
   const muscleVolume = sessions.flatMap(session => session.sets)
@@ -1568,6 +1585,21 @@ function signOut() {
         <div className="overview-actions" aria-label="Quick actions">
           <button type="button" onClick={() => setActiveTab("workouts")}>Start a workout <span aria-hidden="true">↗</span></button>
           <button type="button" className="overview-secondary-action" onClick={() => setActiveTab("coach")}>Open coach</button>
+        </div>
+      </section>
+
+      {/* This compact week strip gives a quick sense of routine without inventing activity for days with no entries. */}
+      <section className="week-strip" aria-label="This week's activity">
+        <div className="week-strip-heading"><strong>This week</strong><span>Mon to Sun</span></div>
+        <div className="week-day-list">
+          {weekDays.map(day => <div className={"week-day" + (day.isToday ? " is-today" : "")} key={day.key} aria-label={day.label + " " + day.day + (day.hasWorkout ? ", workout logged" : "") + (day.hasCheckIn ? ", check-in logged" : "")}>
+            <span className="week-day-label">{day.label}</span>
+            <strong>{day.day}</strong>
+            <span className="week-day-markers" aria-hidden="true">
+              <i className={day.hasWorkout ? "has-workout" : ""} />
+              <i className={day.hasCheckIn ? "has-check-in" : ""} />
+            </span>
+          </div>)}
         </div>
       </section>
 

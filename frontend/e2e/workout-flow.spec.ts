@@ -1988,6 +1988,16 @@ test("captures current FitLoop screens for visual review", async ({ page }, test
     await page.screenshot({ path: testInfo.outputPath(screen.name + "-desktop.png"), fullPage: true });
   }
 
+  // Capture the four Social destinations separately so the profile and discovery
+  // layouts can be reviewed without scrolling through unrelated community tools.
+  await page.locator(".workspace-switch-bar").getByRole("button", { name: "Social" }).click();
+  const socialDesktop = page.locator(".sidebar-nav");
+  for (const destination of ["Feed", "Explore", "Pings", "Profile"]) {
+    await socialDesktop.getByRole("button", { name: destination === "Feed" ? "Community" : destination }).click();
+    await expect(page.locator(".community-page")).toHaveAttribute("data-social-view", destination.toLowerCase());
+    await page.screenshot({ path: testInfo.outputPath(destination.toLowerCase() + "-desktop.png"), fullPage: true });
+  }
+
   // Repeat the same destinations at a common phone size to review the bottom navigation and content flow.
   await page.setViewportSize({ width: 390, height: 844 });
   const mobileNavigation = page.locator(".mobile-nav");
@@ -2015,6 +2025,14 @@ test("captures current FitLoop screens for visual review", async ({ page }, test
     expect(tabBarBounds).not.toBeNull();
     expect(tabBarBounds!.y + tabBarBounds!.height).toBeLessThanOrEqual(844);
     await page.screenshot({ path: testInfo.outputPath(screen.name + "-mobile.png"), fullPage: false });
+  }
+
+  // The Social bar has four equal destinations and should remain usable at phone width.
+  await page.locator(".workspace-switch-bar").getByRole("button", { name: "Social" }).click();
+  for (const destination of ["Feed", "Explore", "Pings", "Profile"]) {
+    await mobileNavigation.getByRole("button", { name: destination === "Feed" ? "Community" : destination }).click();
+    await expect(page.locator(".community-page")).toHaveAttribute("data-social-view", destination.toLowerCase());
+    await page.screenshot({ path: testInfo.outputPath(destination.toLowerCase() + "-mobile.png"), fullPage: false });
   }
 });
 

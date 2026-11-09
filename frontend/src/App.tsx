@@ -1593,11 +1593,11 @@ function signOut() {
           <button aria-current={socialView === "pings" ? "page" : undefined} className={socialView === "pings" ? "active" : ""} onClick={() => { setActiveTab("community"); setSocialView("pings"); }}><span>◌</span>Pings</button>
           <button aria-current={socialView === "profile" ? "page" : undefined} className={socialView === "profile" ? "active" : ""} onClick={() => { setActiveTab("community"); setSocialView("profile"); }}><span>◉</span>Profile</button>
         </> : <>
-          <button aria-current={activeTab === "home" ? "page" : undefined} className={activeTab === "home" ? "active" : ""} onClick={() => setActiveTab("home")}><span>⌂</span>Home</button>
-          <button aria-label="Workouts" aria-current={activeTab === "workouts" ? "page" : undefined} className={activeTab === "workouts" ? "active" : ""} onClick={() => setActiveTab("workouts")}><span>▤</span>Workout</button>
-          <button aria-label="Progress" aria-current={activeTab === "progress" ? "page" : undefined} className={activeTab === "progress" ? "active" : ""} onClick={() => setActiveTab("progress")}><span>▥</span>Stats</button>
-          <button aria-label="Coach" aria-current={activeTab === "coach" ? "page" : undefined} className={activeTab === "coach" ? "active" : ""} onClick={() => setActiveTab("coach")}><span>▦</span>Plan</button>
-          <button aria-current={activeTab === "workouts" ? "page" : undefined} className={activeTab === "workouts" ? "active" : ""} onClick={() => { setActiveTab("workouts"); window.setTimeout(() => document.getElementById("exercise-library")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0); }}><span>▧</span>Library</button>
+          <button aria-current={youView === "home" ? "page" : undefined} className={youView === "home" ? "active" : ""} onClick={() => { setYouView("home"); setActiveTab("home"); }}><span>⌂</span>Home</button>
+          <button aria-label="Workouts" aria-current={youView === "workout" ? "page" : undefined} className={youView === "workout" ? "active" : ""} onClick={() => { setYouView("workout"); setActiveTab("workouts"); }}><span>▤</span>Workout</button>
+          <button aria-label="Progress" aria-current={youView === "stats" ? "page" : undefined} className={youView === "stats" ? "active" : ""} onClick={() => { setYouView("stats"); setActiveTab("progress"); }}><span>▥</span>Stats</button>
+          <button aria-label="Coach" aria-current={youView === "plan" ? "page" : undefined} className={youView === "plan" ? "active" : ""} onClick={() => { setYouView("plan"); setActiveTab("coach"); }}><span>▦</span>Plan</button>
+          <button aria-current={youView === "library" ? "page" : undefined} className={youView === "library" ? "active" : ""} onClick={() => { setYouView("library"); setActiveTab("workouts"); window.setTimeout(() => document.getElementById("exercise-library")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0); }}><span>▧</span>Library</button>
         </>}
       </nav>
 
@@ -1614,7 +1614,7 @@ function signOut() {
           <p className="muted">A clear view of your training and the habits around it.</p>
         </div>
         <div className="overview-actions" aria-label="Quick actions">
-          <button type="button" onClick={() => setActiveTab("workouts")}>Start a workout <span aria-hidden="true">↗</span></button>
+          <button type="button" onClick={() => { setYouView("workout"); setActiveTab("workouts"); }}>Start a workout <span aria-hidden="true">↗</span></button>
           <button type="button" className="overview-secondary-action" onClick={() => { setYouView("plan"); setActiveTab("coach"); }}>Open coach</button>
         </div>
       </section>
@@ -1635,8 +1635,8 @@ function signOut() {
       </section>
 
       <section className="panel section-gap recent-training">
-        <div className="section-heading-row"><div><p className="eyebrow">WORKOUT HISTORY</p><h2>Recent sessions</h2></div><button className="subtle-action" onClick={() => setActiveTab("workouts")}>View workouts <span>↗</span></button></div>
-        {sessions.length === 0 && dashboardLoading ? <p className="muted" role="status">Loading recent training…</p> : sessions.length === 0 && dashboardError ? <p className="muted">Recent training is unavailable until the overview can be refreshed.</p> : sessions.length === 0 ? <div className="empty-training"><p className="muted">Your completed sessions will appear here. Start with a routine or build a one-off workout.</p><button onClick={() => setActiveTab("workouts")}>Build your first workout</button></div> :
+        <div className="section-heading-row"><div><p className="eyebrow">WORKOUT HISTORY</p><h2>Recent sessions</h2></div><button className="subtle-action" onClick={() => { setYouView("workout"); setActiveTab("workouts"); }}>View workouts <span>↗</span></button></div>
+        {sessions.length === 0 && dashboardLoading ? <p className="muted" role="status">Loading recent training…</p> : sessions.length === 0 && dashboardError ? <p className="muted">Recent training is unavailable until the overview can be refreshed.</p> : sessions.length === 0 ? <div className="empty-training"><p className="muted">Your completed sessions will appear here. Start with a routine or build a one-off workout.</p><button onClick={() => { setYouView("workout"); setActiveTab("workouts"); }}>Build your first workout</button></div> :
           <div className="recent-session-list">{sessions.slice(0, 3).map(session => {
             const names = session.sets.map(set => set.exercise.name).filter((name, index, all) => all.indexOf(name) === index);
             const completed = session.sets.filter(set => set.completed).length;
@@ -1695,7 +1695,7 @@ function signOut() {
         <p className="eyebrow">KEEP THE CONTEXT</p>
         <h2>Small patterns are more useful than a perfect week.</h2>
         <p className="muted">Missing entries stay blank. FitLoop does not fill gaps with estimates or turn your records into a health score.</p>
-        <button type="button" className="subtle-action" onClick={() => setActiveTab("home")}>Log a daily check-in <span aria-hidden="true">↗</span></button>
+        <button type="button" className="subtle-action" onClick={() => { setYouView("home"); setActiveTab("home"); }}>Log a daily check-in <span aria-hidden="true">↗</span></button>
       </section>
     </section>}
 

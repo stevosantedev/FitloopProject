@@ -1549,10 +1549,6 @@ function signOut() {
       <a className="brand" href="/">FitLoop<span>.</span></a>
       <p className="sidebar-label">YOUR TRAINING</p>
       {/* Desktop navigation mirrors the two top-level workspaces shown on mobile. */}
-      <div className="workspace-switch" role="group" aria-label="Choose workspace">
-        <button type="button" className={workspace === "social" ? "active" : ""} aria-pressed={workspace === "social"} onClick={() => { setWorkspace("social"); setActiveTab("community"); }}>Social</button>
-        <button type="button" className={workspace === "you" ? "active" : ""} aria-pressed={workspace === "you"} onClick={() => { setWorkspace("you"); setActiveTab("home"); }}>You</button>
-      </div>
       <nav className="sidebar-nav" aria-label={workspace === "social" ? "Social navigation" : "Your training navigation"}>
         {workspace === "social" ? <>
           <button aria-label={unreadNotificationCount > 0 ? `Community, ${unreadNotificationCount} unread ${unreadNotificationCount === 1 ? "notification" : "notifications"}` : "Community"} aria-current={socialView === "feed" ? "page" : undefined} className={socialView === "feed" ? "active" : ""} onClick={() => { setActiveTab("community"); setSocialView("feed"); }}>Feed{unreadNotificationCount > 0 && <span className="nav-unread-count" aria-hidden="true">{unreadNotificationCount > 99 ? "99+" : unreadNotificationCount}</span>}</button>
@@ -2056,10 +2052,6 @@ function signOut() {
     {activeTab === "community" && <section className="page-section community-page" data-social-view={socialView}>
       {communityLoading && <p className="load-state" role="status">Loading your community…</p>}
       {communityError && <div className="load-error" role="alert"><span>{communityError}</span><button type="button" className="secondary" onClick={() => void loadCommunity()}>Try again</button></div>}
-      <div className="social-workspace-switch" role="group" aria-label="Social and personal workspace">
-        <button type="button" className={workspace === "social" ? "active" : ""} aria-pressed={workspace === "social"} onClick={() => { setWorkspace("social"); setActiveTab("community"); }}>Social</button>
-        <button type="button" className={workspace === "you" ? "active" : ""} aria-pressed={workspace === "you"} onClick={() => { setWorkspace("you"); setActiveTab("home"); }}>You</button>
-      </div>
       <nav className="social-subnav" aria-label="Social sections">
         <button type="button" aria-current={socialView === "feed" ? "page" : undefined} className={socialView === "feed" ? "active" : ""} onClick={() => setSocialView("feed")}>Feed</button>
         <button type="button" aria-current={socialView === "explore" ? "page" : undefined} className={socialView === "explore" ? "active" : ""} onClick={() => setSocialView("explore")}>Explore</button>

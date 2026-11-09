@@ -20,8 +20,9 @@ type Props = {
  * Runs a stable snapshot of the workout as a focused training session.
  * The full-screen stage keeps the active set, progress and rest controls
  * visible without exposing the editing form as competing primary content.
+ * The queue is intentionally separate from the editable workout draft so
+ * changes made after starting cannot silently reorder the active session.
  */
-  // The timer owns a working snapshot of the uncompleted sets; edits to the builder do not reorder an active session.
 export default function GuidedRestTimer({ items, onSetComplete }: Props) {
   const [queue, setQueue] = useState<GuidedRestItem[]>([]);
   const [index, setIndex] = useState<number | null>(null);
@@ -36,9 +37,8 @@ export default function GuidedRestTimer({ items, onSetComplete }: Props) {
   const progress = queue.length ? Math.min(100, (performedSetCount / queue.length) * 100) : 0;
   const next = index === null ? null : queue[index + 1];
 
-  // Each timeout represents one second. Cleanup prevents an old countdown
-  // from advancing the queue after pause, skip, stop or component unmount.
-  // Schedule one timeout at a time. Cleanup prevents an old countdown from advancing after pause or unmount.
+  // One timeout per second keeps the countdown in React state. Cleanup stops
+  // a stale tick from advancing the queue after pause or component unmount.
   useEffect(() => {
     if (phase !== "rest" || remaining === null || paused) return;
     const timeout = window.setTimeout(() => {

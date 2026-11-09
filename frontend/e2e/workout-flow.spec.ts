@@ -1703,6 +1703,8 @@ test("Community opens on activity and Coach opens on the conversation", async ({
 
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.locator(".coach-page > .coach-chat-layout")).toHaveCSS("order", "1");
+  await expect(page.locator(".coach-page .coach-chat-panel")).toHaveCSS("order", "0");
+  await expect(page.locator(".coach-page .coach-conversation-list")).toHaveCSS("order", "1");
   await expect(page.locator(".mobile-nav")).toBeVisible();
 });
 

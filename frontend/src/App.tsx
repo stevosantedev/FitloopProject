@@ -2101,7 +2101,7 @@ function signOut() {
           <div className="composer-footer"><small>{profileBioDraft.length}/160</small><button disabled={profileSaving}>{profileSaving ? "Saving…" : "Save profile"}</button></div>
         </form>
         <section className="profile-posts panel">
-          <div className="section-heading-row"><div><p className="eyebrow">YOUR ACTIVITY</p><h2>Shared workouts & posts</h2></div><span>{posts.filter(post => post.user.id === user?.id).length} posts</span></div>
+          <div className="section-heading-row"><div><p className="eyebrow">YOUR ACTIVITY</p><h2>Shared workouts & posts</h2></div><span>{myProfilePosts.length} posts</span></div>
           {myProfilePostsLoading && myProfilePosts.length === 0 && <p className="muted" role="status">Loading your shared posts…</p>}
           {myProfilePostsError && <div className="load-error" role="alert"><span>{myProfilePostsError}</span><button type="button" className="secondary" onClick={() => void loadMyProfilePosts()}>Try again</button></div>}
           {!myProfilePostsLoading && myProfilePosts.length === 0 && !myProfilePostsError && <p className="muted">Your shared workouts and updates will appear here. Complete a workout and share it with your friends to get started.</p>}

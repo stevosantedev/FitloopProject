@@ -2126,3 +2126,18 @@ test("the member profile shows the signed-in user's own shared workout posts", a
   await expect(page.locator(".profile-posts")).toContainText("10");
   await expect(page.locator(".profile-posts")).toContainText("Goblet squat");
 });
+
+
+// Keep the shared visual tokens from drifting back into the older green dashboard palette.
+test("the signed-in app uses the charcoal and orange visual system", async ({ page }) => {
+  await mockApplicationApi(page);
+  await page.goto("/");
+  await page.getByLabel("Email").fill("tester@example.com");
+  await page.getByLabel("Password").fill("test-password");
+  await page.getByRole("button", { name: "Sign in" }).click();
+
+  await expect.poll(() => page.locator("body").evaluate(element => getComputedStyle(element).backgroundColor)).toBe("rgb(11, 13, 15)");
+  await expect.poll(() => page.locator(".workspace-switch-bar button.active").evaluate(element => getComputedStyle(element).backgroundColor)).toBe("rgb(255, 90, 36)");
+  await expect(page.locator(".mobile-nav")).toBeVisible();
+  await expect(page.locator(".mobile-nav button.active")).toBeVisible();
+});

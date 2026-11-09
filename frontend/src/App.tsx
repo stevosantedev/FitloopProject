@@ -78,6 +78,21 @@ type FeedPost = {
   _count?: { comments: number };
 };
 type WorkoutPostMovement = { exerciseId: string; name: string; completedSets: number; totalSets: number };
+type NavigationIconName = "home" | "workout" | "stats" | "plan" | "library" | "explore" | "pings" | "profile";
+
+// One icon set keeps the two navigation layouts visually consistent and avoids platform-dependent text glyphs.
+function NavigationIcon({ name }: { name: NavigationIconName }) {
+  const shared = { className: "nav-icon", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, "aria-hidden": true as const };
+  if (name === "home") return <svg {...shared}><path d="m3 10 9-7 9 7" /><path d="M5 9.5V21h14V9.5" /><path d="M9 21v-7h6v7" /></svg>;
+  if (name === "workout") return <svg {...shared}><path d="M6 5v14M18 5v14M3 9v6M21 9v6M6 12h12" /></svg>;
+  if (name === "stats") return <svg {...shared}><path d="M4 19V5M4 19h16" /><path d="m7 15 4-4 3 2 5-7" /></svg>;
+  if (name === "plan") return <svg {...shared}><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M7 3v4M17 3v4M3 10h18M8 14h3M8 17h7" /></svg>;
+  if (name === "library") return <svg {...shared}><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v17H6.5A2.5 2.5 0 0 0 4 22z" /><path d="M4 5.5V22M8 7h8M8 11h8" /></svg>;
+  if (name === "explore") return <svg {...shared}><circle cx="12" cy="12" r="9" /><path d="m15.8 8.2-2.5 5.1-5.1 2.5 2.5-5.1z" /></svg>;
+  if (name === "pings") return <svg {...shared}><path d="M21 11.5a7.5 7.5 0 0 1-7.5 7.5H7l-4 2v-5.5A7.5 7.5 0 1 1 21 11.5Z" /><path d="M8 11h.01M12 11h.01M16 11h.01" /></svg>;
+  return <svg {...shared}><circle cx="12" cy="8" r="3.5" /><path d="M4.5 21a7.5 7.5 0 0 1 15 0" /></svg>;
+}
+
 
 // Convert a workout into one feed row per movement so the community card stays readable
 // without exposing set-by-set private workout detail.
@@ -1598,16 +1613,16 @@ function signOut() {
       {/* Desktop navigation mirrors the two top-level workspaces shown on mobile. */}
       <nav className="sidebar-nav" aria-label={workspace === "social" ? "Social navigation" : "Your training navigation"}>
         {workspace === "social" ? <>
-          <button aria-label={unreadNotificationCount > 0 ? `Community, ${unreadNotificationCount} unread ${unreadNotificationCount === 1 ? "notification" : "notifications"}` : "Community"} aria-current={socialView === "feed" ? "page" : undefined} className={socialView === "feed" ? "active" : ""} onClick={() => { setActiveTab("community"); setSocialView("feed"); }}>Feed{unreadNotificationCount > 0 && <span className="nav-unread-count" aria-hidden="true">{unreadNotificationCount > 99 ? "99+" : unreadNotificationCount}</span>}</button>
-          <button aria-current={socialView === "explore" ? "page" : undefined} className={socialView === "explore" ? "active" : ""} onClick={() => { setActiveTab("community"); setSocialView("explore"); }}>Explore</button>
-          <button aria-current={socialView === "pings" ? "page" : undefined} className={socialView === "pings" ? "active" : ""} onClick={() => { setActiveTab("community"); setSocialView("pings"); }}>Pings</button>
-          <button aria-current={socialView === "profile" ? "page" : undefined} className={socialView === "profile" ? "active" : ""} onClick={() => { setActiveTab("community"); setSocialView("profile"); }}>Profile</button>
+          <button aria-label={unreadNotificationCount > 0 ? `Community, ${unreadNotificationCount} unread ${unreadNotificationCount === 1 ? "notification" : "notifications"}` : "Community"} aria-current={socialView === "feed" ? "page" : undefined} className={socialView === "feed" ? "active" : ""} onClick={() => { setActiveTab("community"); setSocialView("feed"); }}><span className="nav-symbol"><NavigationIcon name="home" /></span><span>Feed{unreadNotificationCount > 0 && <span className="nav-unread-count" aria-hidden="true">{unreadNotificationCount > 99 ? "99+" : unreadNotificationCount}</span>}</span></button>
+          <button aria-current={socialView === "explore" ? "page" : undefined} className={socialView === "explore" ? "active" : ""} onClick={() => { setActiveTab("community"); setSocialView("explore"); }}><span className="nav-symbol"><NavigationIcon name="explore" /></span><span>Explore</span></button>
+          <button aria-current={socialView === "pings" ? "page" : undefined} className={socialView === "pings" ? "active" : ""} onClick={() => { setActiveTab("community"); setSocialView("pings"); }}><span className="nav-symbol"><NavigationIcon name="pings" /></span><span>Pings</span></button>
+          <button aria-current={socialView === "profile" ? "page" : undefined} className={socialView === "profile" ? "active" : ""} onClick={() => { setActiveTab("community"); setSocialView("profile"); }}><span className="nav-symbol"><NavigationIcon name="profile" /></span><span>Profile</span></button>
         </> : <>
-          <button aria-label="Overview" aria-current={youView === "home" ? "page" : undefined} className={youView === "home" ? "active" : ""} onClick={() => { setYouView("home"); setActiveTab("home"); }}>Home</button>
-          <button aria-label="Workouts" aria-current={youView === "workout" ? "page" : undefined} className={youView === "workout" ? "active" : ""} onClick={() => { setYouView("workout"); setActiveTab("workouts"); }}>Workout</button>
-          <button aria-label="Progress" aria-current={youView === "stats" ? "page" : undefined} className={youView === "stats" ? "active" : ""} onClick={() => { setYouView("stats"); setActiveTab("progress"); }}>Stats</button>
-          <button aria-label="Coach" aria-current={youView === "plan" ? "page" : undefined} className={youView === "plan" ? "active" : ""} onClick={() => { setYouView("plan"); setActiveTab("coach"); }}>Plan</button>
-          <button aria-current={youView === "library" ? "page" : undefined} className={youView === "library" ? "active" : ""} onClick={() => { setYouView("library"); setActiveTab("workouts"); window.setTimeout(() => document.getElementById("exercise-library")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0); }}>Library</button>
+          <button aria-label="Overview" aria-current={youView === "home" ? "page" : undefined} className={youView === "home" ? "active" : ""} onClick={() => { setYouView("home"); setActiveTab("home"); }}><span className="nav-symbol"><NavigationIcon name="home" /></span><span>Home</span></button>
+          <button aria-label="Workouts" aria-current={youView === "workout" ? "page" : undefined} className={youView === "workout" ? "active" : ""} onClick={() => { setYouView("workout"); setActiveTab("workouts"); }}><span className="nav-symbol"><NavigationIcon name="workout" /></span><span>Workout</span></button>
+          <button aria-label="Progress" aria-current={youView === "stats" ? "page" : undefined} className={youView === "stats" ? "active" : ""} onClick={() => { setYouView("stats"); setActiveTab("progress"); }}><span className="nav-symbol"><NavigationIcon name="stats" /></span><span>Stats</span></button>
+          <button aria-label="Coach" aria-current={youView === "plan" ? "page" : undefined} className={youView === "plan" ? "active" : ""} onClick={() => { setYouView("plan"); setActiveTab("coach"); }}><span className="nav-symbol"><NavigationIcon name="plan" /></span><span>Plan</span></button>
+          <button aria-current={youView === "library" ? "page" : undefined} className={youView === "library" ? "active" : ""} onClick={() => { setYouView("library"); setActiveTab("workouts"); window.setTimeout(() => document.getElementById("exercise-library")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0); }}><span className="nav-symbol"><NavigationIcon name="library" /></span><span>Library</span></button>
         </>}
         {workspace === "you" && <button className="sidebar-coach-link" onClick={() => { setYouView("plan"); setActiveTab("coach"); }}>Coach</button>}
       </nav>

@@ -43,7 +43,13 @@ For each area below, check the initial load, a slow connection, a failed request
 - [ ] A genuinely empty friends list and an empty feed have useful first-use explanations.
 - [ ] Friend request, acceptance, reaction and comment success/error feedback is visible.
 - [ ] Private feed content is only shown to the expected account and accepted connections.
-- [ ] The friends' activity feed appears before profile editing, friend management and blocked-account controls.
+- [ ] Social and You remain separate workspaces, and the bottom navigation changes when the top switch changes.
+- Feed shows friends' activity before secondary relationship management.
+- Explore currently provides bounded people discovery only; do not expect public posts or video discovery yet.
+- Pings clearly states that private messaging is not available; it must not imply that messages can be sent.
+- The signed-in Profile shows only that member's shared feed posts and workout summaries, offers profile editing and opens account settings.
+- Profile content does not expose private session notes, wellbeing logs or account credentials.
+- The friends' activity feed appears before friend management and blocked-account controls.
 - [ ] The post composer remains easy to reach on desktop and mobile; character limits and friends-only audience copy are clear.
 - [ ] Profile previews, report actions, block/unblock and friend-request controls remain understandable at narrow widths.
 - [ ] Activity inbox shows friend requests, accepted requests, reactions and comments only to the recipient.
@@ -53,7 +59,7 @@ For each area below, check the initial load, a slow connection, a failed request
 
 ### Coach
 
-- [ ] The conversation is the first main task after the Coach heading; progression guidance and weekly programme planning remain below it.
+- [ ] The Plan destination leads with the weekly programme builder, followed by progression guidance and the Coach conversation. The Coach remains reachable from Home and within Plan.
 - [ ] Creating, switching, deleting and continuing conversations is clear and remains account-private.
 - [ ] Guided replies are distinguishable from optional AI-generated replies.
 - [ ] AI consent is off by default, can be enabled and revoked, and the data disclosure is readable before sending a message.

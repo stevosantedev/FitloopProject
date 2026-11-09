@@ -2,6 +2,7 @@
 // The separate service generates advice; this API selects the minimum context,
 // persists successful exchanges and keeps private account data out of prompts.
 import { Router } from "express";
+import rateLimit from "express-rate-limit";
 import { z } from "zod";
 import { prisma } from "../prisma.js";
 import { config } from "../config.js";
@@ -22,6 +23,19 @@ const conversationInput = z.object({
   title: z.string().trim().min(1).max(80).optional()
 });
 const messageInput = z.object({ message: z.string().trim().min(1).max(2000) });
+
+// Coach messages can trigger external model usage when a user has opted in.
+// Apply an account-scoped hourly ceiling before reading workout context or calling the service.
+const coachMessageLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => req.userId,
+  handler: (_req, res) => res.status(429).json({
+    error: "You've reached the hourly Coach message limit. Try again later."
+  })
+});
 
 
  // Conversation metadata is always scoped to the authenticated owner.
@@ -69,7 +83,7 @@ const messageInput = z.object({ message: z.string().trim().min(1).max(2000) });
  });
 
  // Validate the message before spending a service request or writing chat history.
- router.post("/conversations/:id/messages", async (req, res, next) => {
+ router.post("/conversations/:id/messages", coachMessageLimiter, async (req, res, next) => {
    try {
      const input = messageInput.parse(req.body);
      const conversation = await prismaClient.coachConversation.findFirst({

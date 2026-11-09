@@ -249,7 +249,7 @@ def generate_ai_reply(payload: ConversationRequest) -> str | None:
     ]
     # Bound provider time and output size so a slow response cannot hold up coaching indefinitely.
     response = httpx.post(
-        "https://api.openai.com/v1/chat/completions",
+        os.getenv("AI_COACH_API_URL", "https://api.openai.com/v1/chat/completions"),
         headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
         json={
             "model": model,

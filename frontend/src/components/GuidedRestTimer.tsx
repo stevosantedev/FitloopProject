@@ -92,15 +92,17 @@ export default function GuidedRestTimer({ items, onSetComplete }: Props) {
   }
 
   // Move to the next set without marking it complete; skipping is different from confirming the work was done.
-  function advance() {
+  function advance(newlyCompleted = 0) {
     const nextIndex = (index ?? -1) + 1;
     if (nextIndex >= queue.length) {
+      // Include a just-completed zero-rest set before React applies its queued state update.
+      const finalPerformedCount = performedSetCount + newlyCompleted;
       setIndex(null);
       setRemaining(null);
       setPhase("complete");
-      setMessage(performedSetCount === queue.length
+      setMessage(finalPerformedCount === queue.length
         ? "All guided sets are complete."
-        : `Guided session finished. ${performedSetCount} of ${queue.length} sets completed.`);
+        : `Guided session finished. ${finalPerformedCount} of ${queue.length} sets completed.`);
       return;
     }
     setIndex(nextIndex);
@@ -121,7 +123,7 @@ export default function GuidedRestTimer({ items, onSetComplete }: Props) {
       setPaused(false);
       return;
     }
-    advance();
+    advance(1);
   }
 
   // Skipping rest changes the timer phase, not the completed status of the next set.

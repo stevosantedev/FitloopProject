@@ -26,7 +26,7 @@ const pingRequestInput = z.object({
 }).strict();
 const pingMessageInput = z.object({ message: z.string().trim().min(1).max(2000) }).strict();
 const reportInput = z.object({
-  targetType: z.enum(["user", "post"]),
+  targetType: z.enum(["user", "post", "message"]),
   targetId: z.string().min(1).max(64),
   reason: z.enum(["spam", "harassment", "inappropriate", "impersonation", "other"]),
   details: z.string().trim().max(1000).optional()
@@ -417,6 +417,20 @@ router.post("/reports", reportLimiter, async (req, res, next) => {
       if (input.targetId === req.userId) return res.status(400).json({ error: "You cannot report your own account." });
       reportTarget = await prismaClient.user.findUnique({ where: { id: input.targetId }, select: { id: true } });
       if (!reportTarget) return res.status(404).json({ error: "Report target not found." });
+    } else if (input.targetType === "message") {
+      const blocked = await blockedIds(req.userId);
+      reportTarget = await prismaClient.directMessage.findFirst({
+        where: {
+          id: input.targetId,
+          senderId: { not: req.userId, ...(blocked.length ? { notIn: blocked } : {}) },
+          conversation: {
+            status: { in: ["accepted", "pending"] },
+            OR: [{ userAId: req.userId }, { userBId: req.userId }]
+          }
+        },
+        select: { id: true, senderId: true }
+      });
+      if (!reportTarget) return res.status(404).json({ error: "Report target not found." });
     } else {
       const ids = [req.userId, ...await friendIds(req.userId)];
       reportTarget = await prismaClient.feedPost.findFirst({
@@ -431,6 +445,7 @@ router.post("/reports", reportLimiter, async (req, res, next) => {
         reporterId: req.userId,
         reportedUserId: input.targetType === "user" ? reportTarget.id : reportTarget.userId,
         postId: input.targetType === "post" ? reportTarget.id : null,
+        messageId: input.targetType === "message" ? reportTarget.id : null,
         reason: input.reason,
         details: input.details || null
       },
@@ -478,7 +493,8 @@ router.get("/moderation/reports", requireModerator, async (req, res, next) => {
         reviewedAt: true, resolutionNote: true,
         reporter: { select: { id: true, username: true, displayName: true } },
         reportedUser: { select: { id: true, username: true, displayName: true } },
-        post: { select: { id: true, text: true, user: { select: { id: true, username: true, displayName: true } } } }
+        post: { select: { id: true, text: true, user: { select: { id: true, username: true, displayName: true } } } },
+        message: { select: { id: true, body: true, createdAt: true, sender: { select: { id: true, username: true, displayName: true } } } }
       }
     });
     const hasMore = rows.length > input.limit;

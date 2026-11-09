@@ -26,7 +26,6 @@ export const sessionInput = z.object({
   })).min(1).max(200)
 }).superRefine((input, context) => {
   // These rules compare multiple rows, so they cannot be expressed as single-field checks.
-}).superRefine((input, context) => {
   // Set numbers are unique within an exercise, not across the whole session.
   // This preserves a stable row identity while allowing every movement to start at set 1.
   // A session needs at least one performed set. Other rows may remain

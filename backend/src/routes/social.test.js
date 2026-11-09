@@ -898,6 +898,7 @@ test("POST comments records a notification for the post owner", async () => {
   let notification;
   const prisma = {
     friendConnection: { findMany: async () => [] },
+    userBlock: { findMany: async () => [] },
     feedPost: { findFirst: async () => ({ id: "post-a", userId: "user-b" }) },
     feedComment: {
       create: async ({ data }) => ({ id: "comment-a", ...data, user: { id: "user-a", username: "tester" } })

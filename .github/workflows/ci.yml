@@ -74,6 +74,16 @@ jobs:
       - name: Run browser-level workout tests
         run: npm run test:e2e
 
+      # Keep real browser screenshots available for reviewing the app's current visual layout.
+      - name: Upload desktop and mobile UI previews
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fitloop-ui-preview
+          path: test-results/**/*.png
+          if-no-files-found: warn
+          retention-days: 7
+
   coaching-service:
     runs-on: ubuntu-latest
     steps:

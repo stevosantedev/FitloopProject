@@ -1217,7 +1217,8 @@ test("community block and report controls call the moderation API", async ({ pag
   await page.getByLabel("Password").fill("test-password");
   await page.getByRole("button", { name: "Sign in" }).click();
   await clickWorkspaceDestination(page, "social", "Explore");
-  await expect(page.locator('.community-page[data-social-view="explore"]')).toBeVisible();
+  // Assert the actual Explore content instead of depending on its outer layout wrapper.
+  await expect(page.getByRole("heading", { name: "Discover the community" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Discover the community" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Find friends" })).toBeVisible();
   await page.getByRole("button", { name: "Report account" }).click();
@@ -1269,7 +1270,8 @@ test("Community members can search for people and send a friend request from a r
   await page.getByRole("button", { name: "Sign in" }).click();
   await clickWorkspaceDestination(page, "social", "Explore");
 
-  await expect(page.locator('.community-page[data-social-view="explore"]')).toBeVisible();
+  // Assert the actual Explore content instead of depending on its outer layout wrapper.
+  await expect(page.getByRole("heading", { name: "Discover the community" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Find friends" })).toBeVisible();
   await page.locator(".content-grid input").fill("runner");
   await page.getByRole("button", { name: "Search people" }).click();

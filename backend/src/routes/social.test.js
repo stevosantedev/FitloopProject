@@ -180,7 +180,7 @@ test("PATCH profile rejects empty, overlong and unexpected profile fields", asyn
 // A private account is not discoverable through profile details without an accepted connection.
 test("private profile lookup is hidden from non-friends", async () => {
   const prisma = {
-    user: { findUnique: async () => ({ id: "user-b", username: "private-runner", displayName: "Private Runner", bio: null, privateAccount: true }) },
+    user: { findUnique: async () => ({ id: "user-b", username: "private_runner", displayName: "Private Runner", bio: null, privateAccount: true }) },
     friendConnection: { findFirst: async () => null },
     userBlock: { findMany: async () => [] }
   };
@@ -1128,8 +1128,8 @@ test("POST pings requests creates a pending conversation for the authenticated s
   const prisma = {
     userBlock: { findMany: async () => [] },
     user: { findUnique: async args => {
-      assert.deepEqual(args, { where: { username: "runner" }, select: { id: true, username: true, displayName: true } });
-      return { id: "user-b", username: "runner", displayName: "Runner" };
+      assert.deepEqual(args, { where: { username: "runner" }, select: { id: true, username: true, displayName: true, privateAccount: true } });
+      return { id: "user-b", username: "runner", displayName: "Runner", privateAccount: false };
     } },
     directConversation: {
       findUnique: async args => { assert.deepEqual(args.where.userAId_userBId, { userAId: "user-a", userBId: "user-b" }); return null; },
@@ -1337,14 +1337,14 @@ test("POST pings requests respects private profile visibility", async () => {
   let conversationLookups = 0;
   const prisma = {
     userBlock: { findMany: async () => [] },
-    user: { findUnique: async () => ({ id: "user-b", username: "private-runner", privateAccount: true }) },
+    user: { findUnique: async () => ({ id: "user-b", username: "private_runner", privateAccount: true }) },
     friendConnection: { findFirst: async () => null },
     directConversation: { findUnique: async () => { conversationLookups += 1; return null; }, create: async () => ({}) }
   };
   await withSocialApi(prisma, async base => {
     const response = await fetch(base + "/api/social/pings/requests", {
       method: "POST", headers: { "content-type": "application/json" },
-      body: JSON.stringify({ username: "private-runner", message: "Hello" })
+      body: JSON.stringify({ username: "private_runner", message: "Hello" })
     });
     assert.equal(response.status, 404);
   });

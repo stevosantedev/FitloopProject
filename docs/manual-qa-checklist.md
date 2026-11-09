@@ -113,3 +113,14 @@ For each issue, record:
 - [ ] Evidence stored with the university project test artefacts.
 
 Do not mark these checks complete based only on the Playwright suite. The tester must perform them and record the evidence.
+
+
+## Phone layout review
+
+- [ ] At 320px, Social and You both fit without horizontal page scrolling.
+- [ ] At 360px, the bottom navigation labels and icons remain legible and tappable.
+- [ ] At 390px, the workspace switch remains visible while scrolling long screens.
+- [ ] At 430px, the feed and workout summaries use the available width without oversized empty gutters.
+- [ ] The bottom navigation stays above the device safe area and does not cover the last action.
+- [ ] Reduced-motion preference disables non-essential transitions.
+- [ ] Repeat the same screens at tablet and desktop widths to check that the phone layout has not damaged larger layouts.

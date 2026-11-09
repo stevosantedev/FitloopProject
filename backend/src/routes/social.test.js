@@ -1330,3 +1330,23 @@ test("PATCH pings read updates only incoming unread messages", async () => {
   assert.deepEqual(query.where, { conversationId: "conversation-a", senderId: { not: "user-a" }, readAt: null });
   assert.ok(query.data.readAt instanceof Date);
 });
+
+
+// A private profile cannot be contacted through username guessing; an accepted friendship is required first.
+test("POST pings requests respects private profile visibility", async () => {
+  let conversationLookups = 0;
+  const prisma = {
+    userBlock: { findMany: async () => [] },
+    user: { findUnique: async () => ({ id: "user-b", username: "private-runner", privateAccount: true }) },
+    friendConnection: { findFirst: async () => null },
+    directConversation: { findUnique: async () => { conversationLookups += 1; return null; }, create: async () => ({}) }
+  };
+  await withSocialApi(prisma, async base => {
+    const response = await fetch(base + "/api/social/pings/requests", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ username: "private-runner", message: "Hello" })
+    });
+    assert.equal(response.status, 404);
+  });
+  assert.equal(conversationLookups, 0);
+});

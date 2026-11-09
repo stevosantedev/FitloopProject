@@ -2044,6 +2044,7 @@ footer { border-color: #2b322b; }
 .community-page[data-social-view="profile"] > .activity-inbox,
 .community-page[data-social-view="profile"] > .panel:has(.feed-section-heading),
 .community-page[data-social-view="profile"] > .content-grid,
+/* Keep blocked-account controls available in the Profile safety area. */
 .community-page[data-social-view="profile"] > .community-blocked-panel {
   display: none !important;
 }

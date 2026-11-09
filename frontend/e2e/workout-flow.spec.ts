@@ -1596,7 +1596,7 @@ test("Coach builds a weekly programme, saves it only after review and starts a s
   await page.getByLabel("Email").fill("tester@example.com");
   await page.getByLabel("Password").fill("test-password");
   await page.getByRole("button", { name: "Sign in" }).click();
-  await page.locator(".sidebar-nav").getByRole("button", { name: "Coach" }).click();
+  await clickWorkspaceDestination(page, "you", "Plan");
   await expect(page.getByRole("heading", { name: "Build your week." })).toBeVisible();
   const generate = page.getByRole("button", { name: "Generate weekly programme" });
   await expect(generate).toBeEnabled();
@@ -2006,9 +2006,9 @@ test("captures current FitLoop screens for visual review", async ({ page }, test
   ];
 
   for (const screen of desktopScreens) {
-    if (screen.name === "community") await page.locator(".workspace-switch-bar").getByRole("button", { name: "Social" }).click();
-    else if (screen.name === "coach") { await page.locator(".workspace-switch-bar").getByRole("button", { name: "You" }).click(); await desktopNavigation.getByRole("button", { name: "Coach" }).click(); }
-    else if (screen.button) await desktopNavigation.getByRole("button", { name: screen.button }).click();
+    if (screen.name === "community") await clickWorkspaceDestination(page, "social", "Feed");
+    else if (screen.name === "coach") await clickWorkspaceDestination(page, "you", "Plan");
+    else if (screen.button) await clickWorkspaceDestination(page, "you", "Workout");
     await expect(screen.ready).toBeVisible();
     await page.screenshot({ path: testInfo.outputPath(screen.name + "-desktop.png"), fullPage: true });
   }
@@ -2034,9 +2034,10 @@ test("captures current FitLoop screens for visual review", async ({ page }, test
   ];
 
   for (const screen of mobileScreens) {
-    if (screen.name === "community") await page.locator(".workspace-switch-bar").getByRole("button", { name: "Social" }).click();
-    else if (screen.name === "coach") { await page.locator(".workspace-switch-bar").getByRole("button", { name: "You" }).click(); await mobileNavigation.getByRole("button", { name: "Coach" }).click(); }
-    else await mobileNavigation.getByRole("button", { name: screen.button }).click();
+    if (screen.name === "community") await clickWorkspaceDestination(page, "social", "Feed");
+    else if (screen.name === "coach") await clickWorkspaceDestination(page, "you", "Plan");
+    else if (screen.name === "overview") await clickWorkspaceDestination(page, "you", "Home");
+    else await clickWorkspaceDestination(page, "you", "Workout");
     await expect(screen.ready).toBeVisible();
 
     // The phone layout must use its own screen hierarchy, not show the desktop workspace bar.
@@ -2053,9 +2054,8 @@ test("captures current FitLoop screens for visual review", async ({ page }, test
   }
 
   // The Social bar has four equal destinations and should remain usable at phone width.
-  await page.locator(".workspace-switch-bar").getByRole("button", { name: "Social" }).click();
   for (const destination of ["Feed", "Explore", "Pings", "Profile"]) {
-    await mobileNavigation.getByRole("button", { name: destination === "Feed" ? "Community" : destination }).click();
+    await clickWorkspaceDestination(page, "social", destination);
     await expect(page.locator(".community-page")).toHaveAttribute("data-social-view", destination.toLowerCase());
     await page.screenshot({ path: testInfo.outputPath(destination.toLowerCase() + "-mobile.png"), fullPage: false });
   }
@@ -2065,6 +2065,7 @@ test("captures current FitLoop screens for visual review", async ({ page }, test
 // The two top-level workspaces keep their own focused bottom navigation.
 test("Social and You switch between the correct destinations", async ({ page }) => {
   await mockApplicationApi(page);
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
   await page.getByLabel("Email").fill("tester@example.com");
   await page.getByLabel("Password").fill("test-password");
@@ -2097,11 +2098,11 @@ test("Social and You switch between the correct destinations", async ({ page }) 
   await expect(page.getByRole("heading", { name: "Edit profile" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Blocked accounts" })).toHaveCount(0);
 
-  await page.locator(".mobile-nav").getByRole("button", { name: "Pings" }).click();
+  await clickWorkspaceDestination(page, "social", "Pings");
   await expect(page.getByRole("heading", { name: "Private conversations, done properly." })).toBeVisible();
   await expect(page.getByText(/Private messaging is not available yet/)).toBeVisible();
 
-  await page.locator(".mobile-nav").getByRole("button", { name: "Explore" }).click();
+  await clickWorkspaceDestination(page, "social", "Explore");
   await expect(page.getByRole("heading", { name: "Discover the community" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Find friends" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Friends and requests" })).toBeVisible();

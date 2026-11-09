@@ -200,7 +200,7 @@ The app shell is moving from one mixed navigation model to two workspaces. The t
 - [x] Add Social destinations for Feed, Explore, Pings and Profile.
 - [x] Keep the existing friends-only feed, composer, reactions, comments and activity inbox under Feed.
 - [x] Use the existing bounded friend-discovery workflow as the first Explore experience. This is people discovery only; public post and video discovery still needs its own audience model and API.
-- [x] Add a signed-in member profile with editable display name/bio and a view of the member's shared feed posts and workout summaries.
+- [x] Add a signed-in member profile with editable display name/bio and an owner-scoped cursor-paginated history of the member's own shared posts and workout summaries. The API excludes private workout notes and does not depend on the current friends-feed page.
 - [x] Connect Profile Settings to the existing account settings sheet.
 - [x] Add You destinations for Home, Workout, Stats, Plan and Library. Plan opens the existing weekly programme and progression workspace, with Coach guidance available there and from Home.
 - [ ] Build secure one-to-one Pings messaging, including request handling, blocking integration, abuse reporting, notification preferences and retention rules.

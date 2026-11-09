@@ -1579,7 +1579,7 @@ test("Coach builds a weekly programme, saves it only after review and starts a s
   await page.getByLabel("Email").fill("tester@example.com");
   await page.getByLabel("Password").fill("test-password");
   await page.getByRole("button", { name: "Sign in" }).click();
-  await page.locator(".sidebar-nav").getByRole("button", { name: "Coach" }).click();
+  await page.getByRole("navigation", { name: "Your training navigation" }).getByRole("button", { name: "Coach" }).click();
   await expect(page.getByRole("heading", { name: "Ask about your training." })).toBeVisible();
   const generate = page.getByRole("button", { name: "Generate weekly programme" });
   await expect(generate).toBeEnabled();
@@ -1632,7 +1632,7 @@ test("Coach lets users edit a saved weekly programme and keeps the changes revie
   await page.getByLabel("Email").fill("tester@example.com");
   await page.getByLabel("Password").fill("test-password");
   await page.getByRole("button", { name: "Sign in" }).click();
-  await page.locator(".sidebar-nav").getByRole("button", { name: "Coach" }).click();
+  await page.getByRole("navigation", { name: "Your training navigation" }).getByRole("button", { name: "Coach" }).click();
   await page.getByLabel("Days available each week").selectOption("2");
   await page.getByLabel("Available equipment").selectOption("dumbbells");
   await page.getByRole("button", { name: "Generate weekly programme" }).click();
@@ -1666,7 +1666,7 @@ test("Coach shows a seven-day recovery-aware layout for saved weekly programmes"
   await page.getByLabel("Email").fill("tester@example.com");
   await page.getByLabel("Password").fill("test-password");
   await page.getByRole("button", { name: "Sign in" }).click();
-  await page.locator(".sidebar-nav").getByRole("button", { name: "Coach" }).click();
+  await page.getByRole("navigation", { name: "Your training navigation" }).getByRole("button", { name: "Coach" }).click();
   await page.getByLabel("Days available each week").selectOption("2");
   await page.getByLabel("Available equipment").selectOption("dumbbells");
   await page.getByRole("button", { name: "Generate weekly programme" }).click();
@@ -1688,7 +1688,7 @@ test("Coach displays evidence and explanation for workout progression guidance",
   await page.getByLabel("Email").fill("tester@example.com");
   await page.getByLabel("Password").fill("test-password");
   await page.getByRole("button", { name: "Sign in" }).click();
-  await page.locator(".sidebar-nav").getByRole("button", { name: "Coach" }).click();
+  await page.getByRole("navigation", { name: "Your training navigation" }).getByRole("button", { name: "Coach" }).click();
   const panel = page.getByRole("region", { name: "Training progression" });
   await expect(panel).toBeVisible();
   await expect(panel.getByText("Goblet squat")).toBeVisible();
@@ -1704,7 +1704,7 @@ test("Coach identifies when a reply uses the guided fallback", async ({ page }) 
   await page.getByLabel("Email").fill("tester@example.com");
   await page.getByLabel("Password").fill("test-password");
   await page.getByRole("button", { name: "Sign in" }).click();
-  await page.locator(".sidebar-nav").getByRole("button", { name: "Coach" }).click();
+  await page.getByRole("navigation", { name: "Your training navigation" }).getByRole("button", { name: "Coach" }).click();
   await page.getByRole("button", { name: "New chat +" }).click();
   await page.getByLabel("Message your coach").fill("Can you help me review my training?");
   await page.getByRole("button", { name: "Send message" }).click();
@@ -1846,7 +1846,7 @@ test("Social opens on activity and Plan leads with weekly planning", async ({ pa
   await expect(page.locator(".community-page > .community-blocked-panel")).toHaveCSS("order", "6");
 
   await page.locator(".workspace-switch-bar").getByRole("button", { name: "You" }).click();
-  await page.locator(".sidebar-nav").getByRole("button", { name: "Coach" }).click();
+  await page.getByRole("navigation", { name: "Your training navigation" }).getByRole("button", { name: "Coach" }).click();
   await expect(page.getByRole("heading", { name: "Build your week.", exact: true })).toBeVisible();
   await expect(page.locator(".coach-page > .coach-routine-builder")).toHaveCSS("order", "1");
   await expect(page.locator(".coach-page > .coach-chat-layout")).toHaveCSS("order", "3");
@@ -2078,7 +2078,7 @@ test("Social and You switch between the correct destinations", async ({ page }) 
   await page.locator(".mobile-nav").getByRole("button", { name: "Profile" }).click();
   await expect(page.getByRole("heading", { name: "Shared workouts & posts" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Settings" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Edit profile" })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Edit profile" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Blocked accounts" })).toHaveCount(0);
 
   await page.locator(".mobile-nav").getByRole("button", { name: "Pings" }).click();

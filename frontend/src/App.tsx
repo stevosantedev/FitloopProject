@@ -185,6 +185,12 @@ export default function App() {
   const [moderationError, setModerationError] = useState("");
   const [moderationNoteDrafts, setModerationNoteDrafts] = useState<Record<string, string>>({});
   const [posts, setPosts] = useState<FeedPost[]>([]);
+  // Explore uses its own public-only dataset; it never broadens the friends feed.
+  const [explorePosts, setExplorePosts] = useState<FeedPost[]>([]);
+  const [exploreLoading, setExploreLoading] = useState(false);
+  const [exploreError, setExploreError] = useState("");
+  const [exploreHasMore, setExploreHasMore] = useState(false);
+  const [exploreCursor, setExploreCursor] = useState<string | null>(null);
   // Profile history has its own cursor so an active friends-feed page cannot hide older posts.
   const [myProfilePosts, setMyProfilePosts] = useState<FeedPost[]>([]);
   const [myProfilePostsCursor, setMyProfilePostsCursor] = useState<string | null>(null);
@@ -1405,6 +1411,8 @@ function signOut() {
     if (token && (activeTab === "workouts" || activeTab === "coach")) void loadWorkouts();
     // Switching tabs loads the latest social and coaching records instead of showing stale data.
     if (token && activeTab === "community") void loadCommunity();
+    // Explore has a public-only endpoint and is fetched only when that destination is selected.
+    if (token && activeTab === "community" && socialView === "explore") void loadExplorePosts();
 
     if (token && activeTab === "coach") {
       void loadCoachConversations();
@@ -1414,7 +1422,29 @@ function signOut() {
   }, [token, activeTab]);
 
   useEffect(() => {
-    // Profile history is loaded on demand, without refetching the friends feed for every social tab.
+    // Public discovery has its own API and list. The server decides which accounts are public
+  // and filters blocks, so changing tabs cannot expose private activity.
+  async function loadExplorePosts() {
+    setExploreLoading(true); setExploreError("");
+    try {
+      const data = await request("/api/social/explore");
+      setExplorePosts(data.posts); setExploreCursor(data.nextCursor ?? null); setExploreHasMore(Boolean(data.hasMore));
+    } catch (error) { setExploreError(error instanceof Error ? error.message : "Explore is unavailable right now."); }
+    finally { setExploreLoading(false); }
+  }
+
+  async function loadMoreExplorePosts() {
+    if (!exploreHasMore || !exploreCursor || exploreLoading) return;
+    setExploreLoading(true); setExploreError("");
+    try {
+      const data = await request("/api/social/explore?cursor=" + encodeURIComponent(exploreCursor));
+      setExplorePosts(current => { const existing = new Set(current.map(post => post.id)); return [...current, ...data.posts.filter((post: FeedPost) => !existing.has(post.id))]; });
+      setExploreCursor(data.nextCursor ?? null); setExploreHasMore(Boolean(data.hasMore));
+    } catch (error) { setExploreError(error instanceof Error ? error.message : "Could not load more public posts."); }
+    finally { setExploreLoading(false); }
+  }
+
+  // Profile history is loaded on demand, without refetching the friends feed for every social tab.
     if (token && activeTab === "community" && socialView === "profile") void loadMyProfilePosts();
   }, [token, activeTab, socialView]);
 
@@ -2149,6 +2179,20 @@ function signOut() {
       {/* Explore owns connection discovery and privacy management. Keeping these tools
           off the feed and profile stops the Social workspace becoming one long form. */}
       {socialView === "explore" && <>
+      <section className="panel explore-public-posts" aria-labelledby="explore-public-heading">
+        <div className="section-heading-row"><div><p className="eyebrow">PUBLIC TRAINING</p><h2 id="explore-public-heading">Discover the community</h2><p className="muted">Recent posts from members who have chosen to make their profiles public.</p></div><button type="button" className="small-button secondary" onClick={() => void loadExplorePosts()} disabled={exploreLoading}>Refresh</button></div>
+        {exploreLoading && explorePosts.length === 0 && <p className="muted" role="status">Finding public training posts…</p>}
+        {exploreError && <p className="muted" role="alert">{exploreError}</p>}
+        {!exploreLoading && !exploreError && explorePosts.length === 0 && <div className="explore-empty"><strong>No public posts yet.</strong><p className="muted">Public workout updates will appear here when members choose to share them.</p></div>}
+        <div className="explore-post-list">{explorePosts.map(post => <article className="explore-post" key={post.id}>
+          <div className="explore-post-author"><div className="feed-avatar">{(post.user.displayName || post.user.username).slice(0,1).toUpperCase()}</div><div><strong>{post.user.displayName || "@" + post.user.username}</strong><small>@{post.user.username} · {new Date(post.createdAt).toLocaleDateString()}</small></div></div>
+          {post.text && <p>{post.text}</p>}
+          {post.session && <div className="explore-workout-summary"><strong>{post.session.routine?.name || "Workout completed"}</strong><span>{post.session.sets.filter(set => set.completed).length} completed sets · {new Date(post.session.startedAt).toLocaleDateString()}</span><div>{[...new Set(post.session.sets.map(set => set.exercise.name))].slice(0,4).join(" · ")}</div></div>}
+          <div className="explore-post-footer"><span>{post._count?.comments ?? post.comments.length} comments</span><button type="button" className="text-button danger-text" onClick={() => void reportCommunityTarget("post", post.id)}>Report post</button></div>
+        </article>)}</div>
+        {exploreHasMore && <button type="button" className="small-button secondary" onClick={() => void loadMoreExplorePosts()} disabled={exploreLoading}>{exploreLoading ? "Loading…" : "Load more posts"}</button>}
+      </section>
+
       <div className="content-grid">
         <section className="panel">
           <p className="eyebrow">FRIENDS</p><h2>Find friends</h2>

@@ -1836,7 +1836,7 @@ function signOut() {
       </section>
     </section>}
 
-    {activeTab === "coach" && <section className="page-section">
+    {activeTab === "coach" && <section className="page-section coach-page">
       <div className="welcome compact"><p className="eyebrow">COACH</p><h1>Ask about your training.</h1><p className="muted">Get help with logged sessions, exercise technique or your next routine.</p></div>
       <section className="panel progression-guidance" aria-labelledby="progression-guidance-title">
         <div><p className="eyebrow">BASED ON YOUR LOGGED WORKOUTS</p><h2 id="progression-guidance-title">Training progression</h2>
@@ -1893,7 +1893,7 @@ function signOut() {
       </div>
     </section>}
 
-    {activeTab === "community" && <section className="page-section">
+    {activeTab === "community" && <section className="page-section community-page">
       {communityLoading && <p className="load-state" role="status">Loading your community…</p>}
       {communityError && <div className="load-error" role="alert"><span>{communityError}</span><button type="button" className="secondary" onClick={() => void loadCommunity()}>Try again</button></div>}
       <div className="welcome compact"><p className="eyebrow">FRIENDS</p><h1>Your community.</h1><p className="muted">Share completed workouts and updates with accepted friends.</p></div>

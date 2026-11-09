@@ -223,7 +223,7 @@ async function mockApplicationApi(page: Page, onSessionSave?: (body: any) => voi
       body = { posts: socialPosts };
     } else if (url.pathname === "/api/social/explore") {
       body = { posts: [], hasMore: false, nextCursor: null };
-    }    } else if (url.pathname === "/api/social/pings/requests" && method === "GET") {
+    } else if (url.pathname === "/api/social/pings/requests" && method === "GET") {
       body = { requests: [], hasMore: false, nextCursor: null };
     } else if (url.pathname === "/api/social/pings/conversations" && method === "GET") {
       body = { conversations: [], hasMore: false, nextCursor: null };

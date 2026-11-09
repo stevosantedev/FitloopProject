@@ -186,3 +186,12 @@ The previous visual-review run exposed a strict heading assertion and an extra d
 - Pings remains a clear placeholder. Private messaging is not enabled until message privacy, requests, blocking, reporting and notification handling are implemented.
 - The current Explore page is connection discovery, not public post/video discovery. That wider discovery feature remains future work.
 - Added browser coverage to check that each Social destination shows its own content and does not repeat the other tabs' main sections.
+
+
+## Explore public discovery
+
+- Explore now has a separate paginated public-post feed alongside friend search and connection management.
+- The server returns posts only when the author has opted into a public profile. Private accounts remain excluded.
+- Blocks are checked in both directions before the public feed is queried.
+- The friends feed remains limited to the signed-in member and accepted friends; public discovery does not change that audience.
+- Explore currently shows text updates and workout summaries. Image/video upload, richer post media and full engagement controls remain future work.

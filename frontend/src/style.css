@@ -1993,38 +1993,6 @@ footer { border-color: #2b322b; }
 }
 .workspace-switch { display: flex; gap: 4px; padding: 8px 10px 14px; }
 .workspace-switch button { flex: 1; min-width: 0; }
-.social-subnav {
-  display: flex;
-  gap: 22px;
-  overflow-x: auto;
-  margin: 0 0 14px;
-  padding: 0 2px 10px;
-  border-bottom: 1px solid #29362f;
-  scrollbar-width: none;
-}
-.social-subnav::-webkit-scrollbar { display: none; }
-.social-subnav button {
-  position: relative;
-  flex: 0 0 auto;
-  min-height: 38px;
-  padding: 6px 2px;
-  border: 0;
-  background: transparent;
-  color: #98a59d;
-  font: inherit;
-  font-weight: 650;
-}
-.social-subnav button.active { color: #f2f6f2; }
-.social-subnav button.active::after {
-  position: absolute;
-  right: 0;
-  bottom: -11px;
-  left: 0;
-  height: 3px;
-  border-radius: 3px;
-  background: #d8ff9b;
-  content: "";
-}
 .sidebar-coach-link { margin-top: 14px; opacity: .8; }
 .profile-home { display: grid; gap: 14px; }
 .profile-hero {

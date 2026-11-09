@@ -1,32 +1,83 @@
 # FitLoop
 
-FitLoop is a fitness and daily wellbeing app for people whose routines change from week to week. It brings daily check-ins, workout tracking, a friends feed and an explainable coaching service into one place.
+FitLoop is a fitness and everyday wellbeing app for people whose routines change from week to week. It brings workout tracking, daily check-ins, a friends community and a guided coaching service into one account.
 
-The idea is straightforward: make it easier to notice patterns and keep going, without turning everyday habits into another source of pressure. The coach explains why it has made a suggestion, and users can say whether that suggestion was useful.
+The project is aimed at people who want to look after their health and training while balancing study, work, family and other commitments. It focuses on practical records and small changes that fit around real schedules.
 
-## What is in the project
+## What is implemented
 
-- **Daily check-ins:** sleep, steps, mood and focused work or study time.
-- **Workout tracking:** a structured exercise catalogue, reusable routines, multi-exercise sessions and muscle training summaries.
-- **Community:** friend requests, accepted connections, a friends-only feed, reactions and comments.
-- **Explainable coach:** a separate Python service that reviews recent check-ins and returns messages with reasons.
-- **Coach controls:** choose a gentle or direct tone, choose a focus area and record whether a message was helpful.
-- **Progress view:** recent habit charts and a breakdown of completed sets by muscle group.
+### Workouts and exercise reference
 
-## Product roadmap
+- A seeded exercise catalogue with 101 movements and 31 canonical muscles.
+- Search across exercise names, aliases, descriptions, instructions, coaching cues and equipment.
+- Filters for muscle group, equipment, movement pattern and difficulty.
+- Exercise guides with movement descriptions, technique steps, cues, equipment alternatives and primary/secondary muscle links.
+- An interactive front/back muscle map with selectable regions and training-volume summaries.
+- Reusable workout routines, multi-exercise sessions and editable set records.
+- Per-set categories, rest periods, RIR/RPE values and a guided set-by-set workout flow with pause, skip and stop controls.
+- Workout history, recent movement progress, personal records and weighted muscle-volume summaries.
+- Editable two-to-six-day training programmes built from the exercise catalogue. Each day can be reviewed and adjusted before saving, then loaded into the workout builder.
 
-The AI Coach and Community now have connected MVP foundations, including private conversations, optional consent-gated AI replies, a friends-only activity feed, profiles, reactions, comments and an in-app activity inbox. The next phase focuses on validating these experiences, improving the app interface and closing the privacy, safety and evaluation gaps. See the [product expansion roadmap](docs/product-expansion-roadmap.md) for delivery details and acceptance criteria.
+The muscle map is a training reference, not a clinical anatomy diagram. Set-volume and progression summaries describe logged workouts and should not be read as medical or physiological assessments.
 
-## Development standards
+### Daily check-ins and overview
 
-Read [the implementation standards](docs/implementation-standards.md) before extending the exercise library, muscle maps or other substantial features. It defines the expected code-comment detail, writing style, exercise-library and muscle-map requirements, and definition of done.
+- Daily records for sleep, steps, mood and focused work or study time.
+- A weekly overview of workouts, completed sets and check-ins.
+- Seven-day check-in history and simple charts for the recorded measures.
+- Loading, empty, error and retry states for the main data views.
+
+### Community
+
+- Account profiles with display names, short bios and visibility controls.
+- Friend discovery, requests, accepted connections and relationship management.
+- A friends-oriented activity feed with workout summaries and text updates.
+- Reactions, comments, pagination and author controls for editing or deleting eligible posts and comments.
+- Blocking and reporting controls, with server-side audience and relationship checks.
+- A private in-app activity inbox for friend requests, accepted requests, reactions and comments.
+
+The current feed supports text updates and workout activity. Image uploads, private media storage and push/email notifications are not implemented.
+
+### Coach
+
+- Private, persistent conversations with a history list and message controls.
+- A deterministic, rule-guided coaching service with explanations for its suggestions.
+- Training context based on a limited summary of recent completed workouts.
+- Guided responses for common training questions, with conservative handling of pain, injury and urgent symptom wording.
+- Recent progression comparisons based on completed workout history.
+- Catalogue-based routine and weekly programme drafts that users can review and edit before saving.
+- Coaching tone and focus preferences, plus feedback on whether a suggestion was useful.
+
+The rule-guided service is the default. An optional hosted generative reply path is present but disabled by default and requires explicit opt-in. If enabled, the user's message, coaching preferences and a bounded summary of recent completed workouts are sent to the configured provider. Private session notes, daily wellbeing logs and account identifiers are excluded. This optional path differs from the original project proposal, which specified local/backend rule-based coaching and no hosted language model processing of personal data. Keep it disabled unless the project scope, privacy assessment and consent wording are formally approved.
+
+### App shell and offline use
+
+- Installable Progressive Web App (PWA) with a web app manifest and standalone display mode.
+- Desktop workspace navigation and a mobile bottom tab bar.
+- Safe-area support, visible keyboard focus and reduced-motion handling.
+- A service worker that caches the application shell and static assets. API requests and cross-origin traffic are excluded.
+- An account-scoped IndexedDB queue for completed workouts recorded offline.
+- Retry-safe workout synchronisation using a client request identifier to avoid duplicate sessions after interrupted requests.
+- Account-specific cleanup of queued workouts and cached exercise catalogue data when an account is deleted.
+
+FitLoop is currently a responsive PWA. It does not include native iOS or Android applications.
+
+## Technology
+
+- Frontend: React, TypeScript and Vite.
+- API: Node.js and Express.
+- Data: PostgreSQL and Prisma.
+- Coaching service: Python and FastAPI.
+- Browser testing: Playwright.
+- Backend tests: Node.js test runner and API integration tests.
+- Coaching tests: pytest.
 
 ## Project structure
 
-- `frontend/`: React app and browser interface.
-- `backend/`: Express API, Prisma data access and account security.
-- `coach/`: Python service for explainable coaching suggestions.
-- `docs/`: architecture, setup, privacy, implementation standards and project completion plan.
+- `frontend/`: React application, styles, PWA assets and browser tests.
+- `backend/`: Express API, Prisma schema, migrations, seeds and backend tests.
+- `coach/`: Python service and rule-based coaching tests.
+- `docs/`: architecture, setup, privacy, implementation standards, QA and completion planning.
 
 ## Requirements
 
@@ -46,13 +97,15 @@ Read [the implementation standards](docs/implementation-standards.md) before ext
 7. Start the frontend and API with `npm run dev`.
 8. In another terminal, install `coach/requirements.txt` in a Python virtual environment, then run `uvicorn main:app --app-dir coach --reload --port 8000`.
 
-The frontend runs on port 5173, the API on port 4000 and the coaching service on port 8000. The coaching service must be running for check-in suggestions and guided coaching replies; optional AI-generated replies also require explicit user opt-in and server-side provider configuration.
+The frontend runs on port 5173, the API on port 4000 and the coaching service on port 8000. The coaching service is used for guided coaching and check-in suggestions. The optional hosted AI reply path also requires explicit user opt-in and server-side provider configuration.
 
 ## Useful commands
 
 - `npm run dev`: start the frontend and backend.
 - `npm run build`: check backend JavaScript syntax and create the frontend production build.
 - `npm test`: run the backend Node.js test command.
+- `npm run test:e2e`: run the Playwright browser suite.
+- `npm run db:validate`: validate the Prisma schema.
 - `npm run db:generate`: generate the Prisma client.
 - `npm run db:migrate:dev`: create a reviewed migration after changing the Prisma schema.
 - `npm run db:migrate:deploy`: apply checked-in migrations to a database.
@@ -61,14 +114,32 @@ The frontend runs on port 5173, the API on port 4000 and the coaching service on
 - `npm run db:seed`: add the starter exercise library.
 - `pytest coach/test_coach.py`: run the Python coaching tests.
 
-## Current status and known gaps
+## Current status
 
-The first application flow is in place, including daily check-ins, routine creation, workout logging, friends, a feed and coach feedback. The exercise data model now supports structured instructions, aliases, movement patterns, equipment alternatives, media attribution and explicit primary/secondary muscle relationships. The first-party seed now contains 101 exercise definitions and 31 canonical muscle records, with primary and secondary muscle mappings. The app includes exercise technique cards, a selectable front/back muscle explorer with original shape paths for all 31 canonical muscles, and 30-day weighted-set summaries. This is a growing first-party reference library, not an exhaustive catalogue or clinical anatomy resource. The project now includes an installable app shell, mobile navigation, offline workout recording and retry-safe synchronisation. It is still an MVP rather than a production-ready service: secure cookie-based authentication, additional offline edge-case tests, cleared exercise media, accessibility/usability evaluation, deployment hardening and university submission evidence remain outstanding. See the [project status and completion plan](docs/project-status-and-completion.md) for the current checklist and completion gates.
+The project has connected MVP flows for accounts, daily tracking, training, community and coaching. It is still under development. The current work is focused on the mobile-first interface, screen-by-screen visual review, accessibility and usability checks, exercise content review, privacy decisions and final project evidence.
 
-The workout logger supports multi-exercise sessions with editable rows for each set, including individual reps, load and completion state. Each exercise also has its own set type, rest duration and RIR/RPE settings. The API validates unique set numbering and per-exercise limits. A guided workout flow prompts each pending set, marks it complete on confirmation, then runs that exercise's rest period before advancing. Pause, skip and stop controls are available. The progress charts are simple summaries of logged data, not medical or performance assessments.
+See the [project status and completion plan](docs/project-status-and-completion.md) for the remaining work and completion gates. The [product expansion roadmap](docs/product-expansion-roadmap.md) records the delivery status and acceptance criteria for training, Coach and Community.
+
+## Development standards
+
+Read [the implementation standards](docs/implementation-standards.md) before changing substantial code. Comments should explain why a block exists, its assumptions, data boundaries and side effects. Add them close to the relevant logic, including in tests, migrations and schema changes. Keep prose direct and natural, following the project's Humanizer writing guidance.
 
 ## Privacy and safety
 
-Sleep, mood and activity logs are personal information. Keep the database private, use HTTPS outside local development, and never commit real environment files. The coach receives recent measurements only; it does not receive names or email addresses.
+Sleep, mood, activity and workout records are personal information. Keep the database private, use HTTPS outside local development, and never commit real environment files. Do not log tokens, private messages or sensitive user records.
 
-Do not collect real participant data until the required university ethics approval, retention rules and deletion process are in place. Read [the architecture notes](docs/architecture.md), [development guide](docs/development.md) and [privacy notes](docs/privacy.md) before using the project.
+The Coach is a habit and training reflection aid. It does not diagnose conditions or prescribe medical treatment. Do not collect real participant data until the required university ethics approval, retention rules and deletion process are in place. Use synthetic accounts and records for development and demonstrations until those arrangements are confirmed.
+
+The current authentication implementation uses bearer tokens stored by the frontend. Before a public deployment, replace this with Secure, HttpOnly, SameSite cookie sessions and CSRF protection, then review CORS, HTTPS, rate limits, secrets management, monitoring and database backups.
+
+## Known gaps
+
+- Complete the phone-first redesign and inspect real browser screenshots across phone, tablet and desktop sizes.
+- Finish keyboard, screen-reader, contrast and touch-target checks against WCAG 2.2 AA.
+- Run usability sessions with appropriate ethics approval and record the findings.
+- Have the exercise instructions and muscle mappings reviewed for accuracy; source and license any exercise media before adding it.
+- Decide whether the optional hosted AI path is compatible with the original scope and privacy requirements. Keep it disabled until that decision is made.
+- Add secure cookie authentication and production deployment controls.
+- Complete the assessment report, architecture and data-model diagrams, test evidence, demo script and presentation.
+
+Do not describe the current branch as production-ready. It is a substantial university-project MVP that still needs evaluation, security work and submission evidence.

@@ -208,7 +208,8 @@ The app shell is moving from one mixed navigation model to two workspaces. The t
 - [x] Build the first Pings inbox and chat screen for sending requests, accepting/declining invitations, reading conversation history and replying.
 - [x] Add per-conversation unread counts and member-level report/block controls within the chat thread.
 - [x] Add message-level reporting with participant-scoped access and moderator-queue message context.
-- [ ] Add inbox notifications, delivery preferences and message retention rules.
+- [x] Send private, content-free activity alerts when a message request or accepted-conversation message arrives.
+- [ ] Add notification delivery preferences, message retention rules and a focused privacy review.
 - [ ] Complete the privacy/security review and phone, tablet, desktop, keyboard and screen-reader QA for Pings.
 - [ ] Add workout photo/video uploads with secure object storage, file validation, ownership checks, deletion, audience controls and moderation.
 - [ ] Build public post/video Explore only after a clear public/private audience model and server-side visibility checks are agreed.

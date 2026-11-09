@@ -745,7 +745,7 @@ router.post("/pings/conversations/:id/messages", pingMessageLimiter, async (req,
         OR: [{ userAId: req.userId }, { userBId: req.userId }],
         ...(blocked.length ? { AND: [{ userAId: { notIn: blocked } }, { userBId: { notIn: blocked } }] } : {})
       },
-      select: { id: true }
+      select: { id: true, userAId: true, userBId: true }
     });
     if (!conversation) return res.status(404).json({ error: "Conversation not found." });
     const message = await prismaClient.directMessage.create({
@@ -754,11 +754,7 @@ router.post("/pings/conversations/:id/messages", pingMessageLimiter, async (req,
     });
     await prismaClient.directConversation.update({ where: { id: conversation.id }, data: { lastMessageAt: message.createdAt } });
     // Keep notification previews private: the inbox identifies the sender but never copies message text.
-    const recipientId = (await prismaClient.directConversation.findUnique({
-      where: { id: conversation.id },
-      select: { userAId: true, userBId: true }
-    }));
-    const otherParticipantId = recipientId.userAId === req.userId ? recipientId.userBId : recipientId.userAId;
+    const otherParticipantId = conversation.userAId === req.userId ? conversation.userBId : conversation.userAId;
     await recordActivityNotification({ recipientId: otherParticipantId, actorId: req.userId, type: "ping_message" });
     return res.status(201).json({ message });
   } catch (error) { return next(error); }

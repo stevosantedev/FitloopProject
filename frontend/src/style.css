@@ -2085,3 +2085,122 @@ footer { border-color: #2b322b; }
   .mobile-nav button > span:first-child { font-size: 1.2rem; line-height: 1.2; }
   .mobile-nav button > span:nth-child(2) { font-size: .68rem; line-height: 1.2; }
 }
+
+
+/* FitLoop's current visual direction uses a quiet charcoal base and a warm orange
+   accent. The stronger contrast helps workout actions stand out without turning
+   every panel into a separate card or competing with shared activity photos. */
+:root {
+  color-scheme: dark;
+  --fitloop-bg: #0b0d0f;
+  --fitloop-surface: #141719;
+  --fitloop-surface-raised: #1b1f22;
+  --fitloop-border: #2b3034;
+  --fitloop-text: #f2f3f1;
+  --fitloop-muted: #a0a6aa;
+  --fitloop-accent: #ff5a24;
+  --fitloop-accent-hover: #ff784b;
+  --fitloop-accent-soft: #3a2119;
+}
+
+html { background: var(--fitloop-bg); }
+body { background: var(--fitloop-bg); color: var(--fitloop-text); }
+.app-shell { color: var(--fitloop-text); }
+.app-main { background: transparent; }
+.topbar { border-color: var(--fitloop-border); }
+.topbar-kicker, .eyebrow { color: var(--fitloop-accent); }
+.brand span, h1 span { color: var(--fitloop-accent); }
+.account, .muted, footer { color: var(--fitloop-muted); }
+
+/* Primary actions share one accent; secondary controls stay quiet until needed. */
+button { background: var(--fitloop-accent); color: #160d09; }
+button:hover { background: var(--fitloop-accent-hover); }
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid #ff9a75;
+  outline-offset: 3px;
+}
+.text-button, .secondary-action { color: #ff865e; background: transparent; }
+.text-button:hover, .secondary-action:hover { color: #ffad91; background: #2b1c17; }
+.tab-nav .active, .workspace-switch-bar button.active { background: var(--fitloop-accent); color: #160d09; }
+.tab-nav .secondary, .workspace-switch-bar button:not(.active) {
+  background: transparent;
+  border-color: var(--fitloop-border);
+  color: var(--fitloop-muted);
+}
+.tab-nav .secondary:hover, .workspace-switch-bar button:not(.active):hover {
+  color: var(--fitloop-text);
+  background: var(--fitloop-surface-raised);
+}
+
+/* Shared surfaces use subtle borders and a small amount of depth, not stacked
+   shadows. This keeps long training screens readable on a phone. */
+.panel, .stats article, .routine-card, .mini-chart, .profile-edit-card,
+.profile-posts, .auth-card, .workout-post-summary {
+  background: var(--fitloop-surface);
+  border-color: var(--fitloop-border);
+  box-shadow: none;
+}
+.stats article strong, .workout-post-metrics strong { color: var(--fitloop-text); }
+input, select, textarea, .exercise-picker {
+  background: #111416;
+  border-color: var(--fitloop-border);
+  color: var(--fitloop-text);
+}
+input::placeholder, textarea::placeholder { color: #777f84; }
+.log-list li, .feed-card, .topbar { border-color: var(--fitloop-border); }
+.feed-heading, .profile-hero, .profile-posts { color: var(--fitloop-text); }
+.workout-post-summary, .comment, .workout-post-movement {
+  background: var(--fitloop-surface-raised);
+  border-color: var(--fitloop-border);
+}
+.workout-post-movement strong, .workout-post-metrics strong { color: var(--fitloop-text); }
+.workout-post-movement span, .workout-post-metrics { color: var(--fitloop-muted); }
+.reaction-button, .small-button {
+  background: #202529;
+  border-color: #3a4247;
+  color: #e5e8e6;
+}
+.reaction-button:hover, .small-button:hover { background: #2a3035; }
+.check-row input, input[type="checkbox"], input[type="radio"] { accent-color: var(--fitloop-accent); }
+.bar-column > span, .volume-track span { background: var(--fitloop-accent); }
+.volume-track { background: #292f33; }
+
+/* The workspace switch and bottom tabs should feel like persistent app chrome,
+   with enough contrast to remain legible over scrolling content. */
+.workspace-switch-bar {
+  border: 1px solid var(--fitloop-border);
+  border-radius: 16px;
+  background: #111416;
+  padding: 4px;
+}
+.workspace-switch-bar button { border-radius: 12px; }
+.mobile-nav {
+  border-color: #292e32;
+  background: rgb(12 14 16 / 96%);
+  box-shadow: 0 -10px 30px rgb(0 0 0 / 28%);
+  backdrop-filter: blur(18px);
+}
+.mobile-nav button { background: transparent; color: #858d92; }
+.mobile-nav button.active { color: var(--fitloop-accent); background: transparent; }
+.mobile-nav button.active > span:first-child { color: var(--fitloop-accent); }
+.mobile-nav button:hover { background: #1b2023; color: var(--fitloop-text); }
+.nav-unread-count { background: var(--fitloop-accent); color: #160d09; }
+
+/* A visible orange edge marks the current destination without adding a badge to
+   every item in the interface. */
+.sidebar-nav button.active { color: var(--fitloop-accent); border-color: var(--fitloop-accent); }
+.profile-avatar-large, .profile-avatar { background: var(--fitloop-accent-soft); color: #ff946f; }
+.notice { border-color: #75412f; background: #291a14; color: #ffd0bd; }
+.danger-button { background: #d96b62; color: #1c0c0b; }
+.danger-button:hover { background: #eb8178; }
+
+@media (max-width: 820px) {
+  body { overscroll-behavior-y: contain; }
+  .workspace-switch-bar {
+    border-radius: 0;
+    border-width: 0 0 1px;
+    background: rgb(11 13 15 / 96%);
+    backdrop-filter: blur(16px);
+  }
+  .mobile-nav { padding-bottom: max(8px, env(safe-area-inset-bottom)); }
+}

@@ -964,6 +964,9 @@ test("dedicated coach workspace creates a conversation and displays a guided rep
   await page.getByRole("button", { name: "Sign in" }).click();
   await page.locator(".sidebar-nav").getByRole("button", { name: "Coach" }).click();
   await expect(page.getByRole("heading", { name: "Ask about your training." })).toBeVisible();
+  // Starter prompts lower the effort of the first message without sending content on the user's behalf.
+  await page.getByRole("button", { name: "Review my progress" }).click();
+  await expect(page.getByLabel("Message your coach")).toHaveValue("Review my recent training progress.");
   await page.getByLabel("Message your coach").fill("Can you help me review my progress?");
   await page.getByRole("button", { name: "Send message" }).click();
   await expect(page.locator(".coach-chat-bubble.user")).toContainText("Can you help me review my progress?");

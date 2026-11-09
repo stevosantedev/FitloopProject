@@ -2280,3 +2280,85 @@ test("Explore shows public training discovery separately from friend search", as
   await expect(page.getByRole("heading", { name: "Find friends" })).toBeVisible();
   await expect(page.locator(".community-composer")).toHaveCount(0);
 });
+
+
+// Pings keeps new requests separate from accepted chats and requires recipient consent before replies.
+test("Pings supports message requests, acceptance, private history and replies", async ({ page }) => {
+  await mockApplicationApi(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  let accepted = false;
+  let sentRequest: any = null;
+  let sentReply: any = null;
+  const conversation = {
+    id: "conversation-1", userAId: "user-1", userBId: "user-2", requesterId: "user-2",
+    status: "accepted", lastMessageAt: "2026-11-09T20:00:00.000Z",
+    userA: { id: "user-1", username: "tester", displayName: "Tester" },
+    userB: { id: "user-2", username: "runner", displayName: "Runner One" },
+    messages: [{ id: "message-1", conversationId: "conversation-1", senderId: "user-2", body: "Good work on your last session.", createdAt: "2026-11-09T20:00:00.000Z" }]
+  };
+  await page.route("http://localhost:4000/api/social/pings/**", async route => {
+    const request = route.request();
+    const url = new URL(request.url());
+    const method = request.method();
+    if (url.pathname === "/api/social/pings/requests" && method === "GET") {
+      const requests = accepted ? [] : [{
+        id: "request-1", status: "pending", requesterId: "user-2",
+        requester: { id: "user-2", username: "runner", displayName: "Runner One" },
+        messages: [{ id: "intro-1", body: "Would you like to connect about training?", senderId: "user-2" }]
+      }];
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ requests, hasMore: false, nextCursor: null }) });
+      return;
+    }
+    if (url.pathname === "/api/social/pings/conversations" && method === "GET") {
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ conversations: accepted ? [conversation] : [], hasMore: false, nextCursor: null }) });
+      return;
+    }
+    if (url.pathname === "/api/social/pings/requests" && method === "POST") {
+      sentRequest = request.postDataJSON();
+      await route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify({ conversation: { id: "outgoing-request" } }) });
+      return;
+    }
+    if (url.pathname === "/api/social/pings/requests/request-1/accept" && method === "POST") {
+      accepted = true;
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ conversation }) });
+      return;
+    }
+    if (url.pathname === "/api/social/pings/conversations/conversation-1/messages" && method === "GET") {
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ messages: conversation.messages, hasMore: false, nextCursor: null }) });
+      return;
+    }
+    if (url.pathname === "/api/social/pings/conversations/conversation-1/read" && method === "PATCH") {
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ read: 1 }) });
+      return;
+    }
+    if (url.pathname === "/api/social/pings/conversations/conversation-1/messages" && method === "POST") {
+      sentReply = request.postDataJSON();
+      const message = { id: "message-2", conversationId: "conversation-1", senderId: "user-1", body: sentReply.message, createdAt: "2026-11-09T20:05:00.000Z" };
+      conversation.messages.push(message);
+      await route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify({ message }) });
+      return;
+    }
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({}) });
+  });
+
+  await page.goto("/");
+  await page.getByLabel("Email").fill("tester@example.com");
+  await page.getByLabel("Password").fill("test-password");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await clickWorkspaceDestination(page, "social", "Pings");
+
+  await expect(page.getByRole("heading", { name: "Message requests" })).toBeVisible();
+  await expect(page.getByText("Would you like to connect about training?")).toBeVisible();
+  await page.getByLabel("Username").fill("runnercandidate");
+  await page.getByLabel("Introduction").fill("Hello, I am also working on my training consistency.");
+  await page.getByRole("button", { name: "Send request" }).click();
+  expect(sentRequest).toEqual({ username: "runnercandidate", message: "Hello, I am also working on my training consistency." });
+
+  await page.getByRole("button", { name: "Accept" }).click();
+  await expect(page.getByRole("heading", { name: "Runner One" })).toBeVisible();
+  await expect(page.getByText("Good work on your last session.")).toBeVisible();
+  await page.getByLabel("Write a message").fill("Thanks, that means a lot.");
+  await page.getByRole("button", { name: "Send", exact: true }).click();
+  await expect(page.getByText("Thanks, that means a lot.")).toBeVisible();
+  expect(sentReply).toEqual({ message: "Thanks, that means a lot." });
+});

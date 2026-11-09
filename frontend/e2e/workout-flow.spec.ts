@@ -2108,7 +2108,7 @@ test("Social and You switch between the correct destinations", async ({ page }) 
   await expect(page.getByRole("heading", { name: "Friends and requests" })).toBeVisible();
 
   await workspaceSwitch.getByRole("button", { name: "You" }).click();
-  await expect(page.getByRole("heading", { name: "Your week" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Your week", exact: true })).toBeVisible();
   await expect(page.locator(".mobile-nav button")).toHaveCount(5);
 });
 
@@ -2139,7 +2139,7 @@ test("the member profile shows the signed-in user's own shared workout posts", a
   await page.locator(".workspace-switch-bar").getByRole("button", { name: "Social" }).click();
   await clickWorkspaceDestination(page, "social", "Profile");
 
-  await expect(page.getByRole("heading", { name: "tester" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "tester", exact: true })).toBeVisible();
   await expect(page.getByText("A steady session before lectures.")).toBeVisible();
   await expect(page.locator(".profile-posts")).toContainText("1 posts");
   await expect(page.locator(".profile-stats")).toContainText("1");
@@ -2176,6 +2176,7 @@ test("Social and You navigation remain usable across phone widths", async ({ pag
 
   await page.locator(".workspace-switch-bar").getByRole("button", { name: "You" }).click();
   for (const width of [320, 360, 390, 430]) {
+    await clickWorkspaceDestination(page, "you", "Home");
     await page.setViewportSize({ width, height: 844 });
     const workspaceSwitch = page.locator(".workspace-switch-bar");
     const bottomNavigation = page.locator(".mobile-nav");
@@ -2194,9 +2195,10 @@ test("Social and You navigation remain usable across phone widths", async ({ pag
     expect(navigationBounds!.width).toBeLessThanOrEqual(width);
     expect(navigationBounds!.y + navigationBounds!.height).toBeLessThanOrEqual(844);
 
-    await workspaceSwitch.getByRole("button", { name: "Social" }).click();
+    await clickWorkspaceDestination(page, "social", "Feed");
     await expect(bottomNavigation.locator("button")).toHaveCount(4);
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await clickWorkspaceDestination(page, "you", "Home");
   }
 });
 
@@ -2212,6 +2214,7 @@ test("Social bottom tabs show their own focused screen content", async ({ page }
   await page.getByRole("button", { name: "Sign in" }).click();
 
   const nav = page.locator(".mobile-nav");
+  await clickWorkspaceDestination(page, "social", "Feed");
   await expect(page.locator(".community-composer")).toBeVisible();
   await expect(page.locator(".activity-inbox")).toBeVisible();
   await expect(page.locator(".feed-section-heading")).toBeVisible();
@@ -2244,7 +2247,7 @@ test("Explore shows public training discovery separately from friend search", as
   await page.getByLabel("Email").fill("tester@example.com");
   await page.getByLabel("Password").fill("test-password");
   await page.getByRole("button", { name: "Sign in" }).click();
-  await page.locator(".mobile-nav").getByRole("button", { name: "Explore" }).click();
+  await clickWorkspaceDestination(page, "social", "Explore");
 
   await expect(page.getByRole("heading", { name: "Discover the community" })).toBeVisible();
   await expect(page.getByText("No public posts yet.")).toBeVisible();

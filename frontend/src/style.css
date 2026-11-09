@@ -1862,3 +1862,88 @@ footer { border-color: #2b322b; }
   }
   .workout-subnav a { min-height: 42px; }
 }
+
+
+/* The settings shortcut sits in the Home header like a familiar app control, without competing with the main actions. */
+.overview-welcome { position: relative; }
+.overview-welcome-copy { padding-right: 48px; }
+.overview-settings-action {
+  position: absolute;
+  top: 29px;
+  right: 0;
+  display: grid;
+  width: 42px;
+  min-width: 42px;
+  height: 42px;
+  place-items: center;
+  margin: 0;
+  padding: 0;
+  border: 1px solid #334238;
+  border-radius: 50%;
+  background: #121a14;
+  color: #c4d0c5;
+}
+.overview-settings-action:hover,
+.overview-settings-action:focus-visible {
+  border-color: var(--fitloop-accent);
+  color: var(--fitloop-accent);
+}
+.overview-settings-action svg {
+  width: 19px;
+  height: 19px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.account-settings-backdrop {
+  position: fixed;
+  z-index: 60;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgb(3 6 4 / 78%);
+  backdrop-filter: blur(9px);
+}
+.account-settings-dialog {
+  width: min(720px, 100%);
+  max-height: min(88dvh, 900px);
+  overflow-y: auto;
+  padding: 22px;
+  border: 1px solid #3a493d;
+  border-radius: 18px;
+  background: #101711;
+  box-shadow: 0 24px 90px rgb(0 0 0 / 48%);
+}
+.account-settings-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+.account-settings-heading h2 { margin: 0; }
+.account-settings-dialog .coach-panel,
+.account-settings-dialog .account-danger {
+  margin: 0 0 14px;
+  padding: 18px;
+  border: 1px solid #2b3a30;
+  border-radius: 12px;
+  background: #141e17;
+}
+.account-settings-dialog .account-danger { margin-bottom: 0; }
+@media (max-width: 520px) {
+  .overview-settings-action { top: 25px; right: 0; width: 40px; min-width: 40px; height: 40px; }
+  .account-settings-backdrop { align-items: end; padding: 0; }
+  .account-settings-dialog {
+    width: 100%;
+    max-height: 90dvh;
+    padding: 18px 15px calc(18px + env(safe-area-inset-bottom, 0px));
+    border-right: 0;
+    border-bottom: 0;
+    border-left: 0;
+    border-radius: 18px 18px 0 0;
+  }
+}

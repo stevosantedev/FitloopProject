@@ -1576,6 +1576,11 @@ function signOut() {
     <div className="app-main">
       {/* Desktop keeps a compact workspace header. Phones use the page heading
           and bottom tabs instead, so a second header does not waste vertical space. */}
+      {/* This switch stays visible on phones and desktop so the two workspaces never feel like separate apps. */}
+      <div className="workspace-switch-bar" role="group" aria-label="Choose workspace">
+        <button type="button" className={workspace === "social" ? "active" : ""} aria-pressed={workspace === "social"} onClick={() => { setWorkspace("social"); setActiveTab("community"); }}>Social</button>
+        <button type="button" className={workspace === "you" ? "active" : ""} aria-pressed={workspace === "you"} onClick={() => { setWorkspace("you"); setActiveTab("home"); }}>You</button>
+      </div>
       <header className="topbar">
         <div><p className="topbar-kicker">{activeTab === "home" ? "YOUR TRAINING" : activeTab === "workouts" ? "PLAN / LOG / REVIEW" : activeTab === "progress" ? "TRAINING / DAILY PATTERNS" : activeTab === "community" ? "TRAIN TOGETHER" : "GUIDANCE"}</p><strong>{activeTab === "home" ? "Overview" : activeTab === "workouts" ? "Workouts" : activeTab === "progress" ? "Progress" : activeTab === "community" ? "Community" : "Coach"}</strong></div>
         <div className="account">{pendingWorkoutCount > 0 && <span className="offline-queue-status" role="status">{pendingWorkoutCount} workout{pendingWorkoutCount === 1 ? "" : "s"} waiting to sync</span>}<span className="account-status"><i /> Your space</span>{activeTab !== "home" && <button className="topbar-action" onClick={() => setActiveTab("workouts")}>Start a workout <span aria-hidden="true">↗</span></button>}</div>
@@ -2048,7 +2053,7 @@ function signOut() {
 
     {/* Community keeps the friends' activity feed ahead of profile and relationship
         management, which are supporting tasks rather than the main feed action. */}
-    {activeTab === "community" && <section className="page-section community-page">
+    {activeTab === "community" && <section className="page-section community-page" data-social-view={socialView}>
       {communityLoading && <p className="load-state" role="status">Loading your community…</p>}
       {communityError && <div className="load-error" role="alert"><span>{communityError}</span><button type="button" className="secondary" onClick={() => void loadCommunity()}>Try again</button></div>}
       <div className="social-workspace-switch" role="group" aria-label="Social and personal workspace">

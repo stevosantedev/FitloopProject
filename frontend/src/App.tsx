@@ -1555,15 +1555,15 @@ function signOut() {
       </div>
       <nav className="sidebar-nav" aria-label={workspace === "social" ? "Social navigation" : "Your training navigation"}>
         {workspace === "social" ? <>
-          <button aria-current={socialView === "feed" ? "page" : undefined} className={socialView === "feed" ? "active" : ""} onClick={() => { setActiveTab("community"); setSocialView("feed"); }}>Feed</button>
+          <button aria-label={unreadNotificationCount > 0 ? `Community, ${unreadNotificationCount} unread ${unreadNotificationCount === 1 ? "notification" : "notifications"}` : "Community"} aria-current={socialView === "feed" ? "page" : undefined} className={socialView === "feed" ? "active" : ""} onClick={() => { setActiveTab("community"); setSocialView("feed"); }}>Feed{unreadNotificationCount > 0 && <span className="nav-unread-count" aria-hidden="true">{unreadNotificationCount > 99 ? "99+" : unreadNotificationCount}</span>}</button>
           <button aria-current={socialView === "explore" ? "page" : undefined} className={socialView === "explore" ? "active" : ""} onClick={() => { setActiveTab("community"); setSocialView("explore"); }}>Explore</button>
           <button aria-current={socialView === "pings" ? "page" : undefined} className={socialView === "pings" ? "active" : ""} onClick={() => { setActiveTab("community"); setSocialView("pings"); }}>Pings</button>
           <button aria-current={socialView === "profile" ? "page" : undefined} className={socialView === "profile" ? "active" : ""} onClick={() => { setActiveTab("community"); setSocialView("profile"); }}>Profile</button>
         </> : <>
-          <button aria-current={activeTab === "home" ? "page" : undefined} className={activeTab === "home" ? "active" : ""} onClick={() => setActiveTab("home")}>Home</button>
-          <button aria-current={activeTab === "workouts" ? "page" : undefined} className={activeTab === "workouts" ? "active" : ""} onClick={() => setActiveTab("workouts")}>Workout</button>
-          <button aria-current={activeTab === "progress" ? "page" : undefined} className={activeTab === "progress" ? "active" : ""} onClick={() => setActiveTab("progress")}>Stats</button>
-          <button aria-current={activeTab === "coach" ? "page" : undefined} className={activeTab === "coach" ? "active" : ""} onClick={() => setActiveTab("coach")}>Plan</button>
+          <button aria-label="Overview" aria-current={activeTab === "home" ? "page" : undefined} className={activeTab === "home" ? "active" : ""} onClick={() => setActiveTab("home")}>Home</button>
+          <button aria-label="Workouts" aria-current={activeTab === "workouts" ? "page" : undefined} className={activeTab === "workouts" ? "active" : ""} onClick={() => setActiveTab("workouts")}>Workout</button>
+          <button aria-label="Progress" aria-current={activeTab === "progress" ? "page" : undefined} className={activeTab === "progress" ? "active" : ""} onClick={() => setActiveTab("progress")}>Stats</button>
+          <button aria-label="Coach" aria-current={activeTab === "coach" ? "page" : undefined} className={activeTab === "coach" ? "active" : ""} onClick={() => setActiveTab("coach")}>Plan</button>
           <button aria-current={activeTab === "workouts" ? "page" : undefined} className={activeTab === "workouts" ? "active" : ""} onClick={() => { setActiveTab("workouts"); window.setTimeout(() => document.getElementById("exercise-library")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0); }}>Library</button>
         </>}
         {workspace === "you" && <button className="sidebar-coach-link" onClick={() => setActiveTab("coach")}>Coach</button>}

@@ -199,14 +199,18 @@ The app shell is moving from one mixed navigation model to two workspaces. The t
 
 - [x] Add Social destinations for Feed, Explore, Pings and Profile.
 - [x] Keep the existing friends-only feed, composer, reactions, comments and activity inbox under Feed.
-- [x] Use the existing bounded friend-discovery workflow as the first Explore experience. This is people discovery only; public post and video discovery still needs its own audience model and API.
+- [x] Keep bounded friend discovery alongside a paginated public-post feed. The API enforces public-profile visibility and mutual block rules; reactions and comments recheck visibility on every request. Public photo/video media remains future work.
 - [x] Add a signed-in member profile with editable display name/bio and an owner-scoped cursor-paginated history of the member's own shared posts and workout summaries. The API excludes private workout notes and does not depend on the current friends-feed page.
 - [x] Connect Profile Settings to the existing account settings sheet.
 - [x] Add You destinations for Home, Workout, Stats, Plan and Library. Plan opens the existing weekly programme and progression workspace, with Coach guidance available there and from Home.
-- [ ] Build secure one-to-one Pings messaging, including request handling, blocking integration, abuse reporting, notification preferences and retention rules.
+- [x] Add private one-to-one conversation/message tables, unique participant pairs, account-cascade deletion and stable message pagination.
+- [x] Add request-based contact with an introductory message, recipient-only accept/decline, private-profile friend boundaries, rate-limited replies, block checks and read receipts.
+- [x] Build the first Pings inbox and chat screen for sending requests, accepting/declining invitations, reading conversation history and replying.
+- [ ] Add unread counts, message-level reporting, inbox notifications, delivery preferences and message retention rules.
+- [ ] Complete the privacy/security review and phone, tablet, desktop, keyboard and screen-reader QA for Pings.
 - [ ] Add workout photo/video uploads with secure object storage, file validation, ownership checks, deletion, audience controls and moderation.
 - [ ] Build public post/video Explore only after a clear public/private audience model and server-side visibility checks are agreed.
 - [ ] Add a media-rich profile grid once uploads and post-media relationships exist.
 - [ ] Complete phone, tablet, desktop, keyboard and screen-reader QA for the new workspace navigation.
 
-The current Profile can show only posts returned by the existing signed-in community feed. It is not yet a complete media portfolio. Pings is intentionally shown as unavailable rather than presenting a non-functional chat screen. Club is not part of the current navigation; consider it only if group challenges, club leaderboards or organised group training become a distinct product requirement.
+The current Profile can show only posts returned by the existing signed-in community feed. It is not yet a complete media portfolio. Pings now supports request-based private conversations and replies, but it is not complete until unread state, reporting, notifications, retention rules and privacy/security QA are finished. Club is not part of the current navigation; consider it only if group challenges, club leaderboards or organised group training become a distinct product requirement.

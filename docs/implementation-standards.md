@@ -140,3 +140,12 @@ FitLoop is designed as a phone app that also works in a desktop browser. Treat t
 - Keep the same account permissions, validation and data behaviour across screen sizes. Responsive styling must not hide a feature's only route of access.
 
 For each visual change, add a nearby code comment explaining the layout decision when it is not obvious from the selector or component name. Add a browser assertion for important navigation, hierarchy, touch-target or overflow behaviour. Update the README and project status when the change affects the product description or completion plan.
+
+
+## Visual system
+
+- Use a charcoal base, restrained raised surfaces and one warm orange accent for primary actions and selected destinations.
+- Keep workout data, progress and community media visually prominent. Avoid turning every section into a separate dashboard card.
+- Use consistent focus-visible outlines and keep secondary actions visually quieter than the main action.
+- Re-check contrast, disabled states, destructive actions and status messages whenever accent or surface colours change.
+- Treat design references as direction for hierarchy and interaction, not assets or layouts to copy.

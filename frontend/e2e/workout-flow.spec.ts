@@ -180,6 +180,8 @@ async function mockApplicationApi(page: Page, onSessionSave?: (body: any) => voi
       body = { people: [{ id: "friend-candidate", username: "runnercandidate", displayName: "Runner Candidate" }] };
     } else if (url.pathname === "/api/social/friends/request" && method === "POST") {
       body = { connection: { id: "request-candidate", status: "pending" } };
+    } else if (url.pathname === "/api/social/notifications") {
+      body = { notifications: [], unreadCount: 0, hasMore: false, nextCursor: null };
     } else if (url.pathname === "/api/social/friends") {
       body = { connections: [] };
     } else if (url.pathname === "/api/social/blocks" && method === "GET") {
@@ -1659,6 +1661,8 @@ test("Community opens on activity and Coach opens on the conversation", async ({
   await page.getByRole("button", { name: "Sign in" }).click();
 
   await page.locator(".sidebar-nav").getByRole("button", { name: "Community" }).click();
+  await expect(page.getByRole("heading", { name: "Activity" })).toBeVisible();
+  await expect(page.getByText("Friend requests, reactions and comments will appear here.")).toBeVisible();
   await expect(page.locator(".community-page > .panel:has(.feed-section-heading)")).toHaveCSS("order", "1");
   await expect(page.locator(".community-page > .community-composer")).toHaveCSS("order", "2");
   await expect(page.locator(".community-page > .content-grid")).toHaveCSS("order", "3");

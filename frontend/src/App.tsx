@@ -1,10 +1,14 @@
 /**
  * Main FitLoop browser application.
  *
- * This component currently coordinates authentication and the three primary
- * areas of the MVP: daily wellbeing, workouts and the friends community. API
- * access is centralised in request() so private calls share the same token and
- * error-handling behaviour.
+ * This component coordinates the signed-in app shell and its four main
+ * destinations: Overview, Workouts, Community and Coach. It owns the screen
+ * state and calls the Express API through request(), which applies the current
+ * account token and gives private requests one consistent error path.
+ *
+ * The desktop sidebar and mobile bottom tabs lead to the same destinations.
+ * Screen-specific layout rules live in style.css, while this component keeps
+ * the underlying actions and account data shared across viewport sizes.
  */
 import { useEffect, useRef, useState } from "react";
 import MuscleMap from "./components/MuscleMap";
@@ -1533,10 +1537,14 @@ function signOut() {
       </div>
     </aside>
     <div className="app-main">
+      {/* Desktop keeps a compact workspace header. Phones use the page heading
+          and bottom tabs instead, so a second header does not waste vertical space. */}
       <header className="topbar">
         <div><p className="topbar-kicker">{activeTab === "home" ? "YOUR TRAINING" : activeTab === "workouts" ? "PLAN / LOG / REVIEW" : activeTab === "community" ? "TRAIN TOGETHER" : "GUIDANCE / PROGRESS"}</p><strong>{activeTab === "home" ? "Overview" : activeTab === "workouts" ? "Workouts" : activeTab === "community" ? "Community" : "Coach"}</strong></div>
         <div className="account">{pendingWorkoutCount > 0 && <span className="offline-queue-status" role="status">{pendingWorkoutCount} workout{pendingWorkoutCount === 1 ? "" : "s"} waiting to sync</span>}<span className="account-status"><i /> Your space</span>{activeTab !== "home" && <button className="topbar-action" onClick={() => setActiveTab("workouts")}>Start a workout <span aria-hidden="true">↗</span></button>}</div>
       </header>
+      {/* The tab bar stays available while a user scrolls through a long screen.
+          Safe-area spacing is handled in CSS for gesture bars and notched devices. */}
       <nav className="mobile-nav" aria-label="Main sections">
         <button aria-current={activeTab === "home" ? "page" : undefined} className={activeTab === "home" ? "active" : ""} onClick={() => setActiveTab("home")}><span><svg className="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7"/><path d="M5 9.5V21h14V9.5"/><path d="M9 21v-7h6v7"/></svg></span>Home</button>
         <button aria-current={activeTab === "workouts" ? "page" : undefined} className={activeTab === "workouts" ? "active" : ""} onClick={() => setActiveTab("workouts")}><span><svg className="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5v14M18 5v14M3 9v6M21 9v6M6 12h12"/></svg></span>Workouts</button>
@@ -1544,6 +1552,8 @@ function signOut() {
         <button aria-current={activeTab === "coach" ? "page" : undefined} className={activeTab === "coach" ? "active" : ""} onClick={() => setActiveTab("coach")}><span><svg className="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 1.9 5.8L20 11l-6.1 2.2L12 19l-1.9-5.8L4 11l6.1-2.2L12 3Z"/><path d="m19 14 1.1 2.9L23 18l-2.9 1.1L19 22l-1.1-2.9L15 18l2.9-1.1L19 14Z"/></svg></span>Coach</button>
       </nav>
 
+    {/* Overview puts the next training action first. Check-ins and trends follow
+        the recent-session summary so wellbeing supports the training context. */}
     {activeTab === "home" && <>
       {dashboardLoading && <p className="load-state" role="status">Loading your overview…</p>}
       {dashboardError && <div className="load-error" role="alert"><span>{dashboardError}</span><button type="button" className="secondary" onClick={() => void loadDashboard()}>Try again</button></div>}
@@ -1639,6 +1649,8 @@ function signOut() {
       </section>
     </>}
 
+    {/* The workout workspace keeps the live session builder separate from reusable
+        routines, exercise reference material and historical training summaries. */}
     {activeTab === "workouts" && <section className="page-section">
       {workoutsLoading && <p className="load-state" role="status">Loading your training data…</p>}
       {workoutsError && <div className="load-error" role="alert"><span>{workoutsError}</span><button type="button" className="secondary" onClick={() => void loadWorkouts()}>Try again</button></div>}
@@ -1912,6 +1924,8 @@ function signOut() {
       </section>
     </section>}
 
+    {/* The conversation is the first Coach task. Progression and programme tools
+        remain available below it, where they do not interrupt the chat flow. */}
     {activeTab === "coach" && <section className="page-section coach-page">
       <div className="welcome compact"><p className="eyebrow">COACH</p><h1>Ask about your training.</h1><p className="muted">Get help with logged sessions, exercise technique or your next routine.</p></div>
       <div className="coach-chat-layout">
@@ -1978,6 +1992,8 @@ function signOut() {
       />
     </section>}
 
+    {/* Community keeps the friends' activity feed ahead of profile and relationship
+        management, which are supporting tasks rather than the main feed action. */}
     {activeTab === "community" && <section className="page-section community-page">
       {communityLoading && <p className="load-state" role="status">Loading your community…</p>}
       {communityError && <div className="load-error" role="alert"><span>{communityError}</span><button type="button" className="secondary" onClick={() => void loadCommunity()}>Try again</button></div>}

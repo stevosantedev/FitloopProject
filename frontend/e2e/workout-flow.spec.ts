@@ -2144,3 +2144,38 @@ test("the signed-in app uses the charcoal and orange visual system", async ({ pa
   await expect(page.locator(".mobile-nav")).toBeVisible();
   await expect(page.locator(".mobile-nav button.active")).toBeVisible();
 });
+
+
+// A responsive app should preserve the same navigation and readable controls
+// across common phone widths, not merely avoid a horizontal scrollbar at 320px.
+test("Social and You navigation remain usable across phone widths", async ({ page }) => {
+  await mockApplicationApi(page);
+  await page.goto("/");
+  await page.getByLabel("Email").fill("tester@example.com");
+  await page.getByLabel("Password").fill("test-password");
+  await page.getByRole("button", { name: "Sign in" }).click();
+
+  for (const width of [320, 360, 390, 430]) {
+    await page.setViewportSize({ width, height: 844 });
+    const workspaceSwitch = page.locator(".workspace-switch-bar");
+    const bottomNavigation = page.locator(".mobile-nav");
+
+    await expect(workspaceSwitch).toBeVisible();
+    await expect(bottomNavigation).toBeVisible();
+    await expect(bottomNavigation).toHaveCSS("position", "fixed");
+    await expect(bottomNavigation.locator("button")).toHaveCount(5);
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+
+    const switchBounds = await workspaceSwitch.boundingBox();
+    const navigationBounds = await bottomNavigation.boundingBox();
+    expect(switchBounds).not.toBeNull();
+    expect(navigationBounds).not.toBeNull();
+    expect(switchBounds!.width).toBeLessThanOrEqual(width);
+    expect(navigationBounds!.width).toBeLessThanOrEqual(width);
+    expect(navigationBounds!.y + navigationBounds!.height).toBeLessThanOrEqual(844);
+
+    await workspaceSwitch.getByRole("button", { name: "Social" }).click();
+    await expect(bottomNavigation.locator("button")).toHaveCount(4);
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  }
+});

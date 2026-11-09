@@ -10,7 +10,7 @@
  * and gives private requests one consistent error path. Screen-specific layout
  * rules live in style.css so phone and desktop views can share the same actions.
  */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import MuscleMap from "./components/MuscleMap";
 import GuidedRestTimer from "./components/GuidedRestTimer";
 import CoachRoutineDraft, { type CoachPlanInput, type TrainingPlanView } from "./components/CoachRoutineDraft";
@@ -356,7 +356,7 @@ async function request(path: string, options: RequestInit = {}) {
 
   // A new conversation starts with one short introduction. The recipient must accept it
   // before either person can send another message.
-  async function submitPingRequest(event: React.FormEvent<HTMLFormElement>) {
+  async function submitPingRequest(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!pingRequestUsername.trim() || !pingRequestDraft.trim()) return;
     setPingSaving(true);
@@ -397,7 +397,7 @@ async function request(path: string, options: RequestInit = {}) {
   }
 
   // Replies are sent only after acceptance. Refreshing the inbox updates the preview order.
-  async function submitPingMessage(event: React.FormEvent<HTMLFormElement>) {
+  async function submitPingMessage(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!selectedPingConversationId || !pingMessageDraft.trim()) return;
     setPingSaving(true);
@@ -947,7 +947,7 @@ async function sendCoachMessage(event: React.FormEvent) {
 
   // Read the uncontrolled check-in form once, then convert optional fields into
   // numbers. Empty fields are omitted so a user can record only what they know.
-  async function saveCheckIn(event: React.FormEvent<HTMLFormElement>) {
+  async function saveCheckIn(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     const optionalNumber = (key: string) => {

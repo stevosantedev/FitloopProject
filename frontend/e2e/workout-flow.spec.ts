@@ -2110,7 +2110,7 @@ test("the member profile shows the signed-in user's own shared workout posts", a
   await page.locator(".workspace-switch-bar").getByRole("button", { name: "Social" }).click();
   await page.locator(".mobile-nav").getByRole("button", { name: "Profile" }).click();
 
-  await expect(page.getByRole("heading", { name: "Test Athlete" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "tester" })).toBeVisible();
   await expect(page.getByText("A steady session before lectures.")).toBeVisible();
   await expect(page.locator(".profile-posts")).toContainText("1 posts");
   await expect(page.locator(".profile-posts")).toContainText("10");

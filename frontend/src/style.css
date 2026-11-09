@@ -1124,8 +1124,8 @@ footer { border-color: #2b322b; }
   flex-direction: column;
 }
 .community-page > .welcome { order: 0; }
-.community-page > .panel:has(.feed-section-heading) { order: 1; }
-.community-page > .community-composer { order: 2; }
+.community-page > .community-composer { order: 1; }
+.community-page > .panel:has(.feed-section-heading) { order: 2; }
 .community-page > .content-grid { order: 3; }
 .community-page > .community-profile-form { order: 4; }
 .community-page > .community-blocked-panel { order: 5; }
@@ -1171,6 +1171,30 @@ footer { border-color: #2b322b; }
   min-height: 340px;
   padding: 14px 4px;
 }
+/* Suggested questions reduce the blank-chat barrier without sending anything automatically. */
+.coach-prompt-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+.coach-prompt-chips button {
+  width: auto;
+  min-height: 38px;
+  margin: 0;
+  padding: 8px 11px;
+  border: 1px solid var(--fitloop-border);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--fitloop-text);
+  font-size: .75rem;
+  font-weight: 550;
+}
+.coach-prompt-chips button:hover {
+  border-color: var(--fitloop-accent);
+  background: var(--fitloop-surface-raised);
+}
 .coach-page .coach-chat-bubble {
   border-radius: 9px;
   box-shadow: none;
@@ -1186,8 +1210,8 @@ footer { border-color: #2b322b; }
   box-shadow: none;
 }
 @media (max-width: 820px) {
-  .community-page > .panel:has(.feed-section-heading) { order: 1; }
-  .community-page > .community-composer { order: 2; }
+  .community-page > .community-composer { order: 1; }
+  .community-page > .panel:has(.feed-section-heading) { order: 2; }
   .community-page > .content-grid { order: 3; }
   .community-page > .community-profile-form { order: 4; }
   .coach-page .coach-chat-layout {

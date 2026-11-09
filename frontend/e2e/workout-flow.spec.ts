@@ -468,6 +468,9 @@ test("the app uses persistent navigation on desktop and a bottom tab bar on mobi
   await assertNoHorizontalOverflow();
   await page.locator(".mobile-nav").getByRole("button", { name: "Coach" }).click();
   await assertNoHorizontalOverflow();
+  await page.locator(".workspace-switch-bar").getByRole("button", { name: "Social" }).click();
+  await expect(page.locator(".mobile-nav button")).toHaveCount(4);
+  await assertNoHorizontalOverflow();
 });
 
 // Render the profile fields returned by the API without exposing fields the response omits.

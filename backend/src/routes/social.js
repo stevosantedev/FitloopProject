@@ -591,6 +591,8 @@ router.post("/pings/requests", pingRequestLimiter, async (req, res, next) => {
         messages: { orderBy: [{ createdAt: "desc" }, { id: "desc" }], take: 1 }
       }
     });
+    // The request notification contains no message text; private content stays in Pings.
+    await recordActivityNotification({ recipientId: recipient.id, actorId: req.userId, type: "ping_request" });
     return res.status(201).json({ conversation });
   } catch (error) {
     if (error?.code === "P2002") return res.status(409).json({ error: "A message request already exists for this member." });
@@ -751,6 +753,13 @@ router.post("/pings/conversations/:id/messages", pingMessageLimiter, async (req,
       include: { sender: { select: { id: true, username: true, displayName: true } } }
     });
     await prismaClient.directConversation.update({ where: { id: conversation.id }, data: { lastMessageAt: message.createdAt } });
+    // Keep notification previews private: the inbox identifies the sender but never copies message text.
+    const recipientId = (await prismaClient.directConversation.findUnique({
+      where: { id: conversation.id },
+      select: { userAId: true, userBId: true }
+    }));
+    const otherParticipantId = recipientId.userAId === req.userId ? recipientId.userBId : recipientId.userAId;
+    await recordActivityNotification({ recipientId: otherParticipantId, actorId: req.userId, type: "ping_message" });
     return res.status(201).json({ message });
   } catch (error) { return next(error); }
 });

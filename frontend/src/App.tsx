@@ -66,6 +66,12 @@ type FriendConnection = {
 type CommunityProfile = { id: string; username: string; displayName: string | null; bio: string | null };
 type FriendSearchResult = { id: string; username: string; displayName: string | null };
 type ActivityNotification = { id: string; type: "friend_request" | "friend_accepted" | "reaction" | "comment"; createdAt: string; readAt?: string | null; actor?: User | null; post?: { id: string; text?: string | null; type?: string } | null };
+type PingParticipant = { id: string; username: string; displayName?: string | null };
+type PingMessage = { id: string; conversationId: string; senderId: string; body: string; createdAt: string; readAt?: string | null; sender?: PingParticipant };
+type PingConversation = {
+  id: string; userAId: string; userBId: string; requesterId: string; status: "pending" | "accepted" | "declined";
+  lastMessageAt: string; userA?: PingParticipant; userB?: PingParticipant; requester?: PingParticipant; messages: PingMessage[];
+};
 type FeedPost = {
   id: string;
   createdAt: string;
@@ -207,6 +213,20 @@ export default function App() {
   const [activityNotificationsHasMore, setActivityNotificationsHasMore] = useState(false);
   const [activityNotificationsLoadingMore, setActivityNotificationsLoadingMore] = useState(false);
   const [activityNotificationsLoadError, setActivityNotificationsLoadError] = useState("");
+  // Pings keeps incoming requests, accepted conversations and the open thread separate.
+  // Message content is fetched only after a participant opens a conversation.
+  const [pingRequests, setPingRequests] = useState<PingConversation[]>([]);
+  const [pingConversations, setPingConversations] = useState<PingConversation[]>([]);
+  const [selectedPingConversationId, setSelectedPingConversationId] = useState("");
+  const [pingMessages, setPingMessages] = useState<PingMessage[]>([]);
+  const [pingsLoading, setPingsLoading] = useState(false);
+  const [pingsError, setPingsError] = useState("");
+  const [pingMessagesLoading, setPingMessagesLoading] = useState(false);
+  const [pingMessagesError, setPingMessagesError] = useState("");
+  const [pingRequestUsername, setPingRequestUsername] = useState("");
+  const [pingRequestDraft, setPingRequestDraft] = useState("");
+  const [pingMessageDraft, setPingMessageDraft] = useState("");
+  const [pingSaving, setPingSaving] = useState(false);
   // Disable every reaction on a post while its server update is pending; the ref closes the gap before React rerenders.
   const [reactionSaving, setReactionSaving] = useState<Record<string, boolean>>({});
   const reactionRequestsRef = useRef(new Set<string>());
@@ -293,6 +313,108 @@ async function request(path: string, options: RequestInit = {}) {
     const data = await response.json();
     if (!response.ok) throw new ApiRequestError(data.error ?? "The request could not be completed.", response.status);
     return data;
+  }
+
+  // Load the two inbox sections independently of the public activity feed.
+  // The API decides which requests and conversations this account is allowed to see.
+  async function loadPings() {
+    setPingsLoading(true);
+    setPingsError("");
+    try {
+      const [requestData, conversationData] = await Promise.all([
+        request("/api/social/pings/requests"),
+        request("/api/social/pings/conversations")
+      ]);
+      setPingRequests(requestData.requests);
+      setPingConversations(conversationData.conversations);
+    } catch (error) {
+      setPingsError(error instanceof Error ? error.message : "Pings could not be loaded.");
+    } finally {
+      setPingsLoading(false);
+    }
+  }
+
+  // Messages are fetched only for a conversation the member explicitly opens.
+  // A successful read receipt is written after the server confirms participant access.
+  async function openPingConversation(conversation: PingConversation) {
+    setSelectedPingConversationId(conversation.id);
+    setPingMessagesLoading(true);
+    setPingMessagesError("");
+    try {
+      const data = await request("/api/social/pings/conversations/" + encodeURIComponent(conversation.id) + "/messages");
+      setPingMessages([...data.messages].reverse());
+      if (conversation.status === "accepted") {
+        await request("/api/social/pings/conversations/" + encodeURIComponent(conversation.id) + "/read", { method: "PATCH" });
+      }
+    } catch (error) {
+      setPingMessagesError(error instanceof Error ? error.message : "This conversation could not be opened.");
+      setPingMessages([]);
+    } finally {
+      setPingMessagesLoading(false);
+    }
+  }
+
+  // A new conversation starts with one short introduction. The recipient must accept it
+  // before either person can send another message.
+  async function submitPingRequest(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!pingRequestUsername.trim() || !pingRequestDraft.trim()) return;
+    setPingSaving(true);
+    setPingsError("");
+    try {
+      await request("/api/social/pings/requests", {
+        method: "POST",
+        body: JSON.stringify({ username: pingRequestUsername.trim(), message: pingRequestDraft.trim() })
+      });
+      setPingRequestUsername("");
+      setPingRequestDraft("");
+      setNotice("Message request sent.");
+      await loadPings();
+    } catch (error) {
+      setPingsError(error instanceof Error ? error.message : "The message request could not be sent.");
+    } finally {
+      setPingSaving(false);
+    }
+  }
+
+  // Accepting or declining is a recipient-only decision enforced again by the API.
+  async function respondToPingRequest(id: string, decision: "accept" | "decline") {
+    setPingSaving(true);
+    setPingsError("");
+    try {
+      const data = await request("/api/social/pings/requests/" + encodeURIComponent(id) + "/" + decision, { method: "POST" });
+      await loadPings();
+      if (decision === "accept" && data.conversation) await openPingConversation(data.conversation);
+      else if (selectedPingConversationId === id) {
+        setSelectedPingConversationId("");
+        setPingMessages([]);
+      }
+    } catch (error) {
+      setPingsError(error instanceof Error ? error.message : "The message request could not be updated.");
+    } finally {
+      setPingSaving(false);
+    }
+  }
+
+  // Replies are sent only after acceptance. Refreshing the inbox updates the preview order.
+  async function submitPingMessage(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selectedPingConversationId || !pingMessageDraft.trim()) return;
+    setPingSaving(true);
+    setPingMessagesError("");
+    try {
+      const data = await request("/api/social/pings/conversations/" + encodeURIComponent(selectedPingConversationId) + "/messages", {
+        method: "POST",
+        body: JSON.stringify({ message: pingMessageDraft.trim() })
+      });
+      setPingMessages(current => [...current, data.message]);
+      setPingMessageDraft("");
+      await loadPings();
+    } catch (error) {
+      setPingMessagesError(error instanceof Error ? error.message : "Your message could not be sent.");
+    } finally {
+      setPingSaving(false);
+    }
   }
 
   // Fetch only the signed-in account's saved weekly programmes when Coach is opened.
@@ -1378,6 +1500,15 @@ function signOut() {
     setMyProfilePostsError("");
     setActivityNotifications([]);
     setUnreadNotificationCount(0);
+    setPingRequests([]);
+    setPingConversations([]);
+    setSelectedPingConversationId("");
+    setPingMessages([]);
+    setPingRequestUsername("");
+    setPingRequestDraft("");
+    setPingMessageDraft("");
+    setPingsError("");
+    setPingMessagesError("");
     setActivityNotificationCursor(null);
     setActivityNotificationsHasMore(false);
     setActivityNotificationsLoadError("");
@@ -1421,6 +1552,7 @@ function signOut() {
     if (token && activeTab === "community") void loadCommunity();
     // Explore has a public-only endpoint and is fetched only when that destination is selected.
     if (token && activeTab === "community" && socialView === "explore") void loadExplorePosts();
+    if (token && activeTab === "community" && socialView === "pings") void loadPings();
 
     if (token && activeTab === "coach") {
       void loadCoachConversations();
@@ -2151,7 +2283,7 @@ function signOut() {
       {communityLoading && <p className="load-state" role="status">Loading your community…</p>}
       {communityError && <div className="load-error" role="alert"><span>{communityError}</span><button type="button" className="secondary" onClick={() => void loadCommunity()}>Try again</button></div>}
 
-      <div className="welcome compact"><p className="eyebrow">{socialView === "feed" ? "YOUR CIRCLE" : socialView === "explore" ? "DISCOVER" : socialView === "pings" ? "MESSAGES" : "YOUR SPACE"}</p><h1>{socialView === "feed" ? "Your feed." : socialView === "explore" ? "Explore your circle." : socialView === "pings" ? "Pings." : user?.displayName || user?.username || "Your profile"}</h1><p className="muted">{socialView === "feed" ? "Training updates from people you've connected with." : socialView === "explore" ? "Find people, manage requests and keep your community connections in one place." : socialView === "pings" ? "Private messaging is not available yet. Your conversations will live here when secure messaging is ready." : "Your training identity and the workouts you've chosen to share."}</p></div>
+      <div className="welcome compact"><p className="eyebrow">{socialView === "feed" ? "YOUR CIRCLE" : socialView === "explore" ? "DISCOVER" : socialView === "pings" ? "MESSAGES" : "YOUR SPACE"}</p><h1>{socialView === "feed" ? "Your feed." : socialView === "explore" ? "Explore your circle." : socialView === "pings" ? "Pings." : user?.displayName || user?.username || "Your profile"}</h1><p className="muted">{socialView === "feed" ? "Training updates from people you've connected with." : socialView === "explore" ? "Find people, manage requests and keep your community connections in one place." : socialView === "pings" ? "Private conversations with clear boundaries. New chats begin with a request that the other person can accept or decline." : "Your training identity and the workouts you've chosen to share."}</p></div>
       {socialView === "profile" && <section className="profile-home">
         <div className="profile-hero panel">
           <div className="profile-avatar-large">{(user?.displayName || user?.username || "F").slice(0, 1).toUpperCase()}</div>
@@ -2181,7 +2313,61 @@ function signOut() {
           {myProfilePostsHasMore && <button type="button" className="small-button secondary feed-load-more" onClick={() => void loadMyProfilePosts(myProfilePostsCursor ?? undefined)} disabled={myProfilePostsLoading}>{myProfilePostsLoading ? "Loading…" : "Load older posts"}</button>}
         </section>
       </section>}
-      {socialView === "pings" && <section className="panel pings-placeholder"><span className="pings-symbol">↗</span><h2>Private conversations, done properly.</h2><p className="muted">Messaging is not switched on yet. It needs message privacy, blocking integration, request controls and notification handling before conversations are enabled.</p></section>}
+      {socialView === "pings" && <section className="pings-page" aria-label="Private messages">
+        <section className="panel pings-request-panel">
+          <div className="section-heading-row"><div><p className="eyebrow">START A CONVERSATION</p><h2>Send a message request</h2><p className="muted">Use someone's username. Keep the introduction short and respectful.</p></div></div>
+          <form className="pings-request-form" onSubmit={submitPingRequest}>
+            <label>Username<input value={pingRequestUsername} onChange={event => setPingRequestUsername(event.target.value)} minLength={2} maxLength={30} required placeholder="e.g. runner123" autoComplete="off" /></label>
+            <label>Introduction<textarea value={pingRequestDraft} onChange={event => setPingRequestDraft(event.target.value)} maxLength={2000} rows={3} required placeholder="Say hello and let them know why you're reaching out." /></label>
+            <div className="composer-footer"><small>{pingRequestDraft.length}/2000</small><button type="submit" disabled={pingSaving || !pingRequestUsername.trim() || !pingRequestDraft.trim()}>{pingSaving ? "Sending…" : "Send request"}</button></div>
+          </form>
+        </section>
+        {pingsError && <div className="load-error" role="alert"><span>{pingsError}</span><button type="button" className="secondary" onClick={() => void loadPings()}>Try again</button></div>}
+        {pingsLoading && <p className="muted" role="status">Loading your messages…</p>}
+        <div className="pings-layout">
+          <section className="panel pings-inbox" aria-labelledby="pings-requests-heading">
+            <div className="section-heading-row"><div><p className="eyebrow">INBOX</p><h2 id="pings-requests-heading">Message requests</h2></div><span>{pingRequests.length}</span></div>
+            {pingRequests.length === 0 && !pingsLoading ? <p className="muted">No new requests. Invitations will appear here.</p> : <div className="pings-list">
+              {pingRequests.map(item => <article className="ping-request-card" key={item.id}>
+                <div className="ping-person"><strong>{item.requester?.displayName || "@" + item.requester?.username}</strong><small>@{item.requester?.username}</small></div>
+                <p>{item.messages?.[0]?.body || "Message request"}</p>
+                <div className="ping-actions"><button type="button" disabled={pingSaving} onClick={() => void respondToPingRequest(item.id, "accept")}>Accept</button><button type="button" className="secondary" disabled={pingSaving} onClick={() => void respondToPingRequest(item.id, "decline")}>Decline</button></div>
+              </article>)}
+            </div>}
+          </section>
+          <section className="panel pings-conversations" aria-labelledby="pings-conversations-heading">
+            <div className="section-heading-row"><div><p className="eyebrow">YOUR CHATS</p><h2 id="pings-conversations-heading">Conversations</h2></div><button type="button" className="small-button secondary" onClick={() => void loadPings()} disabled={pingsLoading}>Refresh</button></div>
+            {pingConversations.length === 0 && !pingsLoading ? <p className="muted">Accepted conversations will appear here.</p> : <div className="pings-list">
+              {pingConversations.map(item => {
+                const other = item.userAId === user?.id ? item.userB : item.userA;
+                const preview = item.messages?.[0];
+                return <button type="button" className={"ping-conversation-row" + (selectedPingConversationId === item.id ? " is-selected" : "")} key={item.id} aria-pressed={selectedPingConversationId === item.id} onClick={() => void openPingConversation(item)}>
+                  <span className="ping-avatar">{(other?.displayName || other?.username || "?").slice(0, 1).toUpperCase()}</span>
+                  <span className="ping-conversation-copy"><strong>{other?.displayName || "@" + other?.username}</strong><small>{preview?.body || "Open conversation"}</small></span>
+                  <time dateTime={item.lastMessageAt}>{new Date(item.lastMessageAt).toLocaleDateString()}</time>
+                </button>;
+              })}
+            </div>}
+          </section>
+          <section className="panel pings-thread" aria-labelledby="pings-thread-heading">
+            <div className="section-heading-row"><div><p className="eyebrow">PRIVATE CHAT</p><h2 id="pings-thread-heading">{pingConversations.find(item => item.id === selectedPingConversationId) ? (() => { const item = pingConversations.find(row => row.id === selectedPingConversationId)!; const other = item.userAId === user?.id ? item.userB : item.userA; return other?.displayName || "@" + other?.username; })() : "Your conversation"}</h2></div></div>
+            {!selectedPingConversationId ? <p className="muted">Choose an accepted conversation to read and reply.</p> : <>
+              {pingMessagesLoading && <p className="muted" role="status">Loading conversation…</p>}
+              {pingMessagesError && <p className="load-error" role="alert">{pingMessagesError}</p>}
+              <div className="ping-message-list" aria-live="polite">
+                {pingMessages.map(message => <article className={"ping-message" + (message.senderId === user?.id ? " is-mine" : "")} key={message.id}>
+                  <p>{message.body}</p><time dateTime={message.createdAt}>{new Date(message.createdAt).toLocaleString()}</time>
+                </article>)}
+              </div>
+              <form className="ping-reply-form" onSubmit={submitPingMessage}>
+                <label className="sr-only" htmlFor="ping-message-draft">Write a message</label>
+                <textarea id="ping-message-draft" value={pingMessageDraft} onChange={event => setPingMessageDraft(event.target.value)} maxLength={2000} rows={2} placeholder="Write a message…" />
+                <button type="submit" disabled={pingSaving || !pingMessageDraft.trim()}>Send</button>
+              </form>
+            </>}
+          </section>
+        </div>
+      </section>}
       {/* Explore owns connection discovery and privacy management. Keeping these tools
           off the feed and profile stops the Social workspace becoming one long form. */}
       {socialView === "explore" && <>

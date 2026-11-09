@@ -187,6 +187,10 @@ export default function App() {
   const [feedLoadMoreError, setFeedLoadMoreError] = useState("");
   const [feedRefreshing, setFeedRefreshing] = useState(false);
   const [feedRefreshError, setFeedRefreshError] = useState("");
+  // The top switch separates the social experience from personal training tools.
+  // A social subtab is kept independently so moving to You and back preserves the feed/profile location.
+  const [workspace, setWorkspace] = useState<"social" | "you">("you");
+  const [socialView, setSocialView] = useState<"feed" | "explore" | "pings" | "profile">("feed");
   const [activeTab, setActiveTab] = useState<"home" | "workouts" | "progress" | "community" | "coach">("home");
   // Account controls stay behind a deliberate settings action instead of extending the Home feed.
   const [showAccountSettings, setShowAccountSettings] = useState(false);
@@ -1544,12 +1548,25 @@ function signOut() {
     <aside className="app-sidebar" aria-label="Application navigation">
       <a className="brand" href="/">FitLoop<span>.</span></a>
       <p className="sidebar-label">YOUR TRAINING</p>
-      <nav className="sidebar-nav" aria-label="Main sections">
-        <button aria-current={activeTab === "home" ? "page" : undefined} className={activeTab === "home" ? "active" : ""} onClick={() => setActiveTab("home")}><span className="nav-symbol"><svg className="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7"/><path d="M5 9.5V21h14V9.5"/><path d="M9 21v-7h6v7"/></svg></span><span>Overview</span></button>
-        <button aria-current={activeTab === "workouts" ? "page" : undefined} className={activeTab === "workouts" ? "active" : ""} onClick={() => setActiveTab("workouts")}><span className="nav-symbol"><svg className="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5v14M18 5v14M3 9v6M21 9v6M6 12h12"/></svg></span><span>Workouts</span></button>
-        <button aria-current={activeTab === "progress" ? "page" : undefined} className={activeTab === "progress" ? "active" : ""} onClick={() => setActiveTab("progress")}><span className="nav-symbol"><svg className="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V5M4 19h16"/><path d="m7 15 4-4 3 2 5-7"/></svg></span><span>Progress</span></button>
-        <button aria-label={unreadNotificationCount > 0 ? `Community, ${unreadNotificationCount} unread ${unreadNotificationCount === 1 ? "notification" : "notifications"}` : "Community"} aria-current={activeTab === "community" ? "page" : undefined} className={activeTab === "community" ? "active" : ""} onClick={() => setActiveTab("community")}><span className="nav-symbol"><svg className="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M20 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><span>Community</span>{unreadNotificationCount > 0 && <span className="nav-unread-count" aria-hidden="true">{unreadNotificationCount > 99 ? "99+" : unreadNotificationCount}</span>}</button>
-        <button aria-current={activeTab === "coach" ? "page" : undefined} className={activeTab === "coach" ? "active" : ""} onClick={() => setActiveTab("coach")}><span className="nav-symbol"><svg className="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 1.9 5.8L20 11l-6.1 2.2L12 19l-1.9-5.8L4 11l6.1-2.2L12 3Z"/><path d="m19 14 1.1 2.9L23 18l-2.9 1.1L19 22l-1.1-2.9L15 18l2.9-1.1L19 14Z"/></svg></span><span>Coach</span></button>
+      {/* Desktop navigation mirrors the two top-level workspaces shown on mobile. */}
+      <div className="workspace-switch" role="group" aria-label="Choose workspace">
+        <button type="button" className={workspace === "social" ? "active" : ""} aria-pressed={workspace === "social"} onClick={() => { setWorkspace("social"); setActiveTab("community"); }}>Social</button>
+        <button type="button" className={workspace === "you" ? "active" : ""} aria-pressed={workspace === "you"} onClick={() => { setWorkspace("you"); setActiveTab("home"); }}>You</button>
+      </div>
+      <nav className="sidebar-nav" aria-label={workspace === "social" ? "Social navigation" : "Your training navigation"}>
+        {workspace === "social" ? <>
+          <button aria-current={socialView === "feed" ? "page" : undefined} className={socialView === "feed" ? "active" : ""} onClick={() => { setActiveTab("community"); setSocialView("feed"); }}>Feed</button>
+          <button aria-current={socialView === "explore" ? "page" : undefined} className={socialView === "explore" ? "active" : ""} onClick={() => { setActiveTab("community"); setSocialView("explore"); }}>Explore</button>
+          <button aria-current={socialView === "pings" ? "page" : undefined} className={socialView === "pings" ? "active" : ""} onClick={() => { setActiveTab("community"); setSocialView("pings"); }}>Pings</button>
+          <button aria-current={socialView === "profile" ? "page" : undefined} className={socialView === "profile" ? "active" : ""} onClick={() => { setActiveTab("community"); setSocialView("profile"); }}>Profile</button>
+        </> : <>
+          <button aria-current={activeTab === "home" ? "page" : undefined} className={activeTab === "home" ? "active" : ""} onClick={() => setActiveTab("home")}>Home</button>
+          <button aria-current={activeTab === "workouts" ? "page" : undefined} className={activeTab === "workouts" ? "active" : ""} onClick={() => setActiveTab("workouts")}>Workout</button>
+          <button aria-current={activeTab === "progress" ? "page" : undefined} className={activeTab === "progress" ? "active" : ""} onClick={() => setActiveTab("progress")}>Stats</button>
+          <button aria-current={activeTab === "coach" ? "page" : undefined} className={activeTab === "coach" ? "active" : ""} onClick={() => setActiveTab("coach")}>Plan</button>
+          <button aria-current={activeTab === "workouts" ? "page" : undefined} className={activeTab === "workouts" ? "active" : ""} onClick={() => { setActiveTab("workouts"); window.setTimeout(() => document.getElementById("exercise-library")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0); }}>Library</button>
+        </>}
+        {workspace === "you" && <button className="sidebar-coach-link" onClick={() => setActiveTab("coach")}>Coach</button>}
       </nav>
       <div className="sidebar-bottom">
         <div className="sidebar-profile"><span className="profile-avatar">{(user?.username ?? "F").slice(0, 1).toUpperCase()}</span><span><strong>{user?.username ?? "Your account"}</strong><small>Personal workspace</small></span></div>
@@ -1565,12 +1582,20 @@ function signOut() {
       </header>
       {/* The tab bar stays available while a user scrolls through a long screen.
           Safe-area spacing is handled in CSS for gesture bars and notched devices. */}
-      <nav className="mobile-nav" aria-label="Main sections">
-        <button aria-current={activeTab === "home" ? "page" : undefined} className={activeTab === "home" ? "active" : ""} onClick={() => setActiveTab("home")}><span><svg className="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7"/><path d="M5 9.5V21h14V9.5"/><path d="M9 21v-7h6v7"/></svg></span>Home</button>
-        <button aria-current={activeTab === "workouts" ? "page" : undefined} className={activeTab === "workouts" ? "active" : ""} onClick={() => setActiveTab("workouts")}><span><svg className="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5v14M18 5v14M3 9v6M21 9v6M6 12h12"/></svg></span>Workouts</button>
-        <button aria-current={activeTab === "progress" ? "page" : undefined} className={activeTab === "progress" ? "active" : ""} onClick={() => setActiveTab("progress")}><span><svg className="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V5M4 19h16"/><path d="m7 15 4-4 3 2 5-7"/></svg></span>Progress</button>
-        <button aria-label={unreadNotificationCount > 0 ? `Community, ${unreadNotificationCount} unread ${unreadNotificationCount === 1 ? "notification" : "notifications"}` : "Community"} aria-current={activeTab === "community" ? "page" : undefined} className={activeTab === "community" ? "active" : ""} onClick={() => setActiveTab("community")}><span><svg className="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M20 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><span className="mobile-nav-label">Community{unreadNotificationCount > 0 && <span className="nav-unread-count" aria-hidden="true">{unreadNotificationCount > 99 ? "99+" : unreadNotificationCount}</span>}</span></button>
-        <button aria-current={activeTab === "coach" ? "page" : undefined} className={activeTab === "coach" ? "active" : ""} onClick={() => setActiveTab("coach")}><span><svg className="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 1.9 5.8L20 11l-6.1 2.2L12 19l-1.9-5.8L4 11l6.1-2.2L12 3Z"/><path d="m19 14 1.1 2.9L23 18l-2.9 1.1L19 22l-1.1-2.9L15 18l2.9-1.1L19 14Z"/></svg></span>Coach</button>
+      {/* The lower bar changes with the selected workspace, matching the top switch. */}
+      <nav className="mobile-nav" aria-label={workspace === "social" ? "Social navigation" : "Your training navigation"}>
+        {workspace === "social" ? <>
+          <button aria-current={socialView === "feed" ? "page" : undefined} className={socialView === "feed" ? "active" : ""} onClick={() => { setActiveTab("community"); setSocialView("feed"); }}><span>⌂</span>Feed</button>
+          <button aria-current={socialView === "explore" ? "page" : undefined} className={socialView === "explore" ? "active" : ""} onClick={() => { setActiveTab("community"); setSocialView("explore"); }}><span>⌕</span>Explore</button>
+          <button aria-current={socialView === "pings" ? "page" : undefined} className={socialView === "pings" ? "active" : ""} onClick={() => { setActiveTab("community"); setSocialView("pings"); }}><span>◌</span>Pings</button>
+          <button aria-current={socialView === "profile" ? "page" : undefined} className={socialView === "profile" ? "active" : ""} onClick={() => { setActiveTab("community"); setSocialView("profile"); }}><span>◉</span>Profile</button>
+        </> : <>
+          <button aria-current={activeTab === "home" ? "page" : undefined} className={activeTab === "home" ? "active" : ""} onClick={() => setActiveTab("home")}><span>⌂</span>Home</button>
+          <button aria-current={activeTab === "workouts" ? "page" : undefined} className={activeTab === "workouts" ? "active" : ""} onClick={() => setActiveTab("workouts")}><span>▤</span>Workout</button>
+          <button aria-current={activeTab === "progress" ? "page" : undefined} className={activeTab === "progress" ? "active" : ""} onClick={() => setActiveTab("progress")}><span>▥</span>Stats</button>
+          <button aria-current={activeTab === "coach" ? "page" : undefined} className={activeTab === "coach" ? "active" : ""} onClick={() => setActiveTab("coach")}><span>▦</span>Plan</button>
+          <button aria-current={activeTab === "workouts" ? "page" : undefined} className={activeTab === "workouts" ? "active" : ""} onClick={() => { setActiveTab("workouts"); window.setTimeout(() => document.getElementById("exercise-library")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0); }}><span>▧</span>Library</button>
+        </>}
       </nav>
 
     {/* Overview puts the next training action first. Check-ins and trends follow
@@ -2026,7 +2051,35 @@ function signOut() {
     {activeTab === "community" && <section className="page-section community-page">
       {communityLoading && <p className="load-state" role="status">Loading your community…</p>}
       {communityError && <div className="load-error" role="alert"><span>{communityError}</span><button type="button" className="secondary" onClick={() => void loadCommunity()}>Try again</button></div>}
-      <div className="welcome compact"><p className="eyebrow">FRIENDS</p><h1>Your community.</h1><p className="muted">Share completed workouts and updates with accepted friends.</p></div>
+      <div className="social-workspace-switch" role="group" aria-label="Social and personal workspace">
+        <button type="button" className={workspace === "social" ? "active" : ""} aria-pressed={workspace === "social"} onClick={() => { setWorkspace("social"); setActiveTab("community"); }}>Social</button>
+        <button type="button" className={workspace === "you" ? "active" : ""} aria-pressed={workspace === "you"} onClick={() => { setWorkspace("you"); setActiveTab("home"); }}>You</button>
+      </div>
+      <nav className="social-subnav" aria-label="Social sections">
+        <button type="button" aria-current={socialView === "feed" ? "page" : undefined} className={socialView === "feed" ? "active" : ""} onClick={() => setSocialView("feed")}>Feed</button>
+        <button type="button" aria-current={socialView === "explore" ? "page" : undefined} className={socialView === "explore" ? "active" : ""} onClick={() => setSocialView("explore")}>Explore</button>
+        <button type="button" aria-current={socialView === "pings" ? "page" : undefined} className={socialView === "pings" ? "active" : ""} onClick={() => setSocialView("pings")}>Pings</button>
+        <button type="button" aria-current={socialView === "profile" ? "page" : undefined} className={socialView === "profile" ? "active" : ""} onClick={() => setSocialView("profile")}>Profile</button>
+      </nav>
+      <div className="welcome compact"><p className="eyebrow">{socialView === "feed" ? "YOUR CIRCLE" : socialView === "explore" ? "DISCOVER" : socialView === "pings" ? "MESSAGES" : "YOUR SPACE"}</p><h1>{socialView === "feed" ? "Your feed." : socialView === "explore" ? "Find your people." : socialView === "pings" ? "Pings." : user?.displayName || user?.username || "Your profile"}</h1><p className="muted">{socialView === "feed" ? "Training updates from people you've connected with." : socialView === "explore" ? "Find people to connect with. Public post and video discovery is a later feature." : socialView === "pings" ? "Private messaging is not available yet. Your conversations will live here when secure messaging is ready." : "Your training identity and the workouts you've chosen to share."}</p></div>
+      {socialView === "profile" && <section className="profile-home">
+        <div className="profile-hero panel">
+          <div className="profile-avatar-large">{(user?.displayName || user?.username || "F").slice(0, 1).toUpperCase()}</div>
+          <div className="profile-identity"><h2>{user?.displayName || user?.username || "Your profile"}</h2><p>@{user?.username}</p><p>{user?.bio || "Add a short introduction to your profile."}</p></div>
+          <button type="button" className="small-button secondary" onClick={() => setShowAccountSettings(true)}>Settings</button>
+        </div>
+        <form className="panel profile-edit-card" onSubmit={saveProfile}>
+          <div><p className="eyebrow">PROFILE DETAILS</p><h2>Edit profile</h2></div>
+          <label>Display name<input value={profileNameDraft} onChange={event => setProfileNameDraft(event.target.value)} maxLength={40} placeholder={user?.username ?? "Your name"} /></label>
+          <label>Bio<textarea value={profileBioDraft} onChange={event => setProfileBioDraft(event.target.value)} maxLength={160} rows={3} placeholder="A little about your training…" /></label>
+          <div className="composer-footer"><small>{profileBioDraft.length}/160</small><button disabled={profileSaving}>{profileSaving ? "Saving…" : "Save profile"}</button></div>
+        </form>
+        <section className="profile-posts panel">
+          <div className="section-heading-row"><div><p className="eyebrow">YOUR ACTIVITY</p><h2>Shared workouts & posts</h2></div><span>{posts.filter(post => post.user.id === user?.id).length} posts</span></div>
+          {posts.filter(post => post.user.id === user?.id).length === 0 ? <p className="muted">Your shared workouts and updates will appear here. Complete a workout and share it with your friends to get started.</p> : <div className="feed-list">{posts.filter(post => post.user.id === user?.id).map(post => <article className="feed-card" key={post.id}><time dateTime={post.createdAt}>{new Date(post.createdAt).toLocaleDateString()}</time><p>{post.text || post.session?.routine?.name || "Completed a workout"}</p>{post.session && <div className="workout-post-summary"><div className="workout-post-metrics"><span><strong>{post.session.sets.filter(set => set.completed).length}</strong> sets completed</span><span><strong>{summariseWorkoutPost(post.session).length}</strong> movements</span></div></div>}</article>)}</div>}
+        </section>
+      </section>}
+      {socialView === "pings" && <section className="panel pings-placeholder"><span className="pings-symbol">↗</span><h2>Private conversations, done properly.</h2><p className="muted">Messaging is not switched on yet. It needs message privacy, blocking integration, request controls and notification handling before conversations are enabled.</p></section>}
       <form className="panel community-profile-form" onSubmit={saveProfile}>
         <div><p className="eyebrow">PROFILE</p><h2>Edit your profile</h2><p className="muted">Choose how your name and short introduction appear to accepted friends. Your email and private account details are never shown.</p></div>
         <label>Display name<input value={profileNameDraft} onChange={event => setProfileNameDraft(event.target.value)} maxLength={40} placeholder={user?.username ?? "Your name"} /></label>

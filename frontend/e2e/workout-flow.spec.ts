@@ -1807,12 +1807,12 @@ test("Community navigation shows unread activity on desktop and mobile", async (
   await expect(inbox.locator(".activity-unread-count")).toHaveText("2");
   await inbox.getByRole("button", { name: "Mark activity from Friend as read" }).first().click();
   await expect(desktopBadge).toHaveText("1");
-  await expect(page.locator(".sidebar-nav").getByRole("button", { name: "Community, 1 unread notifications" })).toBeVisible();
+  await expect(page.locator(".sidebar-nav").getByRole("button", { name: "Community, 1 unread notification" })).toBeVisible();
 
   await page.setViewportSize({ width: 390, height: 844 });
   const mobileBadge = page.locator(".mobile-nav .nav-unread-count");
   await expect(mobileBadge).toHaveText("1");
-  await expect(page.locator(".mobile-nav").getByRole("button", { name: "Community, 1 unread notifications" })).toBeVisible();
+  await expect(page.locator(".mobile-nav").getByRole("button", { name: "Community, 1 unread notification" })).toBeVisible();
   await inbox.getByRole("button", { name: "Mark all read" }).click();
   await expect(mobileBadge).toHaveCount(0);
   await expect(page.locator(".mobile-nav").getByRole("button", { name: "Community", exact: true })).toBeVisible();

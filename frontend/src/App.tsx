@@ -1,14 +1,14 @@
 /**
  * Main FitLoop browser application.
  *
- * This component coordinates the signed-in app shell and its five main
- * destinations: Overview, Workouts, Progress, Community and Coach. It owns the screen
- * state and calls the Express API through request(), which applies the current
- * account token and gives private requests one consistent error path.
+ * This component coordinates the signed-in app shell and its two workspaces.
+ * Social contains Feed, Explore, Pings and Profile; You contains Home, Workout,
+ * Stats, Plan and Library. The selected workspace determines the visible
+ * navigation without changing the account or the data shared by each screen.
  *
- * The desktop sidebar and mobile bottom tabs lead to the same five destinations.
- * Screen-specific layout rules live in style.css, while this component keeps
- * the underlying actions and account data shared across viewport sizes.
+ * API requests pass through request(), which applies the current account token
+ * and gives private requests one consistent error path. Screen-specific layout
+ * rules live in style.css so phone and desktop views can share the same actions.
  */
 import { useEffect, useRef, useState } from "react";
 import MuscleMap from "./components/MuscleMap";

@@ -1311,7 +1311,7 @@ async function recordWorkout(event: React.FormEvent) {
     }
   }
 
-  async function reportCommunityTarget(targetType: "user" | "post", targetId: string) {
+  async function reportCommunityTarget(targetType: "user" | "post" | "message", targetId: string) {
     try {
       await request("/api/social/reports", { method: "POST", body: JSON.stringify({ targetType, targetId, reason: "other" }) });
       setNotice("Report submitted privately. Thank you for helping keep the community safe.");
@@ -2388,6 +2388,7 @@ function signOut() {
               <div className="ping-message-list" aria-live="polite">
                 {pingMessages.map(message => <article className={"ping-message" + (message.senderId === user?.id ? " is-mine" : "")} key={message.id}>
                   <p>{message.body}</p><time dateTime={message.createdAt}>{new Date(message.createdAt).toLocaleString()}</time>
+                  {message.senderId !== user?.id && <button type="button" className="ping-message-report" onClick={() => void reportCommunityTarget("message", message.id)}>Report message</button>}
                 </article>)}
               </div>
               <form className="ping-reply-form" onSubmit={submitPingMessage}>

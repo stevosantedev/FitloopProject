@@ -848,10 +848,12 @@ test("POST reactions toggles the current reaction off without touching another a
 // A new reaction value updates the existing per-user choice instead of creating a duplicate.
 test("POST reactions changes the current account's selected reaction", async () => {
   let upserted;
+  let notification;
   const prisma = {
     friendConnection: { findMany: async () => [] },
     userBlock: { findMany: async () => [] },
-    feedPost: { findFirst: async () => ({ id: "post-a" }) },
+    feedPost: { findFirst: async () => ({ id: "post-a", userId: "user-b" }) },
+    activityNotification: { create: async args => { notification = args.data; } },
     reaction: {
       findUnique: async () => ({ id: "reaction-a", userId: "user-a", postId: "post-a", value: "like" }),
       upsert: async args => { upserted = args; return { id: "reaction-a", userId: "user-a", postId: "post-a", value: "strong" }; }
@@ -866,6 +868,50 @@ test("POST reactions changes the current account's selected reaction", async () 
   });
   assert.deepEqual(upserted.where, { userId_postId: { userId: "user-a", postId: "post-a" } });
   assert.deepEqual(upserted.update, { value: "strong" });
+  assert.deepEqual(notification, { recipientId: "user-b", actorId: "user-a", postId: "post-a", type: "reaction" });
+});
+
+// A friend request creates an inbox item for the recipient, never for the sender.
+test("POST friend requests records a notification for the requested account", async () => {
+  let notification;
+  const prisma = {
+    user: { findUnique: async () => ({ id: "user-b" }) },
+    userBlock: { findFirst: async () => null },
+    friendConnection: {
+      findFirst: async () => null,
+      create: async ({ data }) => ({ id: "request-a", ...data, status: "pending" })
+    },
+    activityNotification: { create: async args => { notification = args.data; } }
+  };
+  await withSocialApi(prisma, async base => {
+    const response = await fetch(base + "/api/social/friends/request", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ username: "friend-b" })
+    });
+    assert.equal(response.status, 201);
+  });
+  assert.deepEqual(notification, { recipientId: "user-b", actorId: "user-a", type: "friend_request" });
+});
+
+// Commenting on another person's visible post creates an inbox item for that post owner.
+test("POST comments records a notification for the post owner", async () => {
+  let notification;
+  const prisma = {
+    friendConnection: { findMany: async () => [] },
+    feedPost: { findFirst: async () => ({ id: "post-a", userId: "user-b" }) },
+    feedComment: {
+      create: async ({ data }) => ({ id: "comment-a", ...data, user: { id: "user-a", username: "tester" } })
+    },
+    activityNotification: { create: async args => { notification = args.data; } }
+  };
+  await withSocialApi(prisma, async base => {
+    const response = await fetch(base + "/api/social/posts/post-a/comments", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ text: "Nice work." })
+    });
+    assert.equal(response.status, 201);
+  });
+  assert.deepEqual(notification, { recipientId: "user-b", actorId: "user-a", postId: "post-a", type: "comment" });
 });
 
 // Reactions cannot be used to interact with hidden or inaccessible posts.

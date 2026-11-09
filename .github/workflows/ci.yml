@@ -63,8 +63,10 @@ jobs:
       - name: Run backend unit and route integration tests
         run: npm test
 
-      - name: Build the frontend and check backend syntax
-        run: npm run build
+      - name: Build the frontend and check backend and service-worker syntax
+        run: |
+          npm run build
+          node --check frontend/public/sw.js
 
       - name: Install Chromium for browser tests
         run: npx playwright install --with-deps chromium

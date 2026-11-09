@@ -1377,13 +1377,17 @@ function signOut() {
     if (token && (activeTab === "workouts" || activeTab === "coach")) void loadWorkouts();
     // Switching tabs loads the latest social and coaching records instead of showing stale data.
     if (token && activeTab === "community") void loadCommunity();
-    // Fetch the complete signed-in history only when the member opens their own Profile.
-    if (token && activeTab === "community" && socialView === "profile") void loadMyProfilePosts();
+
     if (token && activeTab === "coach") {
       void loadCoachConversations();
       void loadTrainingPlans();
       void loadProgressionSuggestions();
     }
+  }, [token, activeTab]);
+
+  useEffect(() => {
+    // Profile history is loaded on demand, without refetching the friends feed for every social tab.
+    if (token && activeTab === "community" && socialView === "profile") void loadMyProfilePosts();
   }, [token, activeTab, socialView]);
 
   useEffect(() => {

@@ -594,7 +594,7 @@ test("exercise guide opens technique, coaching and muscle information", async ({
   await signInAndOpenWorkouts(page);
 
   const exerciseCard = page.locator(".exercise-choice").filter({ hasText: "Goblet squat" });
-  await exerciseCard.getByRole("button", { name: "Details" }).click();
+  await exerciseCard.getByRole("button", { name: "Guide" }).click();
   const guide = page.getByRole("region", { name: "Goblet squat details" });
   await expect(guide.getByRole("heading", { name: "Goblet squat" })).toBeVisible();
   await expect(guide.getByText("Hold the weight close to your chest.")).toBeVisible();

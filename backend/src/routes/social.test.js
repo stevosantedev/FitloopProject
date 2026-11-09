@@ -893,6 +893,24 @@ test("POST friend requests records a notification for the requested account", as
   assert.deepEqual(notification, { recipientId: "user-b", actorId: "user-a", type: "friend_request" });
 });
 
+// Accepting a pending request notifies the original requester, not the accepting account.
+test("POST friend request acceptance records a notification for the requester", async () => {
+  let notification;
+  const prisma = {
+    friendConnection: {
+      findFirst: async () => ({ requesterId: "user-b" }),
+      updateMany: async () => ({ count: 1 })
+    },
+    activityNotification: { create: async args => { notification = args.data; } }
+  };
+  await withSocialApi(prisma, async base => {
+    const response = await fetch(base + "/api/social/friends/request-a/accept", { method: "POST" });
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { accepted: true });
+  });
+  assert.deepEqual(notification, { recipientId: "user-b", actorId: "user-a", type: "friend_accepted" });
+});
+
 // Commenting on another person's visible post creates an inbox item for that post owner.
 test("POST comments records a notification for the post owner", async () => {
   let notification;

@@ -1706,8 +1706,15 @@ function signOut() {
       {workoutsLoading && <p className="load-state" role="status">Loading your training data…</p>}
       {workoutsError && <div className="load-error" role="alert"><span>{workoutsError}</span><button type="button" className="secondary" onClick={() => void loadWorkouts()}>Try again</button></div>}
       <div className="welcome compact"><p className="eyebrow">TRAINING</p><h1>Workouts</h1><p className="muted">Build routines, record sets and review your training history.</p></div>
+      {/* These links jump to the four jobs inside Training without adding another layer to the main app navigation. */}
+      <nav className="workout-subnav" aria-label="Training tools">
+        <a href="#workout-session">Session</a>
+        <a href="#exercise-library">Exercises</a>
+        <a href="#training-routines">Routines</a>
+        <a href="#workout-history">History</a>
+      </nav>
       <div className="content-grid workout-workspace">
-        <form className="panel routine-builder-panel" onSubmit={createRoutine}>
+        <form id="training-routines" className="panel routine-builder-panel" onSubmit={createRoutine}>
           <div className="workout-panel-heading"><div><p className="eyebrow">YOUR TEMPLATES</p><h2>{editingRoutineId ? "Edit routine" : "Create a routine"}</h2></div><span>Build once, reuse anytime</span></div>
           <label>Routine name<input required maxLength={80} value={routineName} onChange={event => setRoutineName(event.target.value)} placeholder="e.g. Full body" /></label>
           <p className="field-heading">Choose exercises</p>
@@ -1717,7 +1724,7 @@ function signOut() {
           </label>)}</div>
           <div className="routine-editor-actions"><button disabled={!routineName.trim() || routineExerciseIds.length === 0}>{editingRoutineId ? "Save changes" : "Save routine"}</button>{editingRoutineId && <button type="button" className="secondary" onClick={() => { setEditingRoutineId(""); setRoutineName(""); setRoutineExerciseIds([]); }}>Cancel edit</button>}</div>
         </form>
-        <form className="panel workout-builder-panel" onSubmit={recordWorkout}>
+        <form id="workout-session" className="panel workout-builder-panel" onSubmit={recordWorkout}>
           <div className="workout-panel-heading"><div><p className="eyebrow">TODAY'S SESSION</p><h2>Build a workout</h2></div><span>Log sets as you train</span></div>
           <p className="muted">Pick your movements, set reps and load, then record the work you complete.</p>
           <label>Routine (optional)<select value={selectedRoutine} onChange={event => {
@@ -1725,7 +1732,7 @@ function signOut() {
             setSelectedRoutine(event.target.value);
             setSelectedExerciseIds(routine ? routine.exercises.map(item => item.exercise.id) : []);
           }}><option value="">One-off workout</option>{routines.map(routine => <option key={routine.id} value={routine.id}>{routine.name}</option>)}</select></label>
-          <div className="exercise-library-heading">
+          <div id="exercise-library" className="exercise-library-heading">
             <div><p className="eyebrow">EXERCISE LIBRARY</p><h3>Choose movements</h3></div>
             <p className="muted">Find an exercise by name, muscle, equipment or technique.</p>
           </div>

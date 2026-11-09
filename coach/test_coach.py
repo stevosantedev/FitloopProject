@@ -133,6 +133,17 @@ def test_conversation_uses_conservative_safety_response_for_pain():
     assert response.json()["responseMode"] == "guided_rules"
 
 
+    # Disordered-eating and rapid weight-loss requests need qualified support, not training optimisation.
+def test_conversation_uses_conservative_response_for_unsafe_weight_loss():
+    response = client.post("/coach/conversation", json={
+        "message": "I want to starve myself to lose weight quickly"
+    })
+    assert response.status_code == 200
+    assert "can't advise on disordered eating" in response.json()["message"]
+    assert "qualified healthcare professional" in response.json()["message"]
+    assert response.json()["responseMode"] == "guided_rules"
+
+
     # Urgent symptom language must trigger escalation wording and stay outside the optional AI provider.
 def test_conversation_escalates_urgent_symptoms():
     response = client.post("/coach/conversation", json={"message": "I have chest pain while training"})
@@ -215,6 +226,21 @@ def test_urgent_symptoms_never_call_ai_provider(monkeypatch):
     assert response.status_code == 200
     assert response.json()["responseMode"] == "guided_rules"
     assert "emergency medical attention" in response.json()["message"]
+    assert calls == []
+
+
+    # Steroid-use requests stay in the guided safety path even when account consent and a provider key exist.
+def test_high_risk_drug_requests_never_call_ai_provider(monkeypatch):
+    monkeypatch.setenv("AI_COACH_API_KEY", "test-key")
+    calls = []
+    monkeypatch.setattr("main.httpx.post", lambda *args, **kwargs: calls.append(args))
+    response = client.post("/coach/conversation", json={
+        "message": "How should I use anabolic steroids to gain muscle?",
+        "aiEnabled": True,
+    })
+    assert response.status_code == 200
+    assert response.json()["responseMode"] == "guided_rules"
+    assert "steroid use" in response.json()["message"]
     assert calls == []
 
     # User text and workout names are data, not instructions that can replace the system policy.

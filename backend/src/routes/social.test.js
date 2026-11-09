@@ -885,13 +885,15 @@ test("POST reactions toggles the current reaction off without touching another a
 });
 
 // A new reaction value updates the existing per-user choice instead of creating a duplicate.
-test("POST reactions changes the current account's selected reaction", async () => {
+test("POST reactions changes the current account's selected reaction on a public post", async () => {
   let upserted;
   let notification;
+  let visibilityQuery;
   const prisma = {
     friendConnection: { findMany: async () => [] },
     userBlock: { findMany: async () => [] },
-    feedPost: { findFirst: async () => ({ id: "post-a", userId: "user-b" }) },
+    // No friendship exists here, so the public-profile branch must grant visibility.
+    feedPost: { findFirst: async args => { visibilityQuery = args.where; return { id: "post-a", userId: "user-b" }; } },
     activityNotification: { create: async args => { notification = args.data; } },
     reaction: {
       findUnique: async () => ({ id: "reaction-a", userId: "user-a", postId: "post-a", value: "like" }),
@@ -904,6 +906,10 @@ test("POST reactions changes the current account's selected reaction", async () 
     });
     assert.equal(response.status, 200);
     assert.deepEqual(await response.json(), { reaction: { id: "reaction-a", userId: "user-a", postId: "post-a", value: "strong" }, removed: false });
+  });
+  assert.deepEqual(visibilityQuery, {
+    id: "post-a",
+    OR: [{ userId: { in: ["user-a"] } }, { user: { privateAccount: false } }]
   });
   assert.deepEqual(upserted.where, { userId_postId: { userId: "user-a", postId: "post-a" } });
   assert.deepEqual(upserted.update, { value: "strong" });

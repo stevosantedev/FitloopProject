@@ -185,7 +185,8 @@ async function mockApplicationApi(page: Page, onSessionSave?: (body: any) => voi
     } else if (url.pathname === "/api/social/notifications" && method === "GET") {
       const cursor = url.searchParams.get("cursor");
       const startIndex = cursor ? Math.max(0, activityNotifications.findIndex(item => item.id === cursor) + 1) : 0;
-      const pageRows = activityNotifications.slice(startIndex, startIndex + 20);
+      const pageSize = Number(url.searchParams.get("limit") ?? 20);
+      const pageRows = activityNotifications.slice(startIndex, startIndex + pageSize);
       const hasMore = startIndex + pageRows.length < activityNotifications.length;
       body = {
         notifications: pageRows,
@@ -1780,5 +1781,36 @@ test("Community activity inbox preserves loaded notifications when an older page
   await inbox.getByRole("button", { name: "Try again" }).click();
   await expect(inbox.locator(".activity-notification-list li")).toHaveCount(21);
   await expect(inbox.getByRole("alert")).toHaveCount(0);
+});
+
+// Unread activity remains discoverable from both navigation layouts and clears with inbox actions.
+test("Community navigation shows unread activity on desktop and mobile", async ({ page }) => {
+  const notifications = [1, 2].map(index => ({
+    id: "nav-notification-" + index,
+    type: "reaction",
+    createdAt: new Date(Date.UTC(2026, 10, 8, 12, index)).toISOString(),
+    readAt: null,
+    actor: { id: "friend-1", username: "friend", displayName: "Friend" },
+    post: { id: "nav-post-" + index, text: "A shared training update", type: "update" }
+  }));
+  await mockApplicationApi(page, undefined, 200, [], [exercise], undefined, notifications);
+  await page.goto("/");
+  await page.getByLabel("Email").fill("tester@example.com");
+  await page.getByLabel("Password").fill("test-password");
+  await page.getByRole("button", { name: "Sign in" }).click();
+
+  const desktopBadge = page.locator(".sidebar-nav .nav-unread-count");
+  await expect(desktopBadge).toHaveText("2");
+  await page.locator(".sidebar-nav").getByRole("button", { name: "Community" }).click();
+  const inbox = page.locator(".activity-inbox");
+  await expect(inbox.locator(".activity-unread-count")).toHaveText("2");
+  await inbox.getByRole("button", { name: "Mark activity from Friend as read" }).first().click();
+  await expect(desktopBadge).toHaveText("1");
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  const mobileBadge = page.locator(".mobile-nav .nav-unread-count");
+  await expect(mobileBadge).toHaveText("1");
+  await inbox.getByRole("button", { name: "Mark all read" }).click();
+  await expect(mobileBadge).toHaveCount(0);
 });
 

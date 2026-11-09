@@ -32,6 +32,8 @@ When offline recording is used, completed workout submissions are temporarily st
 
 FitLoop's guided coaching service can generate a reply through an OpenAI-compatible chat-completions endpoint only when the account owner has enabled AI coaching and the deployment has configured a server-side API key. AI processing is off by default. The endpoint URL and model are deployment settings; the browser never receives the provider key.
 
+Coach conversations are limited to 30 messages per account per hour using a shared PostgreSQL counter, so the allowance remains consistent across API restarts and multiple application instances.
+
 For an eligible message, the coaching service receives the message, the user's coaching tone and focus, and up to five recent completed workout summaries. Those summaries contain session dates, routine names and exercise names, reps and recorded external loads. Account identifiers, email addresses, private workout notes and daily wellbeing check-ins are excluded. Messages about urgent symptoms or injury bypass the external provider and use the conservative guided response.
 
 Conversation messages are stored in the FitLoop database until the user deletes the conversation or deletes their account. The account-deletion flow removes owned coaching conversations and messages. This does not by itself define the external provider's retention period: the selected provider's data-processing terms, logging, region and retention controls must be reviewed before enabling the live integration for real users. The current project has not verified a live provider account or completed that independent review.

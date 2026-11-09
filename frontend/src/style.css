@@ -1368,3 +1368,38 @@ footer { border-color: #2b322b; }
 }
 .activity-inbox-pagination .load-error { margin: 0; }
 .activity-inbox-pagination button { width: auto; }
+
+
+/* Unread activity stays visible in navigation without changing the label or touch target. */
+.nav-unread-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 19px;
+  height: 19px;
+  margin-left: auto;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--fitloop-accent);
+  color: var(--fitloop-accent-ink);
+  font-size: .64rem;
+  font-weight: 750;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.mobile-nav .mobile-nav-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: .68rem;
+  line-height: 1;
+}
+.mobile-nav .nav-unread-count {
+  min-width: 15px;
+  height: 15px;
+  margin: 0;
+  padding: 0 4px;
+  font-size: .55rem;
+}
+

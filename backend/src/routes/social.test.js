@@ -631,7 +631,7 @@ test("GET post comments returns a bounded cursor page only for visible posts", a
     assert.equal(response.status, 200);
     assert.deepEqual(await response.json(), { comments: rows.slice(0, 2), hasMore: true, nextCursor: "comment-2" });
   });
-  assert.deepEqual(postQuery.where, { id: "post-visible", userId: { in: ["user-a"] } });
+  assert.deepEqual(postQuery.where, { id: "post-visible", OR: [{ userId: { in: ["user-a"] } }, { user: { privateAccount: false } }] });
   assert.deepEqual(commentQuery.where, { postId: "post-visible" });
   assert.deepEqual(commentQuery.orderBy, [{ createdAt: "asc" }, { id: "asc" }]);
   assert.deepEqual(commentQuery.cursor, { id: "comment-old" });
@@ -698,7 +698,7 @@ test("PATCH comments edits only the author's comment on a currently visible post
     assert.equal(response.status, 200);
     assert.deepEqual(await response.json(), { comment });
   });
-  assert.deepEqual(updateArgs.where, { id: "comment-a", userId: "user-a", post: { userId: { in: ["user-a"] } } });
+  assert.deepEqual(updateArgs.where, { id: "comment-a", userId: "user-a", post: { OR: [{ userId: { in: ["user-a"] } }, { user: { privateAccount: false } }] } });
   assert.deepEqual(updateArgs.data, { text: "Updated support" });
   assert.deepEqual(lookupArgs.include.user.select, { id: true, username: true });
 });
@@ -740,7 +740,7 @@ test("DELETE comments removes only the author's comment on a currently visible p
     assert.equal(response.status, 200);
     assert.deepEqual(await response.json(), { deleted: true });
   });
-  assert.deepEqual(query.where, { id: "comment-a", userId: "user-a", post: { userId: { in: ["user-a"] } } });
+  assert.deepEqual(query.where, { id: "comment-a", userId: "user-a", post: { OR: [{ userId: { in: ["user-a"] } }, { user: { privateAccount: false } }] } });
 });
 
 // The response does not distinguish an unowned comment from one attached to hidden content.
@@ -866,7 +866,7 @@ test("POST reactions toggles the current reaction off without touching another a
     friendConnection: { findMany: async () => [] },
     userBlock: { findMany: async () => [] },
     feedPost: { findFirst: async args => {
-      assert.deepEqual(args.where, { id: "post-a", userId: { in: ["user-a"] } });
+      assert.deepEqual(args.where, { id: "post-a", OR: [{ userId: { in: ["user-a"] } }, { user: { privateAccount: false } }] });
       return { id: "post-a" };
     } },
     reaction: {

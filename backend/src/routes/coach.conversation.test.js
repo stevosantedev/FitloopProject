@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import express from "express";
 import { once } from "node:events";
+import { MemoryStore } from "express-rate-limit";
 process.env.DATABASE_URL ??= "postgresql://fitloop:fitloop@localhost:5432/fitloop_test";
 process.env.JWT_SECRET ??= "fitloop-route-test-secret-at-least-32-characters";
 const { createCoachRouter } = await import("./coach.js");
@@ -12,7 +13,7 @@ async function withApi(prisma, fetchImpl, run) {
   const app = express();
   app.use(express.json());
   app.use((req, _res, next) => { req.userId = "user-a"; next(); });
-  app.use("/api/coach", createCoachRouter(prisma, fetchImpl));
+  app.use("/api/coach", createCoachRouter(prisma, fetchImpl, new MemoryStore()));
   app.use((error, _req, res, _next) => {
     if (error?.name === "ZodError") return res.status(400).json({ error: "Invalid request." });
     return res.status(500).json({ error: "Unexpected test error." });

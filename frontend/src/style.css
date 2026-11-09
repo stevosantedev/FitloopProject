@@ -2047,10 +2047,16 @@ footer { border-color: #2b322b; }
 .community-page[data-social-view="profile"] > .community-blocked-panel {
   display: none !important;
 }
-.community-page[data-social-view="explore"] > .content-grid > section:nth-child(2) { display: none; }
 .community-page[data-social-view="explore"] > .content-grid { display: block; }
 .community-page[data-social-view="profile"] > .profile-home { display: grid; }
 .community-page[data-social-view="pings"] > .pings-placeholder { display: grid; }
+/* Account safety tools remain reachable from Profile; moderator operations stay feed-only. */
+.community-page[data-social-view="explore"] > .panel[aria-labelledby="moderation-heading"],
+.community-page[data-social-view="pings"] > .panel[aria-labelledby="moderation-heading"],
+.community-page[data-social-view="profile"] > .panel[aria-labelledby="moderation-heading"] {
+  display: none !important;
+}
+
 @media (min-width: 821px) {
   .workspace-switch-bar { margin-top: 18px; }
   .workspace-switch-bar button { min-width: 110px; }

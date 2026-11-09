@@ -1653,7 +1653,6 @@ function signOut() {
           <button aria-label="Coach" aria-current={youView === "plan" ? "page" : undefined} className={youView === "plan" ? "active" : ""} onClick={() => { setYouView("plan"); setActiveTab("coach"); }}><span className="nav-symbol"><NavigationIcon name="plan" /></span><span>Plan</span></button>
           <button aria-current={youView === "library" ? "page" : undefined} className={youView === "library" ? "active" : ""} onClick={() => { setYouView("library"); setActiveTab("workouts"); window.setTimeout(() => document.getElementById("exercise-library")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0); }}><span className="nav-symbol"><NavigationIcon name="library" /></span><span>Library</span></button>
         </>}
-        {workspace === "you" && <button className="sidebar-coach-link" onClick={() => { setYouView("plan"); setActiveTab("coach"); }}>Coach</button>}
       </nav>
       <div className="sidebar-bottom">
         <div className="sidebar-profile"><span className="profile-avatar">{(user?.username ?? "F").slice(0, 1).toUpperCase()}</span><span><strong>{user?.username ?? "Your account"}</strong><small>Personal workspace</small></span></div>

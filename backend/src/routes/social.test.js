@@ -448,6 +448,7 @@ test("friend discovery returns a bounded identity-only list excluding relationsh
   assert.equal(searchQuery.take, 10);
 });
 
+// Repeated discovery queries are bounded per account so search cannot become an unrestricted directory scan.
 test("friend discovery is rate-limited per authenticated account", async () => {
   const prisma = {
     friendConnection: { findMany: async () => [] },
@@ -464,6 +465,7 @@ test("friend discovery is rate-limited per authenticated account", async () => {
   });
 });
 
+// Reject broad terms before database access so a one-character query cannot enumerate the user base.
 test("friend discovery rejects short search terms before reading account relationships", async () => {
   let reads = 0;
   const prisma = {

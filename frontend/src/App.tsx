@@ -2504,13 +2504,15 @@ function signOut() {
         </div>
         {communityLoading && activityNotifications.length === 0 ? <p className="muted" role="status">Loading your activity…</p> :
           communityError && activityNotifications.length === 0 ? <p className="muted">Activity is unavailable until the community can be refreshed.</p> :
-          activityNotifications.length === 0 ? <p className="muted">Friend requests, reactions and comments will appear here.</p> :
+          activityNotifications.length === 0 ? <p className="muted">Friend requests, reactions, comments and private message alerts will appear here.</p> :
           <ul className="activity-notification-list">
             {activityNotifications.map(notification => {
               const actorName = notification.actor?.displayName || (notification.actor ? "@" + notification.actor.username : "A former member");
               const action = notification.type === "friend_request" ? "sent you a friend request"
                 : notification.type === "friend_accepted" ? "accepted your friend request"
                 : notification.type === "reaction" ? "reacted to your post"
+                : notification.type === "ping_request" ? "sent you a private message request"
+                : notification.type === "ping_message" ? "sent you a private message"
                 : "commented on your post";
               return <li className={notification.readAt ? "is-read" : "is-unread"} key={notification.id}>
                 <div className="activity-notification-copy">

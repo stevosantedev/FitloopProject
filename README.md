@@ -119,7 +119,7 @@ The frontend runs on port 5173, the API on port 4000 and the coaching service on
 
 ## Current status
 
-The project has connected MVP flows for accounts, daily tracking, training, social community and coaching. The app shell now separates Social from You and gives each workspace its own bottom navigation. It is still under development. The current work is focused on the mobile-first interface, screen-by-screen visual review, accessibility and usability checks, exercise content review, privacy decisions and final project evidence.
+The project has connected MVP flows for accounts, daily tracking, training, social community and coaching. The app shell now separates Social from You and gives each workspace its own bottom navigation. The current visual pass uses charcoal surfaces, warm orange actions, stronger type hierarchy and restrained panel depth. It is still under development. The current work is focused on the mobile-first interface, screen-by-screen visual review, accessibility and usability checks, exercise content review, privacy decisions and final project evidence.
 
 See the [project status and completion plan](docs/project-status-and-completion.md) for the remaining work and completion gates. The [product expansion roadmap](docs/product-expansion-roadmap.md) records the delivery status and acceptance criteria for training, Coach and Community.
 

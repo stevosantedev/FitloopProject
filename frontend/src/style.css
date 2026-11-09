@@ -1155,9 +1155,9 @@ footer { border-color: #2b322b; }
   flex-direction: column;
 }
 .coach-page > .welcome { order: 0; }
-.coach-page > .coach-chat-layout { order: 1; }
+.coach-page > .coach-routine-builder { order: 1; }
 .coach-page > .progression-guidance { order: 2; }
-.coach-page > .coach-routine-builder { order: 3; }
+.coach-page > .coach-chat-layout { order: 3; }
 .coach-page .coach-chat-layout {
   grid-template-columns: minmax(190px, .58fr) minmax(0, 1.7fr);
   gap: 12px;

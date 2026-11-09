@@ -468,7 +468,7 @@ test("the app uses persistent navigation on desktop and a bottom tab bar on mobi
   await assertNoHorizontalOverflow();
   await page.locator(".workspace-switch-bar").getByRole("button", { name: "Social" }).click();
   await assertNoHorizontalOverflow();
-  await page.locator(".mobile-nav").getByRole("button", { name: "Coach" }).click();
+  await page.getByRole("navigation", { name: "Your training navigation" }).getByRole("button", { name: "Coach" }).click();
   await assertNoHorizontalOverflow();
   await page.locator(".workspace-switch-bar").getByRole("button", { name: "Social" }).click();
   await expect(page.locator(".mobile-nav button")).toHaveCount(4);
@@ -1040,7 +1040,7 @@ test("dedicated coach workspace creates a conversation and displays a guided rep
   await page.getByLabel("Email").fill("tester@example.com");
   await page.getByLabel("Password").fill("test-password");
   await page.getByRole("button", { name: "Sign in" }).click();
-  await page.locator(".sidebar-nav").getByRole("button", { name: "Coach" }).click();
+  await page.getByRole("navigation", { name: "Your training navigation" }).getByRole("button", { name: "Coach" }).click();
   await expect(page.getByRole("heading", { name: "Ask about your training." })).toBeVisible();
   // Keep the conversation as the first Coach task; secondary analysis and planning should not push it below the fold.
   const coachSectionOrder = await page.locator(".coach-page > .coach-chat-layout, .coach-page > .progression-guidance, .coach-page > .coach-routine-builder").evaluateAll(elements => elements.map(element => element.className));
@@ -1182,6 +1182,7 @@ test("community block and report controls call the moderation API", async ({ pag
   await page.getByLabel("Password").fill("test-password");
   await page.getByRole("button", { name: "Sign in" }).click();
   await page.locator(".workspace-switch-bar").getByRole("button", { name: "Social" }).click();
+  await page.locator(".mobile-nav").getByRole("button", { name: "Explore" }).click();
   await expect(page.getByRole("heading", { name: "Friends and requests" })).toBeVisible();
   await page.getByRole("button", { name: "Report account" }).click();
   await expect(page.getByRole("status")).toContainText("Report submitted privately");
@@ -1797,7 +1798,8 @@ test("overview quick actions open the workout builder and Coach", async ({ page 
   await navigation.getByRole("button", { name: isMobileLayout ? "Home" : "Overview" }).click();
   await expect(page.getByRole("heading", { name: "Your week", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Open coach" }).click();
-  await expect(page.locator(".topbar strong")).toHaveText("Coach");
+  await expect(page.locator(".coach-chat-panel")).toBeVisible();
+  await expect(page.locator(".topbar strong")).toHaveText("Plan");
 });
 
 
@@ -1948,10 +1950,10 @@ test("Community navigation shows unread activity on desktop and mobile", async (
   await page.getByLabel("Password").fill("test-password");
   await page.getByRole("button", { name: "Sign in" }).click();
 
+  await page.locator(".workspace-switch-bar").getByRole("button", { name: "Social" }).click();
   const desktopBadge = page.locator(".sidebar-nav .nav-unread-count");
   await expect(desktopBadge).toHaveText("2");
   await expect(page.locator(".sidebar-nav").getByRole("button", { name: "Community, 2 unread notifications" })).toBeVisible();
-  await page.locator(".workspace-switch-bar").getByRole("button", { name: "Social" }).click();
   const inbox = page.locator(".activity-inbox");
   await expect(inbox.locator(".activity-unread-count")).toHaveText("2");
   await inbox.getByRole("button", { name: "Mark activity from Friend as read" }).first().click();
@@ -2075,16 +2077,16 @@ test("Social and You switch between the correct destinations", async ({ page }) 
 
   await page.locator(".mobile-nav").getByRole("button", { name: "Profile" }).click();
   await expect(page.getByRole("heading", { name: "Shared workouts & posts" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Edit profile" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Settings" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Blocked accounts" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Edit profile" })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Blocked accounts" })).toHaveCount(0);
 
   await page.locator(".mobile-nav").getByRole("button", { name: "Pings" }).click();
   await expect(page.getByRole("heading", { name: "Private conversations, done properly." })).toBeVisible();
   await expect(page.getByText(/Private messaging is not available yet/)).toBeVisible();
 
   await page.locator(".mobile-nav").getByRole("button", { name: "Explore" }).click();
-  await expect(page.getByRole("heading", { name: "Find your people." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Explore your circle." })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Find friends" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Friends and requests" })).toBeVisible();
 
@@ -2155,6 +2157,7 @@ test("Social and You navigation remain usable across phone widths", async ({ pag
   await page.getByLabel("Password").fill("test-password");
   await page.getByRole("button", { name: "Sign in" }).click();
 
+  await page.locator(".workspace-switch-bar").getByRole("button", { name: "You" }).click();
   for (const width of [320, 360, 390, 430]) {
     await page.setViewportSize({ width, height: 844 });
     const workspaceSwitch = page.locator(".workspace-switch-bar");

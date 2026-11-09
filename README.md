@@ -149,3 +149,5 @@ Do not describe the current branch as production-ready. It is a substantial univ
 
 
 The latest interface pass gives the phone layouts a consistent charcoal and orange theme, a persistent workspace switch, and more focused feed, workout and profile surfaces. Responsive browser coverage checks the navigation at 320px, 360px, 390px and 430px. These changes are still under visual review; passing layout tests alone does not mean the redesign is finished.
+
+Explore now has a separate, paginated public-post endpoint. It does not widen the friends feed: the server checks each author's public-profile setting and filters all blocked relationships before returning content. Public discovery currently displays text updates and workout summaries; photo and video uploads are still planned.

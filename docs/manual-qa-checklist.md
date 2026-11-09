@@ -1,6 +1,6 @@
 # Manual quality-assurance checklist
 
-Last updated: 5 November 2026
+Last updated: 9 November 2026
 
 This checklist records the checks that still require a person using a real browser, device or assistive technology. Automated CI is useful evidence, but it does not prove that the app is usable on every target device or with every screen reader.
 
@@ -43,6 +43,18 @@ For each area below, check the initial load, a slow connection, a failed request
 - [ ] A genuinely empty friends list and an empty feed have useful first-use explanations.
 - [ ] Friend request, acceptance, reaction and comment success/error feedback is visible.
 - [ ] Private feed content is only shown to the expected account and accepted connections.
+- [ ] The friends' activity feed appears before profile editing, friend management and blocked-account controls.
+- [ ] The post composer remains easy to reach on desktop and mobile; character limits and friends-only audience copy are clear.
+- [ ] Profile previews, report actions, block/unblock and friend-request controls remain understandable at narrow widths.
+
+### Coach
+
+- [ ] The conversation is the first main task after the Coach heading; progression guidance and weekly programme planning remain below it.
+- [ ] Creating, switching, deleting and continuing conversations is clear and remains account-private.
+- [ ] Guided replies are distinguishable from optional AI-generated replies.
+- [ ] AI consent is off by default, can be enabled and revoked, and the data disclosure is readable before sending a message.
+- [ ] Provider-unavailable, timeout and rate-limit responses preserve a usable guided-coaching path.
+- [ ] The weekly programme builder makes it clear that the generated split is a draft, that each day must be reviewed, and that saving is an explicit action.
 
 ## Keyboard and assistive-technology review
 

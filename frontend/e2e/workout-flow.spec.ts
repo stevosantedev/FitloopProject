@@ -409,6 +409,7 @@ test("the app uses persistent navigation on desktop and a bottom tab bar on mobi
   await page.getByRole("button", { name: "Sign in" }).click();
 
   await expect(page.locator(".app-sidebar")).toBeVisible();
+  await expect(page.locator(".sidebar-nav button")).toHaveCount(5);
   await expect(page.locator(".sidebar-nav button[aria-current=page]")).toHaveText("Overview");
   await page.locator(".sidebar-nav").getByRole("button", { name: "Workouts" }).click();
   await expect(page.locator(".sidebar-nav button[aria-current=page]")).toHaveText("Workouts");
@@ -417,6 +418,7 @@ test("the app uses persistent navigation on desktop and a bottom tab bar on mobi
   // Tablet portrait uses the compact navigation layout; desktop retains the sidebar.
   await page.setViewportSize({ width: 768, height: 1024 });
   await expect(page.locator(".mobile-nav")).toBeVisible();
+  await expect(page.locator(".mobile-nav button")).toHaveCount(5);
   await expect(page.locator(".app-sidebar")).toBeHidden();
 
   await page.setViewportSize({ width: 390, height: 844 });
@@ -425,6 +427,9 @@ test("the app uses persistent navigation on desktop and a bottom tab bar on mobi
   const mobileNavButton = page.locator(".mobile-nav button").first();
   await expect.poll(() => mobileNavButton.evaluate(element => getComputedStyle(element).minHeight)).toBe("52px");
   await expect.poll(() => page.locator(".mobile-nav").evaluate(element => getComputedStyle(element).position)).toBe("fixed");
+  await page.locator(".mobile-nav").getByRole("button", { name: "Progress" }).click();
+  await expect(page.locator(".mobile-nav button[aria-current=page]")).toHaveText("Progress");
+  await expect(page.getByRole("heading", { name: "Progress", exact: true })).toBeVisible();
   await page.locator(".mobile-nav").getByRole("button", { name: "Community" }).click();
   await expect(page.locator(".mobile-nav button[aria-current=page]")).toHaveText("Community");
   await expect(page.getByRole("heading", { name: "Your community." })).toBeVisible();
@@ -438,6 +443,8 @@ test("the app uses persistent navigation on desktop and a bottom tab bar on mobi
   await page.locator(".mobile-nav").getByRole("button", { name: "Home" }).click();
   await assertNoHorizontalOverflow();
   await page.locator(".mobile-nav").getByRole("button", { name: "Workouts" }).click();
+  await assertNoHorizontalOverflow();
+  await page.locator(".mobile-nav").getByRole("button", { name: "Progress" }).click();
   await assertNoHorizontalOverflow();
   await page.locator(".mobile-nav").getByRole("button", { name: "Community" }).click();
   await assertNoHorizontalOverflow();

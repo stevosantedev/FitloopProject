@@ -1,6 +1,6 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap');
+/* Platform fonts keep installed and browser typography consistent without a remote font request. */
 
-:root { font-family: 'DM Sans', sans-serif; color: #eaf2ec; background: #101c18; font-synthesis: none; }
+:root { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #eaf2ec; background: #101c18; font-synthesis: none; }
 * { box-sizing: border-box; }
 body { margin: 0; min-width: 320px; }
 button, input, select { font: inherit; }
@@ -8,7 +8,7 @@ button { cursor: pointer; border: 0; border-radius: 12px; padding: 13px 18px; ba
 button:hover { background: #c9f49a; }
 input, select { width: 100%; padding: 13px 14px; margin-top: 7px; border: 1px solid #35453d; border-radius: 10px; background: #172720; color: #f3f7f3; }
 label { display: block; margin: 15px 0; color: #c8d5cc; font-size: .9rem; }
-h1, h2, .brand { font-family: 'Manrope', sans-serif; }
+h1, h2, .brand { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
 h1 { font-size: clamp(2.2rem, 5vw, 4rem); line-height: 1.05; margin: 10px 0; letter-spacing: -.05em; }
 h2 { font-size: 1.35rem; margin: 8px 0 20px; }
 .auth-shell { min-height: 100vh; display: grid; place-items: center; padding: 24px; background: radial-gradient(circle at 50% 0%, #263f31, #101c18 55%); }
@@ -250,7 +250,7 @@ body { min-width: 320px; min-height: 100vh; background: #0b100e; color: #edf4ee;
 .topbar { position: sticky; z-index: 5; top: 0; display: flex; align-items: center; justify-content: space-between; min-height: 78px; margin: 0 calc(clamp(22px, 4vw, 58px) * -1); padding: 0 clamp(22px, 4vw, 58px); border-bottom: 1px solid #202c25; background: rgb(11 16 14 / 92%); backdrop-filter: blur(18px); }
 .topbar > div:first-child { display: grid; gap: 3px; }
 .topbar-kicker { margin: 0; color: #7d8d82; font-size: .63rem; font-weight: 700; letter-spacing: .15em; }
-.topbar > div:first-child > strong { color: #edf4ee; font: 700 1rem 'Manrope', sans-serif; }
+.topbar > div:first-child > strong { color: #edf4ee; font: 700 1rem -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
 .account { gap: 16px; color: #a7b5ab; font-size: .8rem; }
 .account-status { display: inline-flex; align-items: center; gap: 8px; }
 .account-status i { width: 7px; height: 7px; border-radius: 50%; background: #b7ed77; box-shadow: 0 0 12px #b7ed7770; }
@@ -848,3 +848,123 @@ footer { padding: 22px 0 0; border-top: 1px solid #202c25; }
 .coach-reply-mode { display: grid; gap: 3px; margin: 0; padding: 9px 11px; border: 1px solid #465a42; border-radius: 9px; color: #dce9d9; background: #1a2921; font-size: .74rem; font-weight: 700; }
 .coach-reply-mode.ai_generated { border-color: #657b48; }
 .coach-reply-mode span { color: #aebdaf; font-size: .68rem; font-weight: 400; line-height: 1.45; }
+
+/* FitLoop's training-first visual system: high-contrast numbers, quiet surfaces and controls built for quick gym-floor use. */
+:root {
+ color-scheme: dark;
+ --fitloop-bg: #101210;
+ --fitloop-sidebar: #151815;
+ --fitloop-surface: #1b1f1b;
+ --fitloop-surface-raised: #222722;
+ --fitloop-border: #343c34;
+ --fitloop-text: #f1f4ed;
+ --fitloop-muted: #a0aa9e;
+ --fitloop-subtle: #778276;
+ --fitloop-accent: #d4ff62;
+ --fitloop-accent-ink: #17200e;
+ --fitloop-danger: #f0a69a;
+ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+ color: var(--fitloop-text);
+ background: var(--fitloop-bg);
+}
+html, body { background: var(--fitloop-bg); color: var(--fitloop-text); }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; letter-spacing: -.012em; }
+button, input, select, textarea { font-family: inherit; }
+button { min-height: 44px; border-radius: 8px; background: var(--fitloop-accent); color: var(--fitloop-accent-ink); font-weight: 750; transition: background-color .14s ease, border-color .14s ease, transform .14s ease; }
+button:hover { background: #e0ff8b; }
+button:active { transform: translateY(1px); }
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--fitloop-accent); outline-offset: 3px; }
+input, select, textarea { border-color: var(--fitloop-border); border-radius: 8px; background: #141814; color: var(--fitloop-text); }
+h1, h2, h3, h4, .brand { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; letter-spacing: -.035em; }
+h1 { font-weight: 760; }
+h2 { font-weight: 720; }
+.app-shell { background: var(--fitloop-bg); }
+.app-sidebar { border-color: #2b322b; background: var(--fitloop-sidebar); }
+.app-sidebar .brand { font-size: 1.6rem; letter-spacing: -.055em; }
+.brand span, h1 span { color: var(--fitloop-accent); }
+.sidebar-label { color: var(--fitloop-subtle); }
+.sidebar-nav { gap: 4px; }
+.sidebar-nav button { min-height: 46px; border-radius: 8px; color: #b0b9ae; }
+.sidebar-nav button:hover { background: #202620; color: var(--fitloop-text); }
+.sidebar-nav button.active { border-color: #414b3c; background: #293226; color: var(--fitloop-accent); }
+.nav-symbol { width: 22px; height: 22px; }
+.nav-icon { display: block; width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.sidebar-bottom { border-color: #2b322b; }
+.profile-avatar { border-color: #5c7040; background: #293222; color: var(--fitloop-accent); }
+.sidebar-signout { min-height: 42px; border-color: #3a4339; border-radius: 8px; color: #b0b9ae; }
+.sidebar-signout:hover { background: #222922; color: var(--fitloop-text); }
+.app-main { max-width: 1480px; padding-bottom: 56px; }
+.topbar { min-height: 72px; border-color: #2b322b; background: rgb(16 18 16 / 94%); }
+.topbar-kicker { color: var(--fitloop-subtle); letter-spacing: .12em; }
+.topbar > div:first-child > strong { font-size: 1.02rem; }
+.account { color: var(--fitloop-muted); }
+.account-status i { background: var(--fitloop-accent); box-shadow: none; }
+.topbar-action { min-height: 42px; border-color: var(--fitloop-accent); border-radius: 8px; background: var(--fitloop-accent); color: var(--fitloop-accent-ink); }
+.welcome { padding-top: 38px; }
+.welcome h1 { max-width: 720px; font-size: clamp(1.9rem, 3.4vw, 2.8rem); letter-spacing: -.045em; }
+.eyebrow { color: var(--fitloop-accent); letter-spacing: .12em; }
+.muted, footer { color: var(--fitloop-muted); }
+.stats { gap: 10px; }
+.stats article, .panel { border: 1px solid var(--fitloop-border); border-radius: 9px; background: var(--fitloop-surface); box-shadow: none; }
+.stats article { min-height: 112px; padding: 17px 19px; }
+.stats article span, .stats article small { color: var(--fitloop-muted); }
+.stats article strong { color: var(--fitloop-text); font-size: 2rem; letter-spacing: -.045em; }
+.panel { padding: 19px; }
+.panel h2 { margin-bottom: 14px; font-size: 1.16rem; }
+.content-grid { gap: 11px; }
+.page-section > .content-grid { gap: 13px; }
+.text-button { color: var(--fitloop-accent); }
+.text-button:hover { color: #e4ff9c; }
+.secondary-action, .subtle-action { border: 1px solid #46513f; border-radius: 8px; background: transparent; color: var(--fitloop-accent); }
+.secondary-action:hover, .subtle-action:hover { background: #293226; }
+.routine-card, .catalogue-card, .exercise-session-card, .mini-chart, .muscle-detail, .coach-routine-preview, .coach-week-schedule, .coach-plan-day, .coach-saved-plan, .progression-guidance-card { border-color: var(--fitloop-border); border-radius: 8px; background: var(--fitloop-surface-raised); box-shadow: none; }
+.feed-card { border-color: #303830; }
+.feed-heading { color: var(--fitloop-text); }
+.feed-heading span, .feed-heading time { color: var(--fitloop-muted); }
+.workout-post-summary, .comment, .workout-post-movement { border-color: var(--fitloop-border); border-radius: 7px; background: var(--fitloop-surface-raised); }
+.workout-post-metrics, .workout-post-movement span { color: var(--fitloop-muted); }
+.workout-post-metrics strong, .workout-post-movement strong { color: var(--fitloop-text); }
+.reaction-button, .small-button { min-height: 38px; border-color: #465044; border-radius: 7px; background: #242b23; color: #e3eadf; }
+.reaction-button:hover, .small-button:hover { background: #303a2d; }
+.exercise-choice { border-color: var(--fitloop-border); border-radius: 8px; background: #171b17; }
+.exercise-choice:hover, .exercise-choice.selected { border-color: #7c914d; background: #252e20; }
+.exercise-choice-indicator { border-color: #56604e; }
+.exercise-choice.selected .exercise-choice-indicator { border-color: var(--fitloop-accent); background: var(--fitloop-accent); color: var(--fitloop-accent-ink); }
+.selection-tray { border-color: var(--fitloop-border); border-radius: 8px; background: #151915; }
+.selection-tray > span strong, .selection-chips button span { color: var(--fitloop-accent); }
+.selection-chips button { border-radius: 6px; }
+.set-entry-row { border-color: var(--fitloop-border); border-radius: 7px; background: #171b17; }
+.set-entry-number, .set-entry-row .completed-set-control input, .check-row input { accent-color: var(--fitloop-accent); }
+.guided-timer, .rest-countdown { border-color: #596b3e; border-radius: 8px; background: #20271d; }
+.guided-timer-current, .rest-countdown { color: #e0f4b8; }
+.bar-column > span, .volume-track span { background: var(--fitloop-accent); }
+.volume-track { background: #343c33; }
+.chart-note, .coach-routine-note, .coach-routine-disclosure, .coach-week-note { color: var(--fitloop-muted); }
+.coach-reply-mode { border-color: #4c5b3e; border-radius: 7px; background: #22291e; color: #e6f1d8; }
+.notice { border-color: #5b7040; border-radius: 7px; background: #20291c; color: #e3f3c9; }
+.load-error, .account-danger { border-color: #795049; }
+.danger-button { background: var(--fitloop-danger); color: #321714; }
+footer { border-color: #2b322b; }
+.mobile-nav { border-color: #343c34; background: rgb(21 24 21 / 97%); }
+.mobile-nav button { min-height: 52px; border-radius: 7px; color: #9ca79b; }
+.mobile-nav button.active { background: #2a3423; color: var(--fitloop-accent); }
+.mobile-nav svg { width: 21px; height: 21px; }
+.active-workout { border-color: #414c3d; border-radius: 12px; background: #171d17; }
+.guided-timer:has(.active-workout) { background: #101210; }
+@media (max-width: 820px) {
+ .app-shell { padding-bottom: calc(78px + env(safe-area-inset-bottom, 0px)); }
+ .app-main { padding-right: 17px; padding-left: 17px; }
+ .topbar { min-height: 66px; margin-right: -17px; margin-left: -17px; padding-right: 17px; padding-left: 17px; padding-top: env(safe-area-inset-top, 0px); }
+ .welcome { padding-top: 29px; }
+ .mobile-nav { padding-bottom: max(10px, env(safe-area-inset-bottom)); }
+}
+@media (max-width: 520px) {
+ .app-main { padding-right: 13px; padding-left: 13px; }
+ .topbar { margin-right: -13px; margin-left: -13px; padding-right: 13px; padding-left: 13px; }
+ .welcome h1 { font-size: clamp(1.8rem, 8vw, 2.3rem); }
+ .stats article { min-height: 96px; }
+ .panel { padding: 15px; }
+}
+@media (prefers-reduced-motion: reduce) {
+ *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}

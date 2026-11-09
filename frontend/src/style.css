@@ -2103,3 +2103,12 @@ footer { border-color: #2b322b; }
   .profile-hero > button { grid-column: 1 / -1; width: 100%; }
   .profile-edit-card, .profile-posts { padding: 14px; }
 }
+
+
+/* You has five destinations while Social has four; each mode gets its own equal-width grid. */
+@media (max-width: 820px) {
+  .mobile-nav[aria-label="Your training navigation"] { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .mobile-nav[aria-label="Social navigation"] { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .mobile-nav button > span:first-child { font-size: 1.2rem; line-height: 1.2; }
+  .mobile-nav button > span:nth-child(2) { font-size: .68rem; line-height: 1.2; }
+}

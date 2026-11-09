@@ -470,7 +470,7 @@ test("the app uses persistent navigation on desktop and a bottom tab bar on mobi
   await assertNoHorizontalOverflow();
   await page.locator(".workspace-switch-bar").getByRole("button", { name: "Social" }).click();
   await assertNoHorizontalOverflow();
-  await page.getByRole("navigation", { name: "Your training navigation" }).getByRole("button", { name: "Coach" }).click();
+  await page.locator(".sidebar-nav").getByRole("button", { name: "Coach" }).click();
   await assertNoHorizontalOverflow();
   await page.locator(".workspace-switch-bar").getByRole("button", { name: "Social" }).click();
   await expect(page.locator(".mobile-nav button")).toHaveCount(4);
@@ -1042,7 +1042,7 @@ test("dedicated coach workspace creates a conversation and displays a guided rep
   await page.getByLabel("Email").fill("tester@example.com");
   await page.getByLabel("Password").fill("test-password");
   await page.getByRole("button", { name: "Sign in" }).click();
-  await page.getByRole("navigation", { name: "Your training navigation" }).getByRole("button", { name: "Coach" }).click();
+  await page.locator(".sidebar-nav").getByRole("button", { name: "Coach" }).click();
   await expect(page.getByRole("heading", { name: "Ask about your training." })).toBeVisible();
   // Keep the conversation as the first Coach task; secondary analysis and planning should not push it below the fold.
   const coachSectionOrder = await page.locator(".coach-page > .coach-chat-layout, .coach-page > .progression-guidance, .coach-page > .coach-routine-builder").evaluateAll(elements => elements.map(element => element.className));
@@ -1581,7 +1581,7 @@ test("Coach builds a weekly programme, saves it only after review and starts a s
   await page.getByLabel("Email").fill("tester@example.com");
   await page.getByLabel("Password").fill("test-password");
   await page.getByRole("button", { name: "Sign in" }).click();
-  await page.getByRole("navigation", { name: "Your training navigation" }).getByRole("button", { name: "Coach" }).click();
+  await page.locator(".sidebar-nav").getByRole("button", { name: "Coach" }).click();
   await expect(page.getByRole("heading", { name: "Ask about your training." })).toBeVisible();
   const generate = page.getByRole("button", { name: "Generate weekly programme" });
   await expect(generate).toBeEnabled();
@@ -1634,7 +1634,7 @@ test("Coach lets users edit a saved weekly programme and keeps the changes revie
   await page.getByLabel("Email").fill("tester@example.com");
   await page.getByLabel("Password").fill("test-password");
   await page.getByRole("button", { name: "Sign in" }).click();
-  await page.getByRole("navigation", { name: "Your training navigation" }).getByRole("button", { name: "Coach" }).click();
+  await page.locator(".sidebar-nav").getByRole("button", { name: "Coach" }).click();
   await page.getByLabel("Days available each week").selectOption("2");
   await page.getByLabel("Available equipment").selectOption("dumbbells");
   await page.getByRole("button", { name: "Generate weekly programme" }).click();
@@ -1668,7 +1668,7 @@ test("Coach shows a seven-day recovery-aware layout for saved weekly programmes"
   await page.getByLabel("Email").fill("tester@example.com");
   await page.getByLabel("Password").fill("test-password");
   await page.getByRole("button", { name: "Sign in" }).click();
-  await page.getByRole("navigation", { name: "Your training navigation" }).getByRole("button", { name: "Coach" }).click();
+  await page.locator(".sidebar-nav").getByRole("button", { name: "Coach" }).click();
   await page.getByLabel("Days available each week").selectOption("2");
   await page.getByLabel("Available equipment").selectOption("dumbbells");
   await page.getByRole("button", { name: "Generate weekly programme" }).click();
@@ -1690,7 +1690,7 @@ test("Coach displays evidence and explanation for workout progression guidance",
   await page.getByLabel("Email").fill("tester@example.com");
   await page.getByLabel("Password").fill("test-password");
   await page.getByRole("button", { name: "Sign in" }).click();
-  await page.getByRole("navigation", { name: "Your training navigation" }).getByRole("button", { name: "Coach" }).click();
+  await page.locator(".sidebar-nav").getByRole("button", { name: "Coach" }).click();
   const panel = page.getByRole("region", { name: "Training progression" });
   await expect(panel).toBeVisible();
   await expect(panel.getByText("Goblet squat")).toBeVisible();
@@ -1706,7 +1706,7 @@ test("Coach identifies when a reply uses the guided fallback", async ({ page }) 
   await page.getByLabel("Email").fill("tester@example.com");
   await page.getByLabel("Password").fill("test-password");
   await page.getByRole("button", { name: "Sign in" }).click();
-  await page.getByRole("navigation", { name: "Your training navigation" }).getByRole("button", { name: "Coach" }).click();
+  await page.locator(".sidebar-nav").getByRole("button", { name: "Coach" }).click();
   await page.getByRole("button", { name: "New chat +" }).click();
   await page.getByLabel("Message your coach").fill("Can you help me review my training?");
   await page.getByRole("button", { name: "Send message" }).click();
@@ -1838,7 +1838,7 @@ test("Social opens on activity and Plan leads with weekly planning", async ({ pa
   await page.getByRole("button", { name: "Sign in" }).click();
 
   await page.locator(".workspace-switch-bar").getByRole("button", { name: "Social" }).click();
-  await expect(page.getByRole("heading", { name: "Activity", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Your feed.", exact: true })).toBeVisible();
   await expect(page.getByText("Friend requests, reactions and comments will appear here.")).toBeVisible();
   await expect(page.locator(".community-page > .panel:has(.feed-section-heading)")).toHaveCSS("order", "1");
   await expect(page.locator(".community-page > .community-composer")).toHaveCSS("order", "2");
@@ -1848,7 +1848,7 @@ test("Social opens on activity and Plan leads with weekly planning", async ({ pa
   await expect(page.locator(".community-page > .community-blocked-panel")).toHaveCSS("order", "6");
 
   await page.locator(".workspace-switch-bar").getByRole("button", { name: "You" }).click();
-  await page.getByRole("navigation", { name: "Your training navigation" }).getByRole("button", { name: "Coach" }).click();
+  await page.locator(".sidebar-nav").getByRole("button", { name: "Coach" }).click();
   await expect(page.getByRole("heading", { name: "Build your week.", exact: true })).toBeVisible();
   await expect(page.locator(".coach-page > .coach-routine-builder")).toHaveCSS("order", "1");
   await expect(page.locator(".coach-page > .coach-chat-layout")).toHaveCSS("order", "3");

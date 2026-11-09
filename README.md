@@ -55,6 +55,7 @@ The rule-guided service is the default. An optional hosted generative reply path
 - Installable Progressive Web App (PWA) with a web app manifest and standalone display mode.
 - Five matching destinations across desktop and mobile: Home, Workouts, Progress, Community and Coach.
 - A compact weekly activity strip on Home and in-page shortcuts for the main Training tasks.
+- Account preferences and permanent account deletion are kept in a separate settings sheet rather than the daily Home feed.
 - Safe-area support, visible keyboard focus and reduced-motion handling.
 - A service worker that caches the application shell and static assets. API requests and cross-origin traffic are excluded.
 - An account-scoped IndexedDB queue for completed workouts recorded offline.

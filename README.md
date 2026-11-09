@@ -27,9 +27,10 @@ The muscle map is a training reference, not a clinical anatomy diagram. Set-volu
 - Seven-day check-in history and simple charts for the recorded measures.
 - Loading, empty, error and retry states for the main data views.
 
-### Community
+### Social and community
 
-- Account profiles with display names, short bios and visibility controls.
+- Account profiles with display names, short bios and visibility controls, plus a dedicated signed-in profile view for the member's own shared feed posts and workout summaries.
+- Social workspace navigation with Feed, Explore, Pings and Profile destinations. Explore currently provides bounded people discovery; public post/video discovery is not implemented. Pings is a clearly labelled placeholder because private messaging is not implemented.
 - Friend discovery, requests, accepted connections and relationship management.
 - A friends-oriented activity feed with workout summaries and text updates.
 - Reactions, comments, pagination and author controls for editing or deleting eligible posts and comments.
@@ -53,7 +54,7 @@ The rule-guided service is the default. An optional hosted generative reply path
 ### App shell and offline use
 
 - Installable Progressive Web App (PWA) with a web app manifest and standalone display mode.
-- Five matching destinations across desktop and mobile: Home, Workouts, Progress, Community and Coach.
+- Two top-level workspaces, Social and You, with context-sensitive navigation. Social contains Feed, Explore, Pings and Profile; You contains Home, Workout, Stats, Plan and Library.
 - A compact weekly activity strip on Home and in-page shortcuts for the main Training tasks.
 - Account preferences and permanent account deletion are kept in a separate settings sheet rather than the daily Home feed.
 - Safe-area support, visible keyboard focus and reduced-motion handling.
@@ -118,7 +119,7 @@ The frontend runs on port 5173, the API on port 4000 and the coaching service on
 
 ## Current status
 
-The project has connected MVP flows for accounts, daily tracking, training, community and coaching. It is still under development. The current work is focused on the mobile-first interface, screen-by-screen visual review, accessibility and usability checks, exercise content review, privacy decisions and final project evidence.
+The project has connected MVP flows for accounts, daily tracking, training, social community and coaching. The app shell now separates Social from You and gives each workspace its own bottom navigation. It is still under development. The current work is focused on the mobile-first interface, screen-by-screen visual review, accessibility and usability checks, exercise content review, privacy decisions and final project evidence.
 
 See the [project status and completion plan](docs/project-status-and-completion.md) for the remaining work and completion gates. The [product expansion roadmap](docs/product-expansion-roadmap.md) records the delivery status and acceptance criteria for training, Coach and Community.
 

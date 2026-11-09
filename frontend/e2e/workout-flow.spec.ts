@@ -1648,3 +1648,29 @@ test("overview quick actions open the workout builder and Coach", async ({ page 
   await page.getByRole("button", { name: "Open coach" }).click();
   await expect(page.locator(".topbar strong")).toHaveText("Coach");
 });
+
+
+// Screen ordering keeps the main task visible before secondary account and planning controls.
+test("Community opens on activity and Coach opens on the conversation", async ({ page }) => {
+  await mockApplicationApi(page);
+  await page.goto("/");
+  await page.getByLabel("Email").fill("tester@example.com");
+  await page.getByLabel("Password").fill("test-password");
+  await page.getByRole("button", { name: "Sign in" }).click();
+
+  await page.locator(".sidebar-nav").getByRole("button", { name: "Community" }).click();
+  await expect(page.locator(".community-page > .panel:has(.feed-section-heading)")).toHaveCSS("order", "1");
+  await expect(page.locator(".community-page > .community-composer")).toHaveCSS("order", "2");
+  await expect(page.locator(".community-page > .content-grid")).toHaveCSS("order", "3");
+  await expect(page.locator(".community-page > .community-profile-form")).toHaveCSS("order", "4");
+  await expect(page.locator(".community-page > .community-blocked-panel")).toHaveCSS("order", "5");
+
+  await page.locator(".sidebar-nav").getByRole("button", { name: "Coach" }).click();
+  await expect(page.locator(".coach-page > .coach-chat-layout")).toHaveCSS("order", "1");
+  await expect(page.locator(".coach-page > .progression-guidance")).toHaveCSS("order", "2");
+  await expect(page.locator(".coach-page > .coach-routine-builder")).toHaveCSS("order", "3");
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.locator(".coach-page > .coach-chat-layout")).toHaveCSS("order", "1");
+  await expect(page.locator(".mobile-nav")).toBeVisible();
+});

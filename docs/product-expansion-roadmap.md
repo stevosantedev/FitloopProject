@@ -1,6 +1,6 @@
 # Product expansion roadmap: AI Coach and Community
 
-Last reviewed: 8 November 2026
+Last reviewed: 9 November 2026
 
 ## Why these workstreams start now
 
@@ -9,6 +9,10 @@ The training foundation is sufficiently established to begin the next product ar
 FitLoop already has an initial rule-based coaching service, coach preferences/history and a friends-only feed with reactions and comments. The next phase is an intentional expansion of those foundations into complete, coherent product experiences.
 
 The work should be delivered in small vertical slices. Each slice includes its interface, API/data behaviour, privacy and safety decisions, failure states and automated tests. Avoid building decorative screens that are not connected to working behaviour.
+
+## Latest interface direction
+
+The current UI refresh takes its main cues from Strava and openGym.ch: clear information hierarchy, direct navigation, compact training controls and a restrained visual system. FitLoop keeps its own identity and does not copy either product. The Workouts screen now gives the active session builder more space and improves exercise discovery. Community places the friends' activity feed and composer ahead of profile and connection management. Coach puts the conversation before progression analysis and weekly planning. Desktop and mobile layouts retain the same task order, with a single-column layout on smaller screens. These are incremental refinements; the complete screen-by-screen design review and physical-device checks are still open.
 
 ## Workstream A: AI Coach
 
@@ -39,7 +43,7 @@ The existing Python rule-based coach remains a useful baseline and fallback. A l
 
 3. **Training assistance**
    - Explain exercises and training concepts using the reviewed first-party catalogue.
-   - [x] Provide a transparent catalogue-based full-body session draft using the user's goal, equipment and experience; transfer selected movements into the existing routine editor for review, with no save until the user confirms. Weekly availability is currently informational only; a genuine multi-day programme builder remains outstanding. This is a deterministic first slice, not generative AI.
+   - [x] Provide a transparent catalogue-based full-body session draft using the user's goal, equipment and experience; transfer selected movements into the existing routine editor for review, with no save until the user confirms. A review-first weekly programme builder now supports two to six training days, goal, equipment and experience. It drafts a movement split, saves only after user review, supports later editing and starts individual saved days in the workout builder. Set/rep/load prescriptions, weekday scheduling and completion tracking remain outstanding. This is a deterministic first slice, not generative AI.
    - Suggest adjustments to reviewed routines only after further evaluation and confirmation flows.
    - Explain progress trends without presenting heuristic muscle-volume estimates as physiological facts.
    - Ask a clarifying question when goals, equipment, experience or constraints materially affect the answer.

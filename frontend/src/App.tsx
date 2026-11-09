@@ -1937,7 +1937,15 @@ function signOut() {
           {coachChatLoading && <p className="load-state" role="status">Loading your conversation…</p>}
           {coachChatError && <div className="load-error" role="alert"><span>{coachChatError}</span><button type="button" className="secondary" onClick={() => activeCoachConversationId ? void loadCoachChat(activeCoachConversationId) : void loadCoachConversations()}>Try again</button></div>}
           <div className="coach-chat-messages" aria-live="polite">
-            {coachChatMessages.length === 0 && <div className="coach-chat-empty"><strong>What would you like help with?</strong><p className="muted">Try asking about your recent progress, a training plan or an exercise in your library.</p></div>}
+            {coachChatMessages.length === 0 && <div className="coach-chat-empty">
+              <strong>What would you like help with?</strong>
+              <p className="muted">Choose a starting point or write your own question.</p>
+              <div className="coach-prompt-chips" aria-label="Suggested coach questions">
+                <button type="button" onClick={() => setCoachDraft("Review my recent training progress.")}>Review my progress</button>
+                <button type="button" onClick={() => setCoachDraft("Help me plan a realistic training week.")}>Plan my week</button>
+                <button type="button" onClick={() => setCoachDraft("Explain how to perform an exercise safely.")}>Explain an exercise</button>
+              </div>
+            </div>}
             {coachChatMessages.map(message => <article className={"coach-chat-bubble " + message.role} key={message.id}><span>{message.role === "assistant" ? "FitLoop Coach" : "You"}</span><p>{message.content}</p></article>)}
           </div>
           {coachReplyMode && <p className={"coach-reply-mode " + coachReplyMode} role="status">

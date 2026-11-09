@@ -2115,7 +2115,7 @@ function signOut() {
       {communityLoading && <p className="load-state" role="status">Loading your community…</p>}
       {communityError && <div className="load-error" role="alert"><span>{communityError}</span><button type="button" className="secondary" onClick={() => void loadCommunity()}>Try again</button></div>}
 
-      <div className="welcome compact"><p className="eyebrow">{socialView === "feed" ? "YOUR CIRCLE" : socialView === "explore" ? "DISCOVER" : socialView === "pings" ? "MESSAGES" : "YOUR SPACE"}</p><h1>{socialView === "feed" ? "Your feed." : socialView === "explore" ? "Find your people." : socialView === "pings" ? "Pings." : user?.displayName || user?.username || "Your profile"}</h1><p className="muted">{socialView === "feed" ? "Training updates from people you've connected with." : socialView === "explore" ? "Find people to connect with. Public post and video discovery is a later feature." : socialView === "pings" ? "Private messaging is not available yet. Your conversations will live here when secure messaging is ready." : "Your training identity and the workouts you've chosen to share."}</p></div>
+      <div className="welcome compact"><p className="eyebrow">{socialView === "feed" ? "YOUR CIRCLE" : socialView === "explore" ? "DISCOVER" : socialView === "pings" ? "MESSAGES" : "YOUR SPACE"}</p><h1>{socialView === "feed" ? "Your feed." : socialView === "explore" ? "Explore your circle." : socialView === "pings" ? "Pings." : user?.displayName || user?.username || "Your profile"}</h1><p className="muted">{socialView === "feed" ? "Training updates from people you've connected with." : socialView === "explore" ? "Find people, manage requests and keep your community connections in one place." : socialView === "pings" ? "Private messaging is not available yet. Your conversations will live here when secure messaging is ready." : "Your training identity and the workouts you've chosen to share."}</p></div>
       {socialView === "profile" && <section className="profile-home">
         <div className="profile-hero panel">
           <div className="profile-avatar-large">{(user?.displayName || user?.username || "F").slice(0, 1).toUpperCase()}</div>
@@ -2146,12 +2146,7 @@ function signOut() {
         </section>
       </section>}
       {socialView === "pings" && <section className="panel pings-placeholder"><span className="pings-symbol">↗</span><h2>Private conversations, done properly.</h2><p className="muted">Messaging is not switched on yet. It needs message privacy, blocking integration, request controls and notification handling before conversations are enabled.</p></section>}
-      <form className="panel community-profile-form" onSubmit={saveProfile}>
-        <div><p className="eyebrow">PROFILE</p><h2>Edit your profile</h2><p className="muted">Choose how your name and short introduction appear to accepted friends. Your email and private account details are never shown.</p></div>
-        <label>Display name<input value={profileNameDraft} onChange={event => setProfileNameDraft(event.target.value)} maxLength={40} placeholder={user?.username ?? "Your name"} /></label>
-        <label>Short bio<textarea value={profileBioDraft} onChange={event => setProfileBioDraft(event.target.value)} maxLength={160} rows={3} placeholder="A little about your training…" /></label>
-        <div className="composer-footer"><small>{profileBioDraft.length}/160 · Visible to accepted friends</small><button disabled={profileSaving}>{profileSaving ? "Saving…" : "Save profile"}</button></div>
-      </form>
+      {socialView === "explore" && <>
       <div className="content-grid">
         <section className="panel">
           <p className="eyebrow">FRIENDS</p><h2>Find friends</h2>
@@ -2190,16 +2185,23 @@ function signOut() {
             })}</ul>}
         </section>
       </div>
+      </div>
       <section className="panel section-gap community-blocked-panel">
         <p className="eyebrow">PRIVACY & SAFETY</p><h2>Blocked accounts</h2>
         {blockedAccounts.length === 0 ? <p className="muted">You haven't blocked anyone.</p> : <ul className="log-list">{blockedAccounts.map(account => <li key={account.id}><strong>{account.displayName || "@" + account.username}</strong><span>@{account.username}</span><button type="button" className="small-button secondary" onClick={() => void unblockCommunityUser(account.id)}>Unblock</button></li>)}</ul>}
       </section>
+      </>}
+
+      {socialView === "feed" && (
       <form className="panel community-composer" onSubmit={createCommunityPost}>
         <p className="eyebrow">POST</p><h2>Share an update</h2>
         <label className="sr-only" htmlFor="community-post">Write a community update</label>
         <textarea id="community-post" value={communityPostDraft} onChange={event => setCommunityPostDraft(event.target.value)} placeholder="Share a win, a goal or a training thought with your friends…" rows={3} maxLength={500} />
         <div className="composer-footer"><small>{communityPostDraft.trim().length}/500 · Shared with accepted friends</small><button disabled={!communityPostDraft.trim()}>Share update</button></div>
       </form>
+      )}
+
+      {socialView === "feed" && (
       <section className="panel section-gap activity-inbox" aria-labelledby="activity-inbox-heading">
         <div className="activity-inbox-heading">
           <div><p className="eyebrow">YOUR COMMUNITY</p><h2 id="activity-inbox-heading">Activity{unreadNotificationCount > 0 ? <span className="activity-unread-count">{unreadNotificationCount}</span> : null}</h2></div>
@@ -2232,6 +2234,9 @@ function signOut() {
           </button>
         </div>}
       </section>
+      )}
+
+      {socialView === "feed" && (
       <section className="panel section-gap">
         <div className="feed-section-heading">
           <div><p className="eyebrow">FRIENDS</p><h2>Friends' activity</h2></div>
@@ -2303,6 +2308,8 @@ function signOut() {
               <button disabled={!commentDrafts[post.id]?.trim()}>Send</button>
             </form>
             </section>
+      )}
+
           </article>})}</div>}
         {feedHasMore && <button type="button" className="small-button secondary feed-load-more" onClick={() => void loadMoreCommunityPosts()} disabled={feedLoadingMore}>{feedLoadingMore ? "Loading older posts…" : "Load older posts"}</button>}
         {feedLoadMoreError && <div className="load-error" role="alert"><span>{feedLoadMoreError}</span><button type="button" className="secondary" onClick={() => void loadMoreCommunityPosts()}>Try again</button></div>}

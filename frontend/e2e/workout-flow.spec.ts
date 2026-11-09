@@ -41,12 +41,14 @@ const exercise = {
   muscles: [{ role: "PRIMARY", muscle: { name: "Quadriceps", slug: "quadriceps" } }]
 };
 
-async function mockApplicationApi(page: Page, onSessionSave?: (body: any) => void, sessionSaveStatus: number | (() => number) = 200, muscleStats: any[] = [], catalogueExercises: any[] = [exercise], onRoutineSave?: (body: any) => void) {
+async function mockApplicationApi(page: Page, onSessionSave?: (body: any) => void, sessionSaveStatus: number | (() => number) = 200, muscleStats: any[] = [], catalogueExercises: any[] = [exercise], onRoutineSave?: (body: any) => void, initialNotifications: any[] = []) {
   const routines: any[] = [];
   const trainingPlans: any[] = [];
   const conversations: any[] = [];
   const chatMessages: Record<string, any[]> = {};
   const socialPosts: any[] = [];
+  // Copy fixtures so read-state updates behave like independent server requests.
+  const activityNotifications = initialNotifications.map(notification => ({ ...notification }));
   // Keep the mock preference between requests so browser coverage can verify both consent and opt-out.
   let coachAiEnabled = false;
   await page.route("http://localhost:4000/**", async route => {
@@ -180,8 +182,27 @@ async function mockApplicationApi(page: Page, onSessionSave?: (body: any) => voi
       body = { people: [{ id: "friend-candidate", username: "runnercandidate", displayName: "Runner Candidate" }] };
     } else if (url.pathname === "/api/social/friends/request" && method === "POST") {
       body = { connection: { id: "request-candidate", status: "pending" } };
-    } else if (url.pathname === "/api/social/notifications") {
-      body = { notifications: [], unreadCount: 0, hasMore: false, nextCursor: null };
+    } else if (url.pathname === "/api/social/notifications" && method === "GET") {
+      const cursor = url.searchParams.get("cursor");
+      const startIndex = cursor ? Math.max(0, activityNotifications.findIndex(item => item.id === cursor) + 1) : 0;
+      const pageRows = activityNotifications.slice(startIndex, startIndex + 20);
+      const hasMore = startIndex + pageRows.length < activityNotifications.length;
+      body = {
+        notifications: pageRows,
+        unreadCount: activityNotifications.filter(item => !item.readAt).length,
+        hasMore,
+        nextCursor: hasMore ? pageRows[pageRows.length - 1]?.id ?? null : null
+      };
+    } else if (url.pathname === "/api/social/notifications/read-all" && method === "POST") {
+      const unread = activityNotifications.filter(item => !item.readAt);
+      const readAt = new Date().toISOString();
+      activityNotifications.forEach(item => { item.readAt = item.readAt ?? readAt; });
+      body = { updated: unread.length };
+    } else if (/^\\/api\\/social\\/notifications\\/[^/]+\\/read$/.test(url.pathname) && method === "PATCH") {
+      const id = url.pathname.split("/")[4];
+      const target = activityNotifications.find(item => item.id === id);
+      if (target) target.readAt = target.readAt ?? new Date().toISOString();
+      body = { read: Boolean(target) };
     } else if (url.pathname === "/api/social/friends") {
       body = { connections: [] };
     } else if (url.pathname === "/api/social/blocks" && method === "GET") {
@@ -1679,3 +1700,36 @@ test("Community opens on activity and Coach opens on the conversation", async ({
   await expect(page.locator(".coach-page > .coach-chat-layout")).toHaveCSS("order", "1");
   await expect(page.locator(".mobile-nav")).toBeVisible();
 });
+
+// The activity inbox keeps unread state accurate while older private notifications are appended.
+test("Community activity inbox marks items read and paginates older notifications", async ({ page }) => {
+  const notifications = Array.from({ length: 21 }, (_, index) => ({
+    id: "notification-" + (index + 1),
+    type: index % 2 === 0 ? "reaction" : "comment",
+    createdAt: new Date(Date.UTC(2026, 10, 8, 12, index)).toISOString(),
+    readAt: null,
+    actor: { id: "friend-1", username: "friend", displayName: "Friend" },
+    post: { id: "post-" + (index + 1), text: "Activity item " + (index + 1), type: "update" }
+  }));
+  await mockApplicationApi(page, undefined, 200, [], [exercise], undefined, notifications);
+  await page.goto("/");
+  await page.getByLabel("Email").fill("tester@example.com");
+  await page.getByLabel("Password").fill("test-password");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.locator(".sidebar-nav").getByRole("button", { name: "Community" }).click();
+
+  const inbox = page.locator(".activity-inbox");
+  await expect(inbox.getByRole("heading", { name: "Activity" })).toBeVisible();
+  await expect(inbox.locator(".activity-unread-count")).toHaveText("21");
+  await expect(inbox.locator(".activity-notification-list li")).toHaveCount(20);
+  await inbox.getByRole("button", { name: "Mark activity from Friend as read" }).first().click();
+  await expect(inbox.locator(".activity-unread-count")).toHaveText("20");
+
+  await inbox.getByRole("button", { name: "Load older activity" }).click();
+  await expect(inbox.locator(".activity-notification-list li")).toHaveCount(21);
+  await expect(inbox.getByText("Activity item 21")).toBeVisible();
+  await inbox.getByRole("button", { name: "Mark all read" }).click();
+  await expect(inbox.locator(".activity-unread-count")).toHaveCount(0);
+  await expect(inbox.locator(".activity-notification-list li.is-unread")).toHaveCount(0);
+});
+

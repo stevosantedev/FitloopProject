@@ -1329,3 +1329,14 @@ footer { border-color: #2b322b; }
   .activity-notification-list li { align-items: flex-start; }
   .activity-notification-list .text-button { min-height: 36px; padding: 5px 2px; }
 }
+
+
+/* Keep inbox pagination visually secondary to the activity items themselves. */
+.activity-inbox-pagination {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  margin-top: 12px;
+}
+.activity-inbox-pagination .load-error { margin: 0; }
+.activity-inbox-pagination button { width: auto; }

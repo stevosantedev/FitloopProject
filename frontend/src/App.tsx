@@ -169,6 +169,11 @@ export default function App() {
   // Keep the in-app inbox separate from feed posts so read state can update without refreshing activity cards.
   const [activityNotifications, setActivityNotifications] = useState<ActivityNotification[]>([]);
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
+  // Keep the inbox cursor separate from the feed cursor so each list can load independently.
+  const [activityNotificationCursor, setActivityNotificationCursor] = useState<string | null>(null);
+  const [activityNotificationsHasMore, setActivityNotificationsHasMore] = useState(false);
+  const [activityNotificationsLoadingMore, setActivityNotificationsLoadingMore] = useState(false);
+  const [activityNotificationsLoadError, setActivityNotificationsLoadError] = useState("");
   // Disable every reaction on a post while its server update is pending; the ref closes the gap before React rerenders.
   const [reactionSaving, setReactionSaving] = useState<Record<string, boolean>>({});
   const reactionRequestsRef = useRef(new Set<string>());
@@ -470,6 +475,9 @@ async function loadCommunity() {
       setBlockedAccounts(blockData.blocks.map((item: any) => item.blockedUser));
       setActivityNotifications(notificationData.notifications ?? []);
       setUnreadNotificationCount(notificationData.unreadCount ?? 0);
+      setActivityNotificationCursor(notificationData.nextCursor ?? null);
+      setActivityNotificationsHasMore(Boolean(notificationData.hasMore));
+      setActivityNotificationsLoadError("");
       // A moderator-only request is made only after the server confirms this account's capability.
       try {
         const capability = await request("/api/social/moderation/capability");
@@ -591,6 +599,27 @@ async function refreshCommunityFeed() {
       setUnreadNotificationCount(0);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Could not mark your activity as read.");
+    }
+  }
+
+  // Older inbox pages append without disturbing read state on notifications already on screen.
+  async function loadMoreActivityNotifications() {
+    if (!activityNotificationsHasMore || !activityNotificationCursor || activityNotificationsLoadingMore) return;
+    setActivityNotificationsLoadingMore(true);
+    setActivityNotificationsLoadError("");
+    try {
+      const data = await request("/api/social/notifications?cursor=" + encodeURIComponent(activityNotificationCursor));
+      setActivityNotifications(current => {
+        const existing = new Set(current.map(item => item.id));
+        return [...current, ...(data.notifications ?? []).filter((item: ActivityNotification) => !existing.has(item.id))];
+      });
+      setUnreadNotificationCount(data.unreadCount ?? 0);
+      setActivityNotificationCursor(data.nextCursor ?? null);
+      setActivityNotificationsHasMore(Boolean(data.hasMore));
+    } catch (error) {
+      setActivityNotificationsLoadError(error instanceof Error ? error.message : "Could not load older activity.");
+    } finally {
+      setActivityNotificationsLoadingMore(false);
     }
   }
 
@@ -2008,6 +2037,12 @@ function signOut() {
               </li>;
             })}
           </ul>}
+        {activityNotificationsHasMore && <div className="activity-inbox-pagination">
+          {activityNotificationsLoadError && <p className="load-error" role="alert">{activityNotificationsLoadError}</p>}
+          <button type="button" className="small-button secondary" onClick={() => void loadMoreActivityNotifications()} disabled={activityNotificationsLoadingMore}>
+            {activityNotificationsLoadingMore ? "Loading…" : activityNotificationsLoadError ? "Try again" : "Load older activity"}
+          </button>
+        </div>}
       </section>
       <section className="panel section-gap">
         <div className="feed-section-heading">

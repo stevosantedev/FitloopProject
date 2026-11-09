@@ -998,6 +998,9 @@ test("dedicated coach workspace creates a conversation and displays a guided rep
   await page.getByRole("button", { name: "Sign in" }).click();
   await page.locator(".sidebar-nav").getByRole("button", { name: "Coach" }).click();
   await expect(page.getByRole("heading", { name: "Ask about your training." })).toBeVisible();
+  // Keep the conversation as the first Coach task; secondary analysis and planning should not push it below the fold.
+  const coachSectionOrder = await page.locator(".coach-page > .coach-chat-layout, .coach-page > .progression-guidance, .coach-page > .coach-routine-builder").evaluateAll(elements => elements.map(element => element.className));
+  expect(coachSectionOrder).toEqual(["coach-chat-layout", "panel progression-guidance", "panel coach-routine-builder"]);
   // Starter prompts lower the effort of the first message without sending content on the user's behalf.
   await page.getByRole("button", { name: "Review my progress" }).click();
   await expect(page.getByLabel("Message your coach")).toHaveValue("Review my recent training progress.");

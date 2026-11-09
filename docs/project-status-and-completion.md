@@ -48,7 +48,7 @@ The application has an installable app shell with persistent desktop navigation 
 - [x] Allow deployment configuration of an OpenAI-compatible chat-completions endpoint without changing the coaching rules; keep the provider key server-side.
 - [x] Add a 30-message-per-account hourly cap to Coach conversations and test that the next request is rejected before context lookup, persistence or provider work.
 - [x] Add a PostgreSQL-backed shared rate-limit store for multi-instance deployment; integration tests verify cross-instance increments, stable reset times, concurrent increments, expiry, decrement and reset behaviour.
-- [ ] Verify a live provider with an operator-supplied key, complete provider data-processing/retention review and broader safety evaluation before enabling external processing for real users.
+- [ ] Resolve the provider-scope decision before any live integration test: the original proposal specified no hosted language models processing personal data, while the current optional path can send a bounded recent-workout summary to an external provider after explicit opt-in. Keep this path disabled until the proposal, privacy position and assessment scope explicitly permit that change. If approved, complete provider data-processing/retention review and broader safety evaluation before enabling it for real users.
 - [x] Add a catalogue-based routine draft with goal, equipment, experience and weekly availability inputs; require review in the routine editor and an explicit save action.
 - [ ] Add safe, evidence-grounded training adjustments after the model and evaluation approach are approved.
 - [x] Add profile editing, private-by-default visibility, bounded friend discovery/search, friend-request/connection management, account blocking and private reports for visible posts/accounts. Blocking removes existing connections and prevents the blocked pair from viewing each other's profiles/feed activity or creating new friend requests.
@@ -104,7 +104,7 @@ The application has an installable app shell with persistent desktop navigation 
 
 ## Scope decisions still needed
 
-The project should not grow indefinitely by adding features without reference to the assessment brief. In particular, push/email notifications, password reset/email verification, data export and public deployment depend on the intended final scope; the private in-app activity inbox is implemented. The priority is to keep stabilising and evaluating the training foundation while delivering the AI Coach and Community workstreams in controlled, testable slices.
+The project should not grow indefinitely by adding features without reference to the assessment brief. One important scope difference needs an explicit decision: the original proposal called for an explainable local/backend rule-based coach and ruled out hosted language models processing personal data. The current optional provider path is default-off and consent-gated, but it still sends a bounded recent-workout summary outside the application when enabled. Explicit consent does not erase that difference from the original proposal. Keep it disabled unless the proposal and privacy requirements are formally updated. Push/email notifications, password reset/email verification, data export and public deployment also depend on the final assessment scope; the private in-app activity inbox is implemented. The next phase is validation and refinement of the connected training, Coach and Community experiences.
 
 ## Current release status
 

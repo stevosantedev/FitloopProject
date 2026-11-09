@@ -376,8 +376,8 @@ test("the guided rest timer can pause, resume and skip its countdown", async ({ 
   await page.getByRole("button", { name: "Start guided workout" }).click();
   await page.getByRole("button", { name: "Set complete — start rest" }).click();
   await expect(page.getByRole("timer")).toBeVisible();
-  await page.getByRole("button", { name: "Pause" }).click();
-  await expect(page.getByRole("button", { name: "Resume" })).toBeVisible();
+  await page.getByRole("button", { name: "Pause rest" }).click();
+  await expect(page.getByRole("button", { name: "Resume rest" })).toBeVisible();
   await page.getByRole("button", { name: "Resume" }).click();
   await page.getByRole("button", { name: "Skip rest" }).click();
   await expect(page.getByText("Next set: Goblet squat · Set 2")).toBeVisible();

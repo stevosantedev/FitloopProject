@@ -427,9 +427,9 @@ test("the app uses persistent navigation on desktop and a bottom tab bar on mobi
 
   await expect(page.locator(".app-sidebar")).toBeVisible();
   await expect(page.locator(".sidebar-nav button")).toHaveCount(5);
-  await expect(page.locator(".sidebar-nav button[aria-current=page]")).toHaveText("Overview");
+  await expect(page.locator(".sidebar-nav button[aria-current=page]")).toHaveText("Home");
   await page.locator(".sidebar-nav").getByRole("button", { name: "Workouts" }).click();
-  await expect(page.locator(".sidebar-nav button[aria-current=page]")).toHaveText("Workouts");
+  await expect(page.locator(".sidebar-nav button[aria-current=page]")).toHaveText("Workout");
   await expect(page.getByRole("heading", { name: "Build a workout" })).toBeVisible();
 
   // Tablet portrait uses the compact navigation layout; desktop retains the sidebar.
@@ -445,11 +445,11 @@ test("the app uses persistent navigation on desktop and a bottom tab bar on mobi
   await expect.poll(() => mobileNavButton.evaluate(element => getComputedStyle(element).minHeight)).toBe("52px");
   await expect.poll(() => page.locator(".mobile-nav").evaluate(element => getComputedStyle(element).position)).toBe("fixed");
   await page.locator(".mobile-nav").getByRole("button", { name: "Progress" }).click();
-  await expect(page.locator(".mobile-nav button[aria-current=page]")).toHaveText("Progress");
+  await expect(page.locator(".mobile-nav button[aria-current=page]")).toHaveText("Stats");
   await expect(page.getByRole("heading", { name: "Progress", exact: true })).toBeVisible();
-  await page.locator(".mobile-nav").getByRole("button", { name: "Community" }).click();
-  await expect(page.locator(".mobile-nav button[aria-current=page]")).toHaveText("Community");
-  await expect(page.getByRole("heading", { name: "Your community." })).toBeVisible();
+  await page.locator(".workspace-switch-bar").getByRole("button", { name: "Social" }).click();
+  await expect(page.locator(".mobile-nav button[aria-current=page]")).toHaveText("Feed");
+  await expect(page.getByRole("heading", { name: "Your feed." })).toBeVisible();
   await expect(page.locator(".app-sidebar")).toBeHidden();
 
   // A narrow phone should keep every main destination inside the viewport without sideways scrolling.
@@ -463,7 +463,7 @@ test("the app uses persistent navigation on desktop and a bottom tab bar on mobi
   await assertNoHorizontalOverflow();
   await page.locator(".mobile-nav").getByRole("button", { name: "Progress" }).click();
   await assertNoHorizontalOverflow();
-  await page.locator(".mobile-nav").getByRole("button", { name: "Community" }).click();
+  await page.locator(".workspace-switch-bar").getByRole("button", { name: "Social" }).click();
   await assertNoHorizontalOverflow();
   await page.locator(".mobile-nav").getByRole("button", { name: "Coach" }).click();
   await assertNoHorizontalOverflow();
@@ -487,7 +487,7 @@ test("Community profile previews respect the profile API response", async ({ pag
   await page.getByLabel("Email").fill("tester@example.com");
   await page.getByLabel("Password").fill("test-password");
   await page.getByRole("button", { name: "Sign in" }).click();
-  await page.locator(".sidebar-nav").getByRole("button", { name: "Community" }).click();
+  await page.locator(".workspace-switch-bar").getByRole("button", { name: "Social" }).click();
   await expect(page.locator(".feed-card")).toContainText("A friend's training update");
   await expect(page.locator(".feed-profile-link")).toBeVisible();
   await page.locator(".feed-profile-link").click();
@@ -533,7 +533,7 @@ test("Community profile previews handle private or unavailable profiles safely",
   await page.getByLabel("Email").fill("tester@example.com");
   await page.getByLabel("Password").fill("test-password");
   await page.getByRole("button", { name: "Sign in" }).click();
-  await page.locator(".sidebar-nav").getByRole("button", { name: "Community" }).click();
+  await page.locator(".workspace-switch-bar").getByRole("button", { name: "Social" }).click();
   const trigger = page.locator(".feed-profile-link");
   await trigger.click();
   const dialog = page.getByRole("dialog");
@@ -568,7 +568,7 @@ test("closing a loading Community profile prevents a late response from reopenin
   await page.getByLabel("Email").fill("tester@example.com");
   await page.getByLabel("Password").fill("test-password");
   await page.getByRole("button", { name: "Sign in" }).click();
-  await page.locator(".sidebar-nav").getByRole("button", { name: "Community" }).click();
+  await page.locator(".workspace-switch-bar").getByRole("button", { name: "Social" }).click();
   const trigger = page.locator(".feed-profile-link");
   await trigger.click();
   const dialog = page.getByRole("dialog");
@@ -607,7 +607,7 @@ test("Community reactions update immediately and roll back when the server rejec
   });
 
   await signInAndOpenWorkouts(page);
-  await page.locator(".sidebar-nav").getByRole("button", { name: "Community" }).click();
+  await page.locator(".workspace-switch-bar").getByRole("button", { name: "Social" }).click();
   const post = page.locator(".feed-card").filter({ hasText: "Reaction rollback post" });
   const like = post.getByRole("button", { name: /Like/ });
 
@@ -643,7 +643,7 @@ test("Community reactions can be selected, changed and toggled off", async ({ pa
     }) });
   });
   await signInAndOpenWorkouts(page);
-  await page.locator(".sidebar-nav").getByRole("button", { name: "Community" }).click();
+  await page.locator(".workspace-switch-bar").getByRole("button", { name: "Social" }).click();
   await page.getByLabel("Write a community update").fill("A reaction test post");
   await page.getByRole("button", { name: "Share update" }).click();
   const post = page.locator(".feed-card").filter({ hasText: "A reaction test post" });
@@ -1082,7 +1082,7 @@ test("authors can edit their own Community text updates", async ({ page }) => {
   await page.getByLabel("Email").fill("tester@example.com");
   await page.getByLabel("Password").fill("test-password");
   await page.getByRole("button", { name: "Sign in" }).click();
-  await page.locator(".sidebar-nav").getByRole("button", { name: "Community" }).click();
+  await page.locator(".workspace-switch-bar").getByRole("button", { name: "Social" }).click();
   const card = page.locator(".feed-card").first();
   await expect(card).toContainText("The original training update");
   await card.getByRole("button", { name: "Edit post" }).click();
@@ -1101,8 +1101,8 @@ test("community users can share a friends-only text update", async ({ page }) =>
   await page.getByLabel("Email").fill("tester@example.com");
   await page.getByLabel("Password").fill("test-password");
   await page.getByRole("button", { name: "Sign in" }).click();
-  await page.locator(".sidebar-nav").getByRole("button", { name: "Community" }).click();
-  await expect(page.getByRole("heading", { name: "Your community." })).toBeVisible();
+  await page.locator(".workspace-switch-bar").getByRole("button", { name: "Social" }).click();
+  await expect(page.getByRole("heading", { name: "Your feed." })).toBeVisible();
   await page.getByLabel("Write a community update").fill("First week back in the gym. Feeling good about the progress.");
   await page.getByRole("button", { name: "Share update" }).click();
   await expect(page.locator(".feed-card")).toContainText("First week back in the gym. Feeling good about the progress.");
@@ -1132,7 +1132,7 @@ test("Community feed retries an initial failure and then shows a genuine empty s
   await page.getByLabel("Email").fill("tester@example.com");
   await page.getByLabel("Password").fill("test-password");
   await page.getByRole("button", { name: "Sign in" }).click();
-  await page.locator(".sidebar-nav").getByRole("button", { name: "Community" }).click();
+  await page.locator(".workspace-switch-bar").getByRole("button", { name: "Social" }).click();
   const error = page.getByRole("alert").filter({ hasText: "Community feed is temporarily unavailable." });
   await expect(error).toBeVisible();
   await expect(page.locator(".activity-inbox")).toContainText("Activity is unavailable until the community can be refreshed.");
@@ -1175,7 +1175,7 @@ test("community block and report controls call the moderation API", async ({ pag
   await page.getByLabel("Email").fill("tester@example.com");
   await page.getByLabel("Password").fill("test-password");
   await page.getByRole("button", { name: "Sign in" }).click();
-  await page.locator(".sidebar-nav").getByRole("button", { name: "Community" }).click();
+  await page.locator(".workspace-switch-bar").getByRole("button", { name: "Social" }).click();
   await expect(page.getByRole("heading", { name: "Friends and requests" })).toBeVisible();
   await page.getByRole("button", { name: "Report account" }).click();
   await expect(page.getByRole("status")).toContainText("Report submitted privately");
@@ -1223,7 +1223,7 @@ test("Community members can search for people and send a friend request from a r
   await page.getByLabel("Email").fill("tester@example.com");
   await page.getByLabel("Password").fill("test-password");
   await page.getByRole("button", { name: "Sign in" }).click();
-  await page.locator(".sidebar-nav").getByRole("button", { name: "Community" }).click();
+  await page.locator(".workspace-switch-bar").getByRole("button", { name: "Social" }).click();
 
   await page.getByLabel("Search by username or display name").fill("runner");
   await page.getByRole("button", { name: "Search people" }).click();
@@ -1272,7 +1272,7 @@ test("Community feed refreshes the first page and preserves posts when refresh f
   await page.getByLabel("Email").fill("tester@example.com");
   await page.getByLabel("Password").fill("test-password");
   await page.getByRole("button", { name: "Sign in" }).click();
-  await page.locator(".sidebar-nav").getByRole("button", { name: "Community" }).click();
+  await page.locator(".workspace-switch-bar").getByRole("button", { name: "Social" }).click();
   await expect(page.getByText("The activity already on screen")).toBeVisible();
   await expect(page.locator(".feed-card").filter({ hasText: "The activity already on screen" }).locator("time")).toHaveAttribute("datetime", "2026-11-08T10:00:00.000Z");
   await expect(page.locator(".feed-card").filter({ hasText: "The activity already on screen" }).locator(".feed-comments-heading")).toContainText("0 comments");
@@ -1311,7 +1311,7 @@ test("community feed loads older posts without replacing the first page", async 
   await page.getByLabel("Email").fill("tester@example.com");
   await page.getByLabel("Password").fill("test-password");
   await page.getByRole("button", { name: "Sign in" }).click();
-  await page.locator(".sidebar-nav").getByRole("button", { name: "Community" }).click();
+  await page.locator(".workspace-switch-bar").getByRole("button", { name: "Social" }).click();
   await expect(page.getByText("The latest training update")).toBeVisible();
   await page.getByRole("button", { name: "Load older posts" }).click();
   await expect(page.getByText("An older training update")).toBeVisible();
@@ -1348,7 +1348,7 @@ test("Community feed pagination offers a retry after a temporary failure", async
   await page.getByLabel("Email").fill("tester@example.com");
   await page.getByLabel("Password").fill("test-password");
   await page.getByRole("button", { name: "Sign in" }).click();
-  await page.locator(".sidebar-nav").getByRole("button", { name: "Community" }).click();
+  await page.locator(".workspace-switch-bar").getByRole("button", { name: "Social" }).click();
   await page.getByRole("button", { name: "Load older posts" }).click();
   await expect(page.getByRole("alert").filter({ hasText: "Temporary feed failure." })).toBeVisible();
   await page.getByRole("alert").getByRole("button", { name: "Try again" }).click();
@@ -1384,7 +1384,7 @@ test("Community comment pagination offers a retry without losing loaded comments
   await page.getByLabel("Email").fill("tester@example.com");
   await page.getByLabel("Password").fill("test-password");
   await page.getByRole("button", { name: "Sign in" }).click();
-  await page.locator(".sidebar-nav").getByRole("button", { name: "Community" }).click();
+  await page.locator(".workspace-switch-bar").getByRole("button", { name: "Social" }).click();
   const card = page.locator(".feed-card").filter({ hasText: "A post with many comments" });
   await expect(card.locator(".comment").first()).toContainText("Comment 1");
   await card.getByRole("button", { name: "Load older comments" }).click();
@@ -1426,7 +1426,7 @@ test("allowlisted moderators can review and resolve private community reports", 
   await page.getByLabel("Email").fill("tester@example.com");
   await page.getByLabel("Password").fill("test-password");
   await page.getByRole("button", { name: "Sign in" }).click();
-  await page.locator(".sidebar-nav").getByRole("button", { name: "Community" }).click();
+  await page.locator(".workspace-switch-bar").getByRole("button", { name: "Social" }).click();
   await expect(page.getByRole("heading", { name: "Moderator review" })).toBeVisible();
   await expect(page.getByText("Repeated abusive messages.")).toBeVisible();
   await page.getByLabel("Resolution note for report-1").fill("Reviewed and action taken.");
@@ -1456,7 +1456,7 @@ test("Community workout cards summarise completed sets by movement", async ({ pa
   await page.getByLabel("Email").fill("tester@example.com");
   await page.getByLabel("Password").fill("test-password");
   await page.getByRole("button", { name: "Sign in" }).click();
-  await page.locator(".sidebar-nav").getByRole("button", { name: "Community" }).click();
+  await page.locator(".workspace-switch-bar").getByRole("button", { name: "Social" }).click();
   const card = page.locator(".feed-card").filter({ hasText: "Upper body" });
   await expect(card.locator(".workout-post-metrics span").nth(0)).toContainText("2");
   await expect(card.locator(".workout-post-metrics span").nth(0)).toContainText("sets completed");
@@ -1497,7 +1497,7 @@ test("Community posts can load older comments without replacing the first page",
   await page.getByLabel("Email").fill("tester@example.com");
   await page.getByLabel("Password").fill("test-password");
   await page.getByRole("button", { name: "Sign in" }).click();
-  await page.locator(".sidebar-nav").getByRole("button", { name: "Community" }).click();
+  await page.locator(".workspace-switch-bar").getByRole("button", { name: "Social" }).click();
   const post = page.locator(".feed-card").filter({ hasText: "A busy discussion" });
   const renderedComments = post.locator(".comment");
   await expect(renderedComments).toHaveCount(20);
@@ -1538,7 +1538,7 @@ test("Community comment authors can edit and delete only their own comments", as
   await page.getByLabel("Email").fill("tester@example.com");
   await page.getByLabel("Password").fill("test-password");
   await page.getByRole("button", { name: "Sign in" }).click();
-  await page.locator(".sidebar-nav").getByRole("button", { name: "Community" }).click();
+  await page.locator(".workspace-switch-bar").getByRole("button", { name: "Social" }).click();
   await expect(page.getByText("Great session")).toBeVisible();
   await page.locator(".comment").getByRole("button", { name: "Edit", exact: true }).click();
   await page.getByLabel("Edit your comment").fill("Updated training encouragement");
@@ -1806,7 +1806,7 @@ test("Progress is a separate destination with compact weekly metrics", async ({ 
 
   await expect(page.locator(".sidebar-nav button")).toHaveCount(5);
   await page.locator(".sidebar-nav").getByRole("button", { name: "Progress" }).click();
-  await expect(page.locator(".sidebar-nav button[aria-current=page]")).toHaveText("Progress");
+  await expect(page.locator(".sidebar-nav button[aria-current=page]")).toHaveText("Stats");
   await expect(page.getByRole("heading", { name: "Progress", exact: true })).toBeVisible();
   await expect(page.getByText("Workouts this week")).toBeVisible();
   await expect(page.getByText("Sleep, steps, mood and focus")).toBeVisible();
@@ -1816,7 +1816,7 @@ test("Progress is a separate destination with compact weekly metrics", async ({ 
   await expect(page.locator(".mobile-nav button")).toHaveCount(5);
   await expect(page.locator(".mobile-nav")).toHaveCSS("position", "fixed");
   await page.locator(".mobile-nav").getByRole("button", { name: "Progress" }).click();
-  await expect(page.locator(".mobile-nav button[aria-current=page]")).toHaveText("Progress");
+  await expect(page.locator(".mobile-nav button[aria-current=page]")).toHaveText("Stats");
   await expect(page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).resolves.toBe(true);
 });
 
@@ -1827,7 +1827,7 @@ test("Community opens on activity and Coach opens on the conversation", async ({
   await page.getByLabel("Password").fill("test-password");
   await page.getByRole("button", { name: "Sign in" }).click();
 
-  await page.locator(".sidebar-nav").getByRole("button", { name: "Community" }).click();
+  await page.locator(".workspace-switch-bar").getByRole("button", { name: "Social" }).click();
   await expect(page.getByRole("heading", { name: "Activity", exact: true })).toBeVisible();
   await expect(page.getByText("Friend requests, reactions and comments will appear here.")).toBeVisible();
   await expect(page.locator(".community-page > .panel:has(.feed-section-heading)")).toHaveCSS("order", "1");
@@ -1864,7 +1864,7 @@ test("Community activity inbox marks items read and paginates older notification
   await page.getByLabel("Email").fill("tester@example.com");
   await page.getByLabel("Password").fill("test-password");
   await page.getByRole("button", { name: "Sign in" }).click();
-  await page.locator(".sidebar-nav").getByRole("button", { name: "Community" }).click();
+  await page.locator(".workspace-switch-bar").getByRole("button", { name: "Social" }).click();
 
   const inbox = page.locator(".activity-inbox");
   await expect(inbox.getByRole("heading", { name: "Activity" })).toBeVisible();
@@ -1910,7 +1910,7 @@ test("Community activity inbox preserves loaded notifications when an older page
   await page.getByLabel("Email").fill("tester@example.com");
   await page.getByLabel("Password").fill("test-password");
   await page.getByRole("button", { name: "Sign in" }).click();
-  await page.locator(".sidebar-nav").getByRole("button", { name: "Community" }).click();
+  await page.locator(".workspace-switch-bar").getByRole("button", { name: "Social" }).click();
   const inbox = page.locator(".activity-inbox");
   await expect(inbox.locator(".activity-notification-list li")).toHaveCount(20);
 
@@ -1942,7 +1942,7 @@ test("Community navigation shows unread activity on desktop and mobile", async (
   const desktopBadge = page.locator(".sidebar-nav .nav-unread-count");
   await expect(desktopBadge).toHaveText("2");
   await expect(page.locator(".sidebar-nav").getByRole("button", { name: "Community, 2 unread notifications" })).toBeVisible();
-  await page.locator(".sidebar-nav").getByRole("button", { name: "Community" }).click();
+  await page.locator(".workspace-switch-bar").getByRole("button", { name: "Social" }).click();
   const inbox = page.locator(".activity-inbox");
   await expect(inbox.locator(".activity-unread-count")).toHaveText("2");
   await inbox.getByRole("button", { name: "Mark activity from Friend as read" }).first().click();
@@ -2010,4 +2010,48 @@ test("captures current FitLoop screens for visual review", async ({ page }, test
     expect(tabBarBounds!.y + tabBarBounds!.height).toBeLessThanOrEqual(844);
     await page.screenshot({ path: testInfo.outputPath(screen.name + "-mobile.png"), fullPage: false });
   }
+});
+
+
+// The two top-level workspaces keep their own focused bottom navigation.
+test("Social and You switch between the correct destinations", async ({ page }) => {
+  await mockApplicationApi(page);
+  await page.goto("/");
+  await page.getByLabel("Email").fill("tester@example.com");
+  await page.getByLabel("Password").fill("test-password");
+  await page.getByRole("button", { name: "Sign in" }).click();
+
+  const workspaceSwitch = page.locator(".workspace-switch-bar");
+  await expect(workspaceSwitch.getByRole("button", { name: "You" })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator(".mobile-nav button")).toHaveCount(5);
+  await expect(page.locator(".mobile-nav")).toContainText("Home");
+  await expect(page.locator(".mobile-nav")).toContainText("Workout");
+  await expect(page.locator(".mobile-nav")).toContainText("Stats");
+  await expect(page.locator(".mobile-nav")).toContainText("Plan");
+  await expect(page.locator(".mobile-nav")).toContainText("Library");
+
+  await workspaceSwitch.getByRole("button", { name: "Social" }).click();
+  await expect(workspaceSwitch.getByRole("button", { name: "Social" })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator(".mobile-nav button")).toHaveCount(4);
+  await expect(page.locator(".mobile-nav")).toContainText("Feed");
+  await expect(page.locator(".mobile-nav")).toContainText("Explore");
+  await expect(page.locator(".mobile-nav")).toContainText("Pings");
+  await expect(page.locator(".mobile-nav")).toContainText("Profile");
+
+  await page.locator(".mobile-nav").getByRole("button", { name: "Profile" }).click();
+  await expect(page.getByRole("heading", { name: "Shared workouts & posts" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Edit profile" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Settings" })).toBeVisible();
+
+  await page.locator(".mobile-nav").getByRole("button", { name: "Pings" }).click();
+  await expect(page.getByRole("heading", { name: "Private conversations, done properly." })).toBeVisible();
+  await expect(page.getByText(/Private messaging is not available yet/)).toBeVisible();
+
+  await page.locator(".mobile-nav").getByRole("button", { name: "Explore" }).click();
+  await expect(page.getByRole("heading", { name: "Find your people." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Find friends" })).toBeVisible();
+
+  await workspaceSwitch.getByRole("button", { name: "You" }).click();
+  await expect(page.getByRole("heading", { name: "Your week" })).toBeVisible();
+  await expect(page.locator(".mobile-nav button")).toHaveCount(5);
 });

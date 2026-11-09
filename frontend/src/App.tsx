@@ -188,6 +188,8 @@ export default function App() {
   const [feedRefreshing, setFeedRefreshing] = useState(false);
   const [feedRefreshError, setFeedRefreshError] = useState("");
   const [activeTab, setActiveTab] = useState<"home" | "workouts" | "progress" | "community" | "coach">("home");
+  // Account controls stay behind a deliberate settings action instead of extending the Home feed.
+  const [showAccountSettings, setShowAccountSettings] = useState(false);
   const [notice, setNotice] = useState("");
   // Keep first-load and refresh failures separate from legitimate empty account data.
   const [dashboardLoading, setDashboardLoading] = useState(false);
@@ -1577,6 +1579,7 @@ function signOut() {
       {dashboardLoading && <p className="load-state" role="status">Loading your overview…</p>}
       {dashboardError && <div className="load-error" role="alert"><span>{dashboardError}</span><button type="button" className="secondary" onClick={() => void loadDashboard()}>Try again</button></div>}
       <section className="welcome overview-welcome">
+        <button type="button" className="overview-settings-action" aria-label="Open account settings" title="Account settings" onClick={() => setShowAccountSettings(true)}><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-1.7 2.94-.09-.02a1.7 1.7 0 0 0-1.73.5l-.07.07h-3.4l-.02-.09a1.7 1.7 0 0 0-1.3-1.3l-.09-.02-1.7-2.94.06-.06A1.7 1.7 0 0 0 10.1 14l-.02-.09v-3.4l.09-.02a1.7 1.7 0 0 0 1.3-1.3l.02-.09h3.4l.07.07a1.7 1.7 0 0 0 1.73.5l.09-.02 1.7 2.94-.06.06A1.7 1.7 0 0 0 18.4 14l.09.02v.98Z"/></svg></button>
         <div className="overview-welcome-copy">
           <p className="eyebrow">THIS WEEK</p>
           <h1>Your week</h1>
@@ -1638,39 +1641,7 @@ function signOut() {
         <div><p className="eyebrow">YOUR PROGRESS</p><h2>See how your week is taking shape</h2><p className="muted">Training totals and daily patterns live together in Progress.</p></div>
         <button type="button" className="subtle-action" onClick={() => setActiveTab("progress")}>View progress <span aria-hidden="true">↗</span></button>
       </section>
-      <section className="panel coach-panel">
-        <div><p className="eyebrow">COACH</p><h2>Review your recent activity.</h2><p className="muted">Get one practical suggestion based on the check-ins you've logged.</p></div>
-        <button onClick={askCoach}>Review my recent trends</button>
-        <form className="coach-preferences" onSubmit={saveCoachPreference}>
-          <p className="field-heading">Coaching style</p>
-          <select value={coachPreference.style} onChange={event => setCoachPreference(current => ({ ...current, style: event.target.value as CoachPreference["style"] }))}>
-            <option value="gentle">Gentle and encouraging</option><option value="direct">Clear and direct</option>
-          </select>
-          <p className="field-heading">Main focus</p>
-          <select value={coachPreference.focus} onChange={event => setCoachPreference(current => ({ ...current, focus: event.target.value as CoachPreference["focus"] }))}>
-            <option value="energy">Everyday energy</option><option value="consistency">Consistency</option><option value="recovery">Rest and recovery</option>
-          </select>
-          <label className="coach-ai-consent">
-            <input type="checkbox" checked={coachPreference.aiEnabled} onChange={event => setCoachPreference(current => ({ ...current, aiEnabled: event.target.checked }))} />
-            <span><strong>Use AI-generated coaching replies</strong><small>Optional and off by default. If enabled, your message and up to five recent completed workout summaries are sent to the configured AI provider to draft a reply. Your account identity, private notes and daily wellbeing logs are not sent. You can switch this off at any time.</small></span>
-          </label>
-          <button className="secondary-action">Save coach preferences</button>
-        </form>
-        {coachMessages.map(item => <article className="coach-message" key={item.id}>
-          <strong>{item.message}</strong><p className="muted">{item.explanation}</p>
-          <p className="decision-state">Decision: {item.decision ?? "pending"}</p>
-          <div className="decision-actions"><button type="button" className="small-button" onClick={() => void decideCoachMessage(item.id, "approved")}>Helpful</button><button type="button" className="small-button" onClick={() => void decideCoachMessage(item.id, "declined")}>Not for me</button></div>
-        </article>)}
-      </section>
-      <section className="panel section-gap account-danger">
-        <p className="eyebrow">ACCOUNT CONTROL</p><h2>Delete your account</h2>
-        <p className="muted">This permanently removes your account, daily logs, workouts, coach history and social records. This cannot be undone.</p>
-        <form onSubmit={deleteAccount}>
-          <label>Current password<input required type="password" value={deletePassword} onChange={event => setDeletePassword(event.target.value)} /></label>
-          <label>Type DELETE to confirm<input required value={deleteConfirmation} onChange={event => setDeleteConfirmation(event.target.value)} placeholder="DELETE" /></label>
-          <button className="danger-button" disabled={deleteConfirmation !== "DELETE" || !deletePassword}>Permanently delete account</button>
-        </form>
-      </section>
+
     </>}
 
     {/* Progress is a separate destination so the Home screen stays focused on the next useful action.
@@ -2270,6 +2241,45 @@ function signOut() {
           <p className="profile-dialog-bio">{viewedProfile.bio || "This member hasn't added a bio yet."}</p>
         </>}
         <p id="community-profile-privacy" className="profile-dialog-privacy">Only profile information allowed by this member's privacy settings is shown. Private workout notes and account details are not part of a community profile.</p>
+      </section>
+    </div>}
+    {/* Preferences and destructive account actions are available on demand, not mixed into the daily Home journey. */}
+    {showAccountSettings && <div className="account-settings-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) setShowAccountSettings(false); }}>
+      <section className="account-settings-dialog" role="dialog" aria-modal="true" aria-labelledby="account-settings-title">
+        <div className="account-settings-heading"><div><p className="eyebrow">YOUR ACCOUNT</p><h2 id="account-settings-title">Settings</h2></div><button type="button" className="small-button secondary" onClick={() => setShowAccountSettings(false)}>Close</button></div>
+      <section className="panel coach-panel">
+        <div><p className="eyebrow">COACH</p><h2>Review your recent activity.</h2><p className="muted">Get one practical suggestion based on the check-ins you've logged.</p></div>
+        <button onClick={askCoach}>Review my recent trends</button>
+        <form className="coach-preferences" onSubmit={saveCoachPreference}>
+          <p className="field-heading">Coaching style</p>
+          <select value={coachPreference.style} onChange={event => setCoachPreference(current => ({ ...current, style: event.target.value as CoachPreference["style"] }))}>
+            <option value="gentle">Gentle and encouraging</option><option value="direct">Clear and direct</option>
+          </select>
+          <p className="field-heading">Main focus</p>
+          <select value={coachPreference.focus} onChange={event => setCoachPreference(current => ({ ...current, focus: event.target.value as CoachPreference["focus"] }))}>
+            <option value="energy">Everyday energy</option><option value="consistency">Consistency</option><option value="recovery">Rest and recovery</option>
+          </select>
+          <label className="coach-ai-consent">
+            <input type="checkbox" checked={coachPreference.aiEnabled} onChange={event => setCoachPreference(current => ({ ...current, aiEnabled: event.target.checked }))} />
+            <span><strong>Use AI-generated coaching replies</strong><small>Optional and off by default. If enabled, your message and up to five recent completed workout summaries are sent to the configured AI provider to draft a reply. Your account identity, private notes and daily wellbeing logs are not sent. You can switch this off at any time.</small></span>
+          </label>
+          <button className="secondary-action">Save coach preferences</button>
+        </form>
+        {coachMessages.map(item => <article className="coach-message" key={item.id}>
+          <strong>{item.message}</strong><p className="muted">{item.explanation}</p>
+          <p className="decision-state">Decision: {item.decision ?? "pending"}</p>
+          <div className="decision-actions"><button type="button" className="small-button" onClick={() => void decideCoachMessage(item.id, "approved")}>Helpful</button><button type="button" className="small-button" onClick={() => void decideCoachMessage(item.id, "declined")}>Not for me</button></div>
+        </article>)}
+      </section>
+      <section className="panel section-gap account-danger">
+        <p className="eyebrow">ACCOUNT CONTROL</p><h2>Delete your account</h2>
+        <p className="muted">This permanently removes your account, daily logs, workouts, coach history and social records. This cannot be undone.</p>
+        <form onSubmit={deleteAccount}>
+          <label>Current password<input required type="password" value={deletePassword} onChange={event => setDeletePassword(event.target.value)} /></label>
+          <label>Type DELETE to confirm<input required value={deleteConfirmation} onChange={event => setDeleteConfirmation(event.target.value)} placeholder="DELETE" /></label>
+          <button className="danger-button" disabled={deleteConfirmation !== "DELETE" || !deletePassword}>Permanently delete account</button>
+        </form>
+      </section>
       </section>
     </div>}
     {notice && <p role="status" className="notice">{notice}</p>}

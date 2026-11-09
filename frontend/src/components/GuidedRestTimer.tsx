@@ -155,7 +155,7 @@ export default function GuidedRestTimer({ items, onSetComplete }: Props) {
             <button type="button" className="small-button active-stop" onClick={stop}>End session</button>
           </div>
           <div className="workout-progress-copy"><span>SESSION PROGRESS</span><strong>{performedSetCount} / {queue.length} sets</strong></div>
-          <div className="workout-progress-track" role="progressbar" aria-label="Workout progress" aria-valuemin={0} aria-valuemax={queue.length} aria-valuenow={completedCount}><span style={{ width: progress + "%" }} /></div>
+          <div className="workout-progress-track" role="progressbar" aria-label="Workout progress" aria-valuemin={0} aria-valuemax={queue.length} aria-valuenow={performedSetCount}><span style={{ width: progress + "%" }} /></div>
 
           {phase === "set" ? (
             <div className="active-set-stage">
@@ -169,7 +169,7 @@ export default function GuidedRestTimer({ items, onSetComplete }: Props) {
               <p className="active-coaching-line">Focus on controlled reps. Confirm the set when you finish.</p>
               <div className="active-primary-actions">
                 <button type="button" className="active-complete-button" onClick={completeCurrentSet}>Set complete — start rest <span>→</span></button>
-                <button type="button" className="small-button" onClick={advance}>Skip set</button>
+                <button type="button" className="small-button" onClick={() => advance()}>Skip set</button>
               </div>
             </div>
           ) : (

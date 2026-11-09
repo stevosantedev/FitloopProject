@@ -1127,7 +1127,7 @@ footer { border-color: #2b322b; }
 .community-page > .community-composer { order: 2; }
 .community-page > .content-grid { order: 3; }
 .community-page > .community-profile-form { order: 4; }
-.community-page > .panel:has(h2):not(:has(.feed-section-heading)) { order: 5; }
+.community-page > .community-blocked-panel { order: 5; }
 .community-page .feed-section-heading { align-items: center; }
 .community-page .feed-card {
   padding: 18px 0;

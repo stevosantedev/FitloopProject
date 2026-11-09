@@ -1403,3 +1403,111 @@ footer { border-color: #2b322b; }
   font-size: .55rem;
 }
 
+/* Community should read like an activity stream, not a stack of unrelated admin panels. */
+.community-page > .community-composer,
+.community-page > .activity-inbox,
+.community-page > .content-grid > section {
+  border-radius: 10px;
+  box-shadow: none;
+}
+.community-page > .community-composer {
+  gap: 12px;
+  padding: 18px;
+  border-color: #35463a;
+  background: #111a14;
+}
+.community-composer .eyebrow { margin-bottom: 2px; }
+.community-composer textarea {
+  min-height: 88px;
+  padding: 13px 14px;
+  border-radius: 8px;
+  background: #0d1510;
+  line-height: 1.5;
+}
+.community-composer .composer-footer {
+  align-items: center;
+  padding-top: 2px;
+}
+.community-page .activity-inbox {
+  padding-top: 16px;
+  padding-bottom: 16px;
+}
+.community-page .activity-notification-list li {
+  padding: 13px 0;
+}
+.community-page .reaction-row {
+  gap: 7px;
+}
+.community-page .reaction-button {
+  min-height: 38px;
+  padding: 7px 11px;
+  border-radius: 7px;
+  background: transparent;
+  box-shadow: none;
+}
+.community-page .reaction-button.is-selected {
+  border-color: var(--fitloop-accent);
+  background: #1b2b20;
+  color: #d8f3bb;
+}
+.community-page .community-post-text {
+  max-width: 72ch;
+  font-size: .96rem;
+  line-height: 1.7;
+}
+.community-page .feed-comments {
+  border-color: #29382e;
+}
+@media (max-width: 600px) {
+  .community-page > .community-composer { padding: 14px; }
+  .community-page .reaction-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .community-page .reaction-button { padding-inline: 5px; font-size: .76rem; }
+}
+
+/* Coach is a working conversation: keep the response and next action ahead of settings. */
+.coach-panel {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 16px 24px;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: none;
+}
+.coach-panel > div:first-child { max-width: 58ch; }
+.coach-panel > button {
+  grid-column: 2;
+  grid-row: 1;
+  min-height: 42px;
+  padding-inline: 16px;
+}
+.coach-message {
+  padding: 16px 0 4px;
+  border-top-color: #2b3a30;
+}
+.coach-message > strong {
+  display: block;
+  max-width: 68ch;
+  color: #e5eee6;
+  font-size: .98rem;
+  line-height: 1.5;
+}
+.coach-message > .muted {
+  max-width: 72ch;
+  line-height: 1.65;
+}
+.coach-preferences {
+  padding-top: 16px;
+  border-top: 1px solid #2b3a30;
+}
+.coach-ai-consent {
+  align-items: start;
+  padding: 12px;
+  border: 1px solid #334238;
+  border-radius: 8px;
+  background: #111a14;
+}
+@media (max-width: 700px) {
+  .coach-panel { padding: 15px; }
+  .coach-panel > button { grid-column: 1; grid-row: auto; justify-self: start; }
+}
+

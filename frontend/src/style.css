@@ -2510,3 +2510,10 @@ input::placeholder, textarea::placeholder { color: #777f84; }
   padding: 0 6px; border-radius: 999px; background: var(--fitloop-accent); color: #17110e;
   font-size: .68rem; font-weight: 800; font-variant-numeric: tabular-nums;
 }
+
+.ping-thread-actions { display: flex; flex-wrap: wrap; gap: 7px; }
+.ping-thread-actions button { min-height: 36px; padding: 0 11px; font-size: .72rem; }
+@media (max-width: 420px) {
+  .pings-thread .section-heading-row { align-items: flex-start; }
+  .ping-thread-actions { justify-content: flex-end; }
+}

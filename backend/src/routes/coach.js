@@ -6,9 +6,10 @@ import rateLimit from "express-rate-limit";
 import { z } from "zod";
 import { prisma } from "../prisma.js";
 import { config } from "../config.js";
+import { PrismaRateLimitStore } from "../utils/prismaRateLimitStore.js";
 
 // Dependencies are injectable so route tests can verify ownership and persistence without live services.
-export function createCoachRouter(prismaClient = prisma, fetchImpl = fetch) {
+export function createCoachRouter(prismaClient = prisma, fetchImpl = fetch, rateLimitStore = new PrismaRateLimitStore(prismaClient)) {
 const router = Router();
 
 // Validate preferences at the API boundary. AI consent must arrive as an explicit boolean.
@@ -31,6 +32,7 @@ const coachMessageLimiter = rateLimit({
   limit: 30,
   standardHeaders: true,
   legacyHeaders: false,
+  store: rateLimitStore,
   keyGenerator: (req) => req.userId,
   handler: (_req, res) => res.status(429).json({
     error: "You've reached the hourly Coach message limit. Try again later."

@@ -40,6 +40,8 @@ model User {
   reportsFiled    ContentReport[] @relation("ReportAuthor")
   reportsReceived ContentReport[] @relation("ReportedUser")
   moderationReviews ContentReport[] @relation("ReportReviewer")
+  notificationsReceived ActivityNotification[] @relation("NotificationRecipient")
+  notificationsSent ActivityNotification[] @relation("NotificationActor")
 }
 
 // One row per user per calendar day keeps daily check-ins easy to query and update.
@@ -273,7 +275,27 @@ model FeedPost {
   reactions Reaction[]
   comments  FeedComment[]
   reports   ContentReport[]
+  notifications ActivityNotification[]
   @@index([userId, createdAt])
+}
+
+
+// Private activity inbox entries are scoped to one recipient and survive only while
+// their referenced actor/post remains available under the deletion rules below.
+model ActivityNotification {
+  id          String   @id @default(cuid())
+  recipientId String
+  actorId     String?
+  postId      String?
+  type        String
+  createdAt   DateTime @default(now())
+  readAt      DateTime?
+  recipient   User     @relation("NotificationRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  actor       User?    @relation("NotificationActor", fields: [actorId], references: [id], onDelete: SetNull)
+  post        FeedPost? @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([recipientId, readAt, createdAt])
+  @@index([postId])
 }
 
 // A single directional request avoids storing duplicate friendship state.

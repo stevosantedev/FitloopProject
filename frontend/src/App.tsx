@@ -1982,7 +1982,7 @@ function signOut() {
     {/* The conversation is the first Coach task. Progression and programme tools
         remain available below it, where they do not interrupt the chat flow. */}
     {activeTab === "coach" && <section className="page-section coach-page">
-      <div className="welcome compact"><p className="eyebrow">COACH</p><h1>Ask about your training.</h1><p className="muted">Get help with logged sessions, exercise technique or your next routine.</p></div>
+      <div className="welcome compact"><p className="eyebrow">YOUR PLAN</p><h1>Build your week.</h1><p className="muted">Shape a realistic training week, review your progress and ask the Coach when you need guidance.</p></div>
       <div className="coach-chat-layout">
         <aside className="panel coach-conversation-list">
           <div className="section-heading-row"><h2>Conversations</h2><button type="button" className="small-button" onClick={() => void createCoachConversation()}>New chat +</button></div>

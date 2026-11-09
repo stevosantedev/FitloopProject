@@ -531,12 +531,26 @@ router.post("/pings/requests", pingRequestLimiter, async (req, res, next) => {
     const input = pingRequestInput.parse(req.body);
     const recipient = await prismaClient.user.findUnique({
       where: { username: input.username.toLowerCase() },
-      select: { id: true, username: true, displayName: true }
+      select: { id: true, username: true, displayName: true, privateAccount: true }
     });
     // Use one generic response for unknown, self and blocked targets to avoid account discovery.
     if (!recipient || recipient.id === req.userId) return res.status(404).json({ error: "This member is unavailable for a message request." });
     const blocked = await blockedIds(req.userId);
     if (blocked.includes(recipient.id)) return res.status(404).json({ error: "This member is unavailable for a message request." });
+    // A private account can receive a request only from an existing accepted friend.
+    if (recipient.privateAccount) {
+      const friendship = await prismaClient.friendConnection.findFirst({
+        where: {
+          status: "accepted",
+          OR: [
+            { requesterId: req.userId, addresseeId: recipient.id },
+            { requesterId: recipient.id, addresseeId: req.userId }
+          ]
+        },
+        select: { id: true }
+      });
+      if (!friendship) return res.status(404).json({ error: "This member is unavailable for a message request." });
+    }
 
     const [userAId, userBId] = [req.userId, recipient.id].sort();
     const existing = await prismaClient.directConversation.findUnique({

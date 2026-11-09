@@ -558,6 +558,52 @@ router.delete("/posts/:id", async (req, res, next) => {
   }
 });
 
+// A member's profile history is separate from the friends feed, so older posts are not hidden by feed pagination.
+router.get("/profile/me/posts", async (req, res, next) => {
+  try {
+    // The owner comes only from authenticated middleware; clients cannot request another account's history.
+    const input = z.object({
+      cursor: z.string().min(1).max(64).optional(),
+      limit: z.coerce.number().int().min(1).max(50).default(20)
+    }).strict().parse(req.query);
+    const rows = await prismaClient.feedPost.findMany({
+      where: { userId: req.userId },
+      include: {
+        user: { select: { id: true, username: true, displayName: true } },
+        session: { select: {
+          id: true,
+          startedAt: true,
+          routine: { select: { name: true } },
+          sets: {
+            select: {
+              id: true,
+              reps: true,
+              weightKg: true,
+              completed: true,
+              exercise: { select: { id: true, name: true } }
+            }
+          }
+        } },
+        reactions: { select: { value: true, userId: true } },
+        comments: {
+          include: { user: { select: { id: true, username: true } } },
+          orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+          take: 20
+        },
+        _count: { select: { comments: true } }
+      },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      ...(input.cursor ? { cursor: { id: input.cursor }, skip: 1 } : {}),
+      take: input.limit + 1
+    });
+    const hasMore = rows.length > input.limit;
+    const posts = hasMore ? rows.slice(0, input.limit) : rows;
+    return res.json({ posts, hasMore, nextCursor: hasMore ? posts[posts.length - 1].id : null });
+  } catch (error) {
+    return next(error);
+  }
+});
+
 // Build the visible friend set first, then fetch only posts allowed by friendship and block relationships.
 router.get("/feed", async (req, res, next) => {
   try {

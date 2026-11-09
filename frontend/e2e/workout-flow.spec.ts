@@ -1871,3 +1871,45 @@ test("Community navigation shows unread activity on desktop and mobile", async (
   await expect(page.locator(".mobile-nav").getByRole("button", { name: "Community", exact: true })).toBeVisible();
 });
 
+
+
+// Capture the four main destinations at desktop and phone widths so design changes can be reviewed
+// against the real React interface instead of relying on descriptions or a separate mock-up.
+test("captures current FitLoop screens for visual review", async ({ page }, testInfo) => {
+  await mockApplicationApi(page);
+  await page.goto("/");
+  await page.getByLabel("Email").fill("tester@example.com");
+  await page.getByLabel("Password").fill("test-password");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await expect(page.getByRole("heading", { name: "Your week" })).toBeVisible();
+
+  const desktopNavigation = page.locator(".sidebar-nav");
+  const desktopScreens = [
+    { name: "overview", ready: page.getByRole("heading", { name: "Your week" }) },
+    { name: "workouts", button: "Workouts", ready: page.getByRole("heading", { name: "Build a workout" }) },
+    { name: "community", button: "Community", ready: page.getByRole("heading", { name: "Activity", exact: true }) },
+    { name: "coach", button: "Coach", ready: page.locator(".coach-chat-panel") }
+  ];
+
+  for (const screen of desktopScreens) {
+    if (screen.button) await desktopNavigation.getByRole("button", { name: screen.button }).click();
+    await expect(screen.ready).toBeVisible();
+    await page.screenshot({ path: testInfo.outputPath(screen.name + "-desktop.png"), fullPage: true });
+  }
+
+  // Repeat the same destinations at a common phone size to review the bottom navigation and content flow.
+  await page.setViewportSize({ width: 390, height: 844 });
+  const mobileNavigation = page.locator(".mobile-nav");
+  const mobileScreens = [
+    { name: "overview", button: "Home", ready: page.getByRole("heading", { name: "Your week" }) },
+    { name: "workouts", button: "Workouts", ready: page.getByRole("heading", { name: "Build a workout" }) },
+    { name: "community", button: "Community", ready: page.getByRole("heading", { name: "Activity", exact: true }) },
+    { name: "coach", button: "Coach", ready: page.locator(".coach-chat-panel") }
+  ];
+
+  for (const screen of mobileScreens) {
+    await mobileNavigation.getByRole("button", { name: screen.button }).click();
+    await expect(screen.ready).toBeVisible();
+    await page.screenshot({ path: testInfo.outputPath(screen.name + "-mobile.png"), fullPage: true });
+  }
+});

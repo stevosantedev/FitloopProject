@@ -2054,12 +2054,7 @@ function signOut() {
     {activeTab === "community" && <section className="page-section community-page" data-social-view={socialView}>
       {communityLoading && <p className="load-state" role="status">Loading your community…</p>}
       {communityError && <div className="load-error" role="alert"><span>{communityError}</span><button type="button" className="secondary" onClick={() => void loadCommunity()}>Try again</button></div>}
-      <nav className="social-subnav" aria-label="Social sections">
-        <button type="button" aria-current={socialView === "feed" ? "page" : undefined} className={socialView === "feed" ? "active" : ""} onClick={() => setSocialView("feed")}>Feed</button>
-        <button type="button" aria-current={socialView === "explore" ? "page" : undefined} className={socialView === "explore" ? "active" : ""} onClick={() => setSocialView("explore")}>Explore</button>
-        <button type="button" aria-current={socialView === "pings" ? "page" : undefined} className={socialView === "pings" ? "active" : ""} onClick={() => setSocialView("pings")}>Pings</button>
-        <button type="button" aria-current={socialView === "profile" ? "page" : undefined} className={socialView === "profile" ? "active" : ""} onClick={() => setSocialView("profile")}>Profile</button>
-      </nav>
+
       <div className="welcome compact"><p className="eyebrow">{socialView === "feed" ? "YOUR CIRCLE" : socialView === "explore" ? "DISCOVER" : socialView === "pings" ? "MESSAGES" : "YOUR SPACE"}</p><h1>{socialView === "feed" ? "Your feed." : socialView === "explore" ? "Find your people." : socialView === "pings" ? "Pings." : user?.displayName || user?.username || "Your profile"}</h1><p className="muted">{socialView === "feed" ? "Training updates from people you've connected with." : socialView === "explore" ? "Find people to connect with. Public post and video discovery is a later feature." : socialView === "pings" ? "Private messaging is not available yet. Your conversations will live here when secure messaging is ready." : "Your training identity and the workouts you've chosen to share."}</p></div>
       {socialView === "profile" && <section className="profile-home">
         <div className="profile-hero panel">

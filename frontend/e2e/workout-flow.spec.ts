@@ -1733,6 +1733,30 @@ test("overview quick actions open the workout builder and Coach", async ({ page 
 
 
 // Screen ordering keeps the main task visible before secondary account and planning controls.
+// Progress owns the weekly totals and daily pattern charts so Home can stay focused on today's next action.
+test("Progress is a separate destination with compact weekly metrics", async ({ page }) => {
+  await mockApplicationApi(page);
+  await page.goto("/");
+  await page.getByLabel("Email").fill("tester@example.com");
+  await page.getByLabel("Password").fill("test-password");
+  await page.getByRole("button", { name: "Sign in" }).click();
+
+  await expect(page.locator(".sidebar-nav button")).toHaveCount(5);
+  await page.locator(".sidebar-nav").getByRole("button", { name: "Progress" }).click();
+  await expect(page.locator(".sidebar-nav button[aria-current=page]")).toHaveText("Progress");
+  await expect(page.getByRole("heading", { name: "Progress", exact: true })).toBeVisible();
+  await expect(page.getByText("Workouts this week")).toBeVisible();
+  await expect(page.getByText("Sleep, steps, mood and focus")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Your week" })).toHaveCount(0);
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.locator(".mobile-nav button")).toHaveCount(5);
+  await expect(page.locator(".mobile-nav")).toHaveCSS("position", "fixed");
+  await page.locator(".mobile-nav").getByRole("button", { name: "Progress" }).click();
+  await expect(page.locator(".mobile-nav button[aria-current=page]")).toHaveText("Progress");
+  await expect(page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).resolves.toBe(true);
+});
+
 test("Community opens on activity and Coach opens on the conversation", async ({ page }) => {
   await mockApplicationApi(page);
   await page.goto("/");

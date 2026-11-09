@@ -1308,7 +1308,7 @@ test("POST pings messages stores the authenticated sender and updates last activ
       body: JSON.stringify({ message: "  Thanks for reaching out.  " })
     });
     assert.equal(response.status, 201);
-    assert.deepEqual(await response.json(), { message });
+    assert.deepEqual(await response.json(), JSON.parse(JSON.stringify({ message })));
   });
   assert.deepEqual(createArgs.data, { conversationId: "conversation-a", senderId: "user-a", body: "Thanks for reaching out." });
   assert.deepEqual(updateArgs, { where: { id: "conversation-a" }, data: { lastMessageAt: createdAt } });

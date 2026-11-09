@@ -217,6 +217,8 @@ async function mockApplicationApi(page: Page, onSessionSave?: (body: any) => voi
     } else if (url.pathname === "/api/social/posts/post-text-1" && method === "DELETE") {
       socialPosts.splice(0, socialPosts.length);
       body = { deleted: true };
+    } else if (url.pathname === "/api/social/profile/me/posts") {
+      body = { posts: socialPosts.filter(post => post.user.id === "user-1"), hasMore: false, nextCursor: null };
     } else if (url.pathname === "/api/social/feed") {
       body = { posts: socialPosts };
     }

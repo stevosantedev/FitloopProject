@@ -203,9 +203,10 @@ async function mockApplicationApi(page: Page, onSessionSave?: (body: any) => voi
 }
 
 async function clickWorkoutsNavigation(page: Page) {
-  // Both responsive navigation variants remain in the document; choose the one currently displayed.
-  const desktopNavigation = page.locator(".sidebar-nav");
-  const navigation = await desktopNavigation.isVisible() ? desktopNavigation : page.locator(".mobile-nav");
+  // Wait for authentication to finish rendering the app before choosing a responsive navigation variant.
+  await expect(page.locator(".app-shell")).toBeVisible();
+  const isMobileLayout = (page.viewportSize()?.width ?? 1280) <= 820;
+  const navigation = page.locator(isMobileLayout ? ".mobile-nav" : ".sidebar-nav");
   const workoutsButton = navigation.getByRole("button", { name: "Workouts" });
   await expect(workoutsButton).toBeVisible();
   await workoutsButton.click();

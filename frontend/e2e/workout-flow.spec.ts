@@ -2130,6 +2130,7 @@ test("the member profile shows the signed-in user's own shared workout posts", a
 
 // Keep the shared visual tokens from drifting back into the older green dashboard palette.
 test("the signed-in app uses the charcoal and orange visual system", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
   await mockApplicationApi(page);
   await page.goto("/");
   await page.getByLabel("Email").fill("tester@example.com");

@@ -198,7 +198,7 @@ async function mockApplicationApi(page: Page, onSessionSave?: (body: any) => voi
       const readAt = new Date().toISOString();
       activityNotifications.forEach(item => { item.readAt = item.readAt ?? readAt; });
       body = { updated: unread.length };
-    } else if (/^\\/api\\/social\\/notifications\\/[^/]+\\/read$/.test(url.pathname) && method === "PATCH") {
+    } else if (url.pathname.startsWith("/api/social/notifications/") && url.pathname.endsWith("/read") && method === "PATCH") {
       const id = url.pathname.split("/")[4];
       const target = activityNotifications.find(item => item.id === id);
       if (target) target.readAt = target.readAt ?? new Date().toISOString();

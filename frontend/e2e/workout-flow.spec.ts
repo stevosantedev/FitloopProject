@@ -202,13 +202,21 @@ async function mockApplicationApi(page: Page, onSessionSave?: (body: any) => voi
   return socialPosts;
 }
 
+async function clickWorkoutsNavigation(page: Page) {
+  // Both responsive navigation variants remain in the document; choose the one currently displayed.
+  const desktopNavigation = page.locator(".sidebar-nav");
+  const navigation = await desktopNavigation.isVisible() ? desktopNavigation : page.locator(".mobile-nav");
+  const workoutsButton = navigation.getByRole("button", { name: "Workouts" });
+  await expect(workoutsButton).toBeVisible();
+  await workoutsButton.click();
+}
+
 async function signInAndOpenWorkouts(page: Page) {
   await page.goto("/");
   await page.getByLabel("Email").fill("tester@example.com");
   await page.getByLabel("Password").fill("test-password");
   await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page.getByRole("button", { name: "Workouts" })).toBeVisible();
-  await page.getByRole("button", { name: "Workouts" }).click();
+  await clickWorkoutsNavigation(page);
   await expect(page.getByRole("heading", { name: "Build a workout" })).toBeVisible();
   await expect(page.getByText("Goblet squat", { exact: true }).first()).toBeVisible();
   await page.locator(".exercise-choice").filter({ hasText: "Goblet squat" }).locator("input").check();
@@ -344,7 +352,7 @@ test("the app uses persistent navigation on desktop and a bottom tab bar on mobi
 
   await expect(page.locator(".app-sidebar")).toBeVisible();
   await expect(page.locator(".sidebar-nav button[aria-current=page]")).toHaveText("Overview");
-  await page.getByRole("button", { name: "Workouts" }).click();
+  await page.locator(".sidebar-nav").getByRole("button", { name: "Workouts" }).click();
   await expect(page.locator(".sidebar-nav button[aria-current=page]")).toHaveText("Workouts");
   await expect(page.getByRole("heading", { name: "Build a workout" })).toBeVisible();
 
@@ -891,7 +899,7 @@ test("workout loading state is announced before the exercise library arrives", a
   await page.getByLabel("Email").fill("tester@example.com");
   await page.getByLabel("Password").fill("test-password");
   await page.getByRole("button", { name: "Sign in" }).click();
-  await page.getByRole("button", { name: "Workouts" }).click();
+  await page.locator(".sidebar-nav").getByRole("button", { name: "Workouts" }).click();
   await expect(page.getByRole("status").filter({ hasText: "Loading your training data" })).toBeVisible();
   await expect(page.getByText("Goblet squat", { exact: true }).first()).toBeVisible();
   await expect(page.getByRole("status").filter({ hasText: "Loading your training data" })).toHaveCount(0);
@@ -913,7 +921,7 @@ test("a failed exercise-library request shows an explicit retry instead of an em
   await page.getByLabel("Email").fill("tester@example.com");
   await page.getByLabel("Password").fill("test-password");
   await page.getByRole("button", { name: "Sign in" }).click();
-  await page.getByRole("button", { name: "Workouts" }).click();
+  await page.locator(".sidebar-nav").getByRole("button", { name: "Workouts" }).click();
 
   await expect(page.getByRole("alert").filter({ hasText: "Exercise service temporarily unavailable." })).toBeVisible();
   await expect(page.getByRole("button", { name: "Try again" })).toBeVisible();
@@ -931,7 +939,7 @@ test("dedicated coach workspace creates a conversation and displays a guided rep
   await page.getByLabel("Password").fill("test-password");
   await page.getByRole("button", { name: "Sign in" }).click();
   await page.locator(".sidebar-nav").getByRole("button", { name: "Coach" }).click();
-  await expect(page.getByRole("heading", { name: "Meet your coach." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Ask about your training." })).toBeVisible();
   await page.getByLabel("Message your coach").fill("Can you help me review my progress?");
   await page.getByRole("button", { name: "Send message" }).click();
   await expect(page.locator(".coach-chat-bubble.user")).toContainText("Can you help me review my progress?");
@@ -1461,7 +1469,7 @@ test("Coach builds a weekly programme, saves it only after review and starts a s
   await page.getByLabel("Password").fill("test-password");
   await page.getByRole("button", { name: "Sign in" }).click();
   await page.locator(".sidebar-nav").getByRole("button", { name: "Coach" }).click();
-  await expect(page.getByRole("heading", { name: "Meet your coach." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Ask about your training." })).toBeVisible();
   const generate = page.getByRole("button", { name: "Generate weekly programme" });
   await expect(generate).toBeEnabled();
   await page.getByLabel("Days available each week").selectOption("2");

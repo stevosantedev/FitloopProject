@@ -29,10 +29,11 @@ export default function GuidedRestTimer({ items, onSetComplete }: Props) {
   const [paused, setPaused] = useState(false);
   const [phase, setPhase] = useState<"idle" | "set" | "rest" | "complete">("idle");
   const [message, setMessage] = useState("");
+  // Track performed sets separately from the queue position: skipping a set must not count as training completed.
+  const [performedSetCount, setPerformedSetCount] = useState(0);
   const current = index === null ? null : queue[index];
   const pendingCount = items.filter(item => !item.completed).length;
-  const completedCount = index === null ? (phase === "complete" ? queue.length : 0) : index + (phase === "rest" ? 1 : 0);
-  const progress = queue.length ? Math.min(100, (completedCount / queue.length) * 100) : 0;
+  const progress = queue.length ? Math.min(100, (performedSetCount / queue.length) * 100) : 0;
   const next = index === null ? null : queue[index + 1];
 
   // Each timeout represents one second. Cleanup prevents an old countdown
@@ -51,7 +52,9 @@ export default function GuidedRestTimer({ items, onSetComplete }: Props) {
         setIndex(null);
         setRemaining(null);
         setPhase("complete");
-        setMessage("All guided sets are complete.");
+        setMessage(performedSetCount === queue.length
+          ? "All guided sets are complete."
+          : `Guided session finished. ${performedSetCount} of ${queue.length} sets completed.`);
         return;
       }
       setIndex(nextIndex);
@@ -59,7 +62,7 @@ export default function GuidedRestTimer({ items, onSetComplete }: Props) {
       setPhase("set");
     }, 1000);
     return () => window.clearTimeout(timeout);
-  }, [phase, remaining, paused, index, queue]);
+  }, [phase, remaining, paused, index, queue, performedSetCount]);
 
   // Start from the sets still marked incomplete; already-finished work should not be repeated.
   function start() {
@@ -69,6 +72,7 @@ export default function GuidedRestTimer({ items, onSetComplete }: Props) {
       return;
     }
     setQueue(sequence);
+    setPerformedSetCount(0);
     setIndex(0);
     setRemaining(null);
     setPaused(false);
@@ -79,6 +83,7 @@ export default function GuidedRestTimer({ items, onSetComplete }: Props) {
   // Reset every timer field together so a later start cannot inherit stale pause or countdown state.
   function stop() {
     setQueue([]);
+    setPerformedSetCount(0);
     setIndex(null);
     setRemaining(null);
     setPaused(false);
@@ -93,7 +98,9 @@ export default function GuidedRestTimer({ items, onSetComplete }: Props) {
       setIndex(null);
       setRemaining(null);
       setPhase("complete");
-      setMessage("All guided sets are complete.");
+      setMessage(performedSetCount === queue.length
+        ? "All guided sets are complete."
+        : `Guided session finished. ${performedSetCount} of ${queue.length} sets completed.`);
       return;
     }
     setIndex(nextIndex);
@@ -105,6 +112,8 @@ export default function GuidedRestTimer({ items, onSetComplete }: Props) {
   function completeCurrentSet() {
     if (!current) return;
     onSetComplete(current.exerciseId, current.setId);
+    // Count only confirmed work; skipped sets advance the queue but stay incomplete in the saved workout.
+    setPerformedSetCount(value => value + 1);
     // A zero-rest set advances directly; otherwise the configured rest belongs to the set just completed.
     if (current.restSeconds > 0) {
       setRemaining(current.restSeconds);
@@ -143,7 +152,7 @@ export default function GuidedRestTimer({ items, onSetComplete }: Props) {
             <div><span className="guided-kicker">FITLOOP SESSION</span><strong>Workout in progress</strong></div>
             <button type="button" className="small-button active-stop" onClick={stop}>End session</button>
           </div>
-          <div className="workout-progress-copy"><span>SESSION PROGRESS</span><strong>{completedCount} / {queue.length} sets</strong></div>
+          <div className="workout-progress-copy"><span>SESSION PROGRESS</span><strong>{performedSetCount} / {queue.length} sets</strong></div>
           <div className="workout-progress-track" role="progressbar" aria-label="Workout progress" aria-valuemin={0} aria-valuemax={queue.length} aria-valuenow={completedCount}><span style={{ width: progress + "%" }} /></div>
 
           {phase === "set" ? (
@@ -188,7 +197,7 @@ export default function GuidedRestTimer({ items, onSetComplete }: Props) {
           <span className="guided-kicker">SESSION FINISHED</span>
           <h3>Strong work.</h3>
           <p>{message || "All guided sets are complete."}</p>
-          <strong>{queue.length} sets completed in guided mode</strong>
+          <strong>{performedSetCount} of {queue.length} sets completed in guided mode</strong>
           <button type="button" className="secondary-action" onClick={stop}>Back to workout summary</button>
         </div>
       )}

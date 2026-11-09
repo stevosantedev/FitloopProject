@@ -126,7 +126,7 @@ The current friends-only feed, workout posts, reactions and comments provide a s
 
 ## Shared product foundations
 
-- **Navigation and app feel:** coach and community become first-class app destinations, with consistent mobile navigation and desktop workspace patterns.
+- **Navigation and app feel:** Home, Workouts, Progress, Community and Coach share one five-destination navigation model across mobile and desktop. Secondary Training tools remain reachable through compact in-page shortcuts.
 - **Design system:** shared typography, spacing, cards, avatars, media treatment, loading skeletons, toasts and accessible interaction states.
 - **Visual direction (active):** move away from generic dashboard styling towards a distinctive training-first interface. Use restrained graphite surfaces, a high-contrast lime action colour, tighter information hierarchy, flatter surfaces, deliberate whitespace and consistent line icons. Replace broad motivational filler with labels that describe the actual task or data on screen. Desktop keeps a persistent workspace rail; mobile keeps thumb-reachable bottom navigation and safe-area spacing. Keep active workout mode focused and distraction-light.
 - **Interaction principles:** make activity history and training trends easy to scan; keep workout logging quick; make gym-floor controls low-friction and use sensible prefilled values. These are product principles, not templates to reproduce.
@@ -176,10 +176,12 @@ A slice is complete only when its user journey works end-to-end; API ownership a
 
 ## Phone-first screen redesign
 
-The responsive PWA is being redesigned around phone use. The bottom tab bar and safe-area support are in place, and the desktop workspace header is hidden on narrow screens. The captured first-pass screens still show long, web-like content flows, so the visual redesign remains open.
+The responsive PWA is being redesigned around phone use. Five matching destinations, bottom navigation, safe-area support, the Home week strip and Training shortcuts are in place. The captured first-pass screens still show long, web-like content flows, so the visual redesign remains open.
 
 - [x] Add real Playwright captures for the four primary destinations at desktop and phone sizes.
 - [x] Make the mobile tab bar fixed and reserve space for device safe areas.
+- [x] Keep the five main destinations consistent across desktop and phone navigation.
+- [x] Add a data-backed weekly activity strip to Home and shortcut navigation within Training.
 - [ ] Rework Overview around recent training and a compact daily check-in, with account administration moved out of the main journey.
 - [ ] Rework Workouts around quick session start and gym-floor set logging. Keep exercise discovery, routine editing, muscle map and history accessible without forcing every tool into one long page.
 - [ ] Rework Community so the friends feed and post composer lead, while profile and relationship controls sit in secondary areas.

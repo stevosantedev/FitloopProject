@@ -176,6 +176,8 @@ export default function App() {
   const [myProfilePostsHasMore, setMyProfilePostsHasMore] = useState(false);
   const [myProfilePostsLoading, setMyProfilePostsLoading] = useState(false);
   const [myProfilePostsError, setMyProfilePostsError] = useState("");
+  // Ignore profile-history responses that finish after a tab change or account sign-out.
+  const myProfilePostsRequestIdRef = useRef(0);
   // Keep the in-app inbox separate from feed posts so read state can update without refreshing activity cards.
   const [activityNotifications, setActivityNotifications] = useState<ActivityNotification[]>([]);
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
@@ -483,20 +485,25 @@ async function loadProgressionSuggestions() {
   // Load only this account's shared posts. The API derives the owner from the signed-in token.
   // Profile history has its own cursor because the friends feed can contain only a recent page.
   async function loadMyProfilePosts(cursor?: string) {
+    const requestId = ++myProfilePostsRequestIdRef.current;
     setMyProfilePostsLoading(true);
     setMyProfilePostsError("");
     try {
       const query = new URLSearchParams({ limit: "20", ...(cursor ? { cursor } : {}) });
       const data = await request("/api/social/profile/me/posts?" + query.toString());
+
+      // A response from an earlier account or a previous page request must not replace current profile data.
+      if (requestId !== myProfilePostsRequestIdRef.current) return;
       setMyProfilePosts(current => cursor
         ? [...current, ...data.posts.filter((post: FeedPost) => !current.some(existing => existing.id === post.id))]
         : data.posts);
       setMyProfilePostsCursor(data.nextCursor ?? null);
       setMyProfilePostsHasMore(Boolean(data.hasMore));
     } catch (error) {
+      if (requestId !== myProfilePostsRequestIdRef.current) return;
       setMyProfilePostsError(error instanceof Error ? error.message : "Could not load your shared posts.");
     } finally {
-      setMyProfilePostsLoading(false);
+      if (requestId === myProfilePostsRequestIdRef.current) setMyProfilePostsLoading(false);
     }
   }
 
@@ -1338,6 +1345,7 @@ function signOut() {
     setMyProfilePosts([]);
     setMyProfilePostsCursor(null);
     setMyProfilePostsHasMore(false);
+    myProfilePostsRequestIdRef.current += 1;
     setMyProfilePostsError("");
     setActivityNotifications([]);
     setUnreadNotificationCount(0);

@@ -131,7 +131,7 @@ A feature is not complete merely because its screen renders. Check that:
 
 FitLoop is designed as a phone app that also works in a desktop browser. Treat the phone layout as the primary experience when changing navigation or screen composition.
 
-- Keep the four main destinations reachable through a fixed, safe-area-aware bottom tab bar on phones.
+- Keep the Social and You workspaces reachable through a persistent top switch. Their context-sensitive bottom tabs expose Feed, Explore, Pings and Profile in Social, and Home, Workout, Stats, Plan and Library in You.
 - Give the first screen of each destination a clear primary task. Avoid leading with settings, long explanations or secondary management forms.
 - Keep workout controls usable with one hand and prevent the keyboard, tab bar or device safe areas from covering important actions.
 - Use full-width mobile sections where they improve reading and interaction. Avoid shrinking desktop columns into narrow cards.

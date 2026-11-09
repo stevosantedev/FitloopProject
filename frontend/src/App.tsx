@@ -348,6 +348,7 @@ async function request(path: string, options: RequestInit = {}) {
       setPingMessages([...data.messages].reverse());
       if (conversation.status === "accepted") {
         await request("/api/social/pings/conversations/" + encodeURIComponent(conversation.id) + "/read", { method: "PATCH" });
+        setPingConversations(current => current.map(item => item.id === conversation.id ? { ...item, unreadCount: 0 } : item));
       }
     } catch (error) {
       setPingMessagesError(error instanceof Error ? error.message : "This conversation could not be opened.");
@@ -2347,6 +2348,7 @@ function signOut() {
                 return <button type="button" className={"ping-conversation-row" + (selectedPingConversationId === item.id ? " is-selected" : "")} key={item.id} aria-pressed={selectedPingConversationId === item.id} onClick={() => void openPingConversation(item)}>
                   <span className="ping-avatar">{(other?.displayName || other?.username || "?").slice(0, 1).toUpperCase()}</span>
                   <span className="ping-conversation-copy"><strong>{other?.displayName || "@" + other?.username}</strong><small>{preview?.body || "Open conversation"}</small></span>
+                  {(item.unreadCount ?? 0) > 0 && <span className="ping-unread-count" aria-label={item.unreadCount + " unread messages"}>{item.unreadCount}</span>}
                   <time dateTime={item.lastMessageAt}>{new Date(item.lastMessageAt).toLocaleDateString()}</time>
                 </button>;
               })}

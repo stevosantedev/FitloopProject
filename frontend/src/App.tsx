@@ -1334,6 +1334,11 @@ function signOut() {
     setSessions([]);
     setConnections([]);
     setPosts([]);
+    // A different account must never inherit the previous member's private profile history.
+    setMyProfilePosts([]);
+    setMyProfilePostsCursor(null);
+    setMyProfilePostsHasMore(false);
+    setMyProfilePostsError("");
     setActivityNotifications([]);
     setUnreadNotificationCount(0);
     setActivityNotificationCursor(null);

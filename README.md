@@ -23,7 +23,7 @@ The muscle map is a training reference, not a clinical anatomy diagram. Set-volu
 ### Daily check-ins and overview
 
 - Daily records for sleep, steps, mood and focused work or study time.
-- A weekly overview of workouts, completed sets and check-ins.
+- A weekly overview of workouts, completed sets and check-ins, with a seven-day strip that marks only activity the user has logged.
 - Seven-day check-in history and simple charts for the recorded measures.
 - Loading, empty, error and retry states for the main data views.
 
@@ -53,7 +53,8 @@ The rule-guided service is the default. An optional hosted generative reply path
 ### App shell and offline use
 
 - Installable Progressive Web App (PWA) with a web app manifest and standalone display mode.
-- Desktop workspace navigation and a mobile bottom tab bar.
+- Five matching destinations across desktop and mobile: Home, Workouts, Progress, Community and Coach.
+- A compact weekly activity strip on Home and in-page shortcuts for the main Training tasks.
 - Safe-area support, visible keyboard focus and reduced-motion handling.
 - A service worker that caches the application shell and static assets. API requests and cross-origin traffic are excluded.
 - An account-scoped IndexedDB queue for completed workouts recorded offline.

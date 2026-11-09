@@ -516,7 +516,7 @@ test("reports can be filed only against a visible post and store no reporter-sup
     assert.equal((await response.json()).report.status, "open");
   });
   assert.deepEqual(create.data, {
-    reporterId: "user-a", reportedUserId: "user-b", postId: "post-b", reason: "harassment", details: "Abusive comments."
+    reporterId: "user-a", reportedUserId: "user-b", postId: "post-b", messageId: null, reason: "harassment", details: "Abusive comments."
   });
 });
 

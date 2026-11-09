@@ -325,6 +325,9 @@ async function request(path: string, options: RequestInit = {}) {
         request("/api/social/pings/requests"),
         request("/api/social/pings/conversations")
       ]);
+      if (!Array.isArray(requestData.requests) || !Array.isArray(conversationData.conversations)) {
+        throw new Error("The Pings inbox returned an unexpected response.");
+      }
       setPingRequests(requestData.requests);
       setPingConversations(conversationData.conversations);
     } catch (error) {
@@ -1775,7 +1778,7 @@ function signOut() {
     return groups;
   }, []) : [];
 
-  return <main className="app-shell">
+  return <main className="app-shell" data-workspace={workspace} data-social-view={socialView} data-you-view={youView}>
     <aside className="app-sidebar" aria-label="Application navigation">
       <a className="brand" href="/">FitLoop<span>.</span></a>
       <p className="sidebar-label">{workspace === "social" ? "YOUR COMMUNITY" : "YOUR TRAINING"}</p>

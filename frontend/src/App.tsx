@@ -1419,7 +1419,7 @@ function signOut() {
       void loadTrainingPlans();
       void loadProgressionSuggestions();
     }
-  }, [token, activeTab]);
+  }, [token, activeTab, socialView]);
 
   async function loadExplorePosts() {
     setExploreLoading(true); setExploreError("");

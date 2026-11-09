@@ -2422,3 +2422,19 @@ input::placeholder, textarea::placeholder { color: #777f84; }
     transition-duration: .01ms !important;
   }
 }
+
+
+/* Explore discovery uses the same quiet editorial rhythm as the friends feed.
+   Public posts are separated from connection tools so discovery stays scannable. */
+.explore-public-posts { margin-bottom: 18px; }
+.explore-post-list { display: grid; gap: 0; }
+.explore-post { padding: 18px 0; border-bottom: 1px solid var(--fitloop-border); }
+.explore-post:last-child { border-bottom: 0; }
+.explore-post-author { display: flex; align-items: center; gap: 11px; }
+.explore-post-author > div:last-child { display: grid; gap: 3px; }
+.explore-post-author small, .explore-workout-summary span { color: var(--fitloop-muted); font-size: .78rem; }
+.explore-post > p { margin: 13px 0; line-height: 1.55; }
+.explore-workout-summary { display: grid; gap: 6px; margin-top: 12px; padding: 14px; border: 1px solid var(--fitloop-border); border-radius: 14px; background: var(--fitloop-surface); }
+.explore-workout-summary > div { color: var(--fitloop-muted); font-size: .84rem; }
+.explore-post-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; color: var(--fitloop-muted); font-size: .78rem; }
+.explore-empty { padding: 22px 0; }

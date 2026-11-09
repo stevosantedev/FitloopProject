@@ -15,6 +15,7 @@ test("account deletion removes owned records and private exercises while preserv
   let privateExerciseId;
 
   try {
+    // Separate owner and friend records prove deletion is scoped to one account, not the whole social graph.
     const owner = await prisma.user.create({
       data: {
         id: ownerId,
@@ -32,6 +33,7 @@ test("account deletion removes owned records and private exercises while preserv
       }
     });
 
+    // Keep one shared catalogue entry and one owner-only custom exercise to check both deletion rules.
     const sharedExercise = await prisma.exercise.create({
       data: { name: "Shared deletion fixture " + suffix, muscleGroup: "Test", isCustom: false }
     });
@@ -47,6 +49,7 @@ test("account deletion removes owned records and private exercises while preserv
     });
     privateExerciseId = privateExercise.id;
 
+    // The routine and session deliberately reference the private exercise to exercise the foreign-key cascade order.
     const routine = await prisma.workoutRoutine.create({
       data: {
         userId: owner.id,
@@ -76,6 +79,7 @@ test("account deletion removes owned records and private exercises while preserv
       }
     });
 
+    // Plan days point at the same routine so the test also checks programme-to-routine cleanup.
     await prisma.trainingPlan.create({
       data: {
         userId: owner.id, name: "Deletion fixture plan", goal: "general", daysPerWeek: 2,
@@ -87,6 +91,7 @@ test("account deletion removes owned records and private exercises while preserv
       }
     });
 
+    // Social posts and Coach conversations must disappear with their owner, including dependent messages.
     const post = await prisma.feedPost.create({
       data: { userId: owner.id, type: "update", text: "Deletion fixture post" }
     });
@@ -101,6 +106,8 @@ test("account deletion removes owned records and private exercises while preserv
       }
     });
 
+    // Add records across every account-owned feature plus cross-account reports and blocks.
+    // The friend's records must survive, with references to the deleted account anonymised.
     await Promise.all([
       prisma.dailyLog.create({
         data: { userId: owner.id, date: new Date("2026-01-01T00:00:00.000Z"), mood: 3 }
@@ -144,6 +151,7 @@ test("account deletion removes owned records and private exercises while preserv
       })
     ]);
 
+    // Exercise the production deletion helper rather than manually reproducing its delete sequence.
     await deleteUserAccount(prisma, owner.id);
 
     // Read back every dependent table so a missing cascade cannot be hidden by a successful delete response.
@@ -207,6 +215,7 @@ test("account deletion removes owned records and private exercises while preserv
     ]) {
       assert.equal(count, 0);
     }
+    // Reports filed by the surviving friend remain, but references to the deleted user/post are cleared.
     assert.equal(survivingFriendReports.length, 2);
     assert.ok(survivingFriendReports.every(report => report.reportedUserId === null));
     assert.ok(survivingFriendReports.every(report => report.postId === null));

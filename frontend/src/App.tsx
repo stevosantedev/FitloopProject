@@ -1471,10 +1471,16 @@ function signOut() {
     {activeTab === "home" && <>
       {dashboardLoading && <p className="load-state" role="status">Loading your overview…</p>}
       {dashboardError && <div className="load-error" role="alert"><span>{dashboardError}</span><button type="button" className="secondary" onClick={() => void loadDashboard()}>Try again</button></div>}
-      <section className="welcome">
-        <p className="eyebrow">THIS WEEK</p>
-        <h1>Your week</h1>
-        <p className="muted">Training and daily check-ins, together.</p>
+      <section className="welcome overview-welcome">
+        <div className="overview-welcome-copy">
+          <p className="eyebrow">THIS WEEK</p>
+          <h1>Your week</h1>
+          <p className="muted">A clear view of your training and the habits around it.</p>
+        </div>
+        <div className="overview-actions" aria-label="Quick actions">
+          <button type="button" onClick={() => setActiveTab("workouts")}>Start a workout <span aria-hidden="true">↗</span></button>
+          <button type="button" className="overview-secondary-action" onClick={() => setActiveTab("coach")}>Open coach</button>
+        </div>
       </section>
       <section className="stats">
         <article><span>Workouts this week</span><strong>{sessionsThisWeek.length}</strong><small>Last 7 days</small></article>

@@ -2043,9 +2043,7 @@ footer { border-color: #2b322b; }
 .community-page[data-social-view="profile"] > .community-composer,
 .community-page[data-social-view="profile"] > .activity-inbox,
 .community-page[data-social-view="profile"] > .panel:has(.feed-section-heading),
-.community-page[data-social-view="profile"] > .content-grid,
-/* Keep blocked-account controls available in the Profile safety area. */
-.community-page[data-social-view="profile"] > .community-blocked-panel {
+.community-page[data-social-view="profile"] > .content-grid {
   display: none !important;
 }
 .community-page[data-social-view="explore"] > .content-grid { display: block; }

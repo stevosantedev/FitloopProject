@@ -421,6 +421,21 @@ async function request(path: string, options: RequestInit = {}) {
     }
   }
 
+  // Blocking from a private thread removes the connection and refreshes both inbox and feed state.
+  // The confirmation is explicit because the action changes who can contact and discover each other.
+  async function blockPingParticipant(userId: string) {
+    if (!window.confirm("Block this account? Their profile, activity and conversation will be hidden from you.")) return;
+    try {
+      await request("/api/social/blocks/" + encodeURIComponent(userId), { method: "POST", body: JSON.stringify({}) });
+      setSelectedPingConversationId("");
+      setPingMessages([]);
+      setNotice("Account blocked. This conversation has been hidden.");
+      await Promise.all([loadPings(), loadCommunity()]);
+    } catch (error) {
+      setPingsError(error instanceof Error ? error.message : "Could not block this account.");
+    }
+  }
+
   // Fetch only the signed-in account's saved weekly programmes when Coach is opened.
   // Refresh saved plans independently so editing a plan does not reset unrelated workout state.
 async function loadTrainingPlans() {
@@ -2355,7 +2370,18 @@ function signOut() {
             </div>}
           </section>
           <section className="panel pings-thread" aria-labelledby="pings-thread-heading">
-            <div className="section-heading-row"><div><p className="eyebrow">PRIVATE CHAT</p><h2 id="pings-thread-heading">{pingConversations.find(item => item.id === selectedPingConversationId) ? (() => { const item = pingConversations.find(row => row.id === selectedPingConversationId)!; const other = item.userAId === user?.id ? item.userB : item.userA; return other?.displayName || "@" + other?.username; })() : "Your conversation"}</h2></div></div>
+            <div className="section-heading-row">
+              <div><p className="eyebrow">PRIVATE CHAT</p><h2 id="pings-thread-heading">{pingConversations.find(item => item.id === selectedPingConversationId) ? (() => { const item = pingConversations.find(row => row.id === selectedPingConversationId)!; const other = item.userAId === user?.id ? item.userB : item.userA; return other?.displayName || "@" + other?.username; })() : "Your conversation"}</h2></div>
+              {selectedPingConversationId && (() => {
+                const conversation = pingConversations.find(item => item.id === selectedPingConversationId);
+                const other = conversation ? (conversation.userAId === user?.id ? conversation.userB : conversation.userA) : undefined;
+                if (!other) return null;
+                return <div className="ping-thread-actions">
+                  <button type="button" className="small-button secondary" onClick={() => void reportCommunityTarget("user", other.id)}>Report member</button>
+                  <button type="button" className="small-button secondary" onClick={() => void blockPingParticipant(other.id)}>Block</button>
+                </div>;
+              })()}
+            </div>
             {!selectedPingConversationId ? <p className="muted">Choose an accepted conversation to read and reply.</p> : <>
               {pingMessagesLoading && <p className="muted" role="status">Loading conversation…</p>}
               {pingMessagesError && <p className="load-error" role="alert">{pingMessagesError}</p>}

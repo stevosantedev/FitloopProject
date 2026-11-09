@@ -2123,6 +2123,8 @@ test("the member profile shows the signed-in user's own shared workout posts", a
   await expect(page.getByRole("heading", { name: "tester" })).toBeVisible();
   await expect(page.getByText("A steady session before lectures.")).toBeVisible();
   await expect(page.locator(".profile-posts")).toContainText("1 posts");
+  await expect(page.locator(".profile-stats")).toContainText("1");
+  await expect(page.locator(".profile-stats")).toContainText("Completed sets");
   await expect(page.locator(".profile-posts")).toContainText("10");
   await expect(page.locator(".profile-posts")).toContainText("Goblet squat");
 });

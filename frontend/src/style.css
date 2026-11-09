@@ -1116,3 +1116,99 @@ footer { border-color: #2b322b; }
   }
 }
 
+/* Community should open on the activity people came to see; account management
+   stays available below the feed rather than pushing it off the first screen. */
+.community-page {
+  display: flex;
+  flex-direction: column;
+}
+.community-page > .welcome { order: 0; }
+.community-page > .panel:has(.feed-section-heading) { order: 1; }
+.community-page > .community-composer { order: 2; }
+.community-page > .content-grid { order: 3; }
+.community-page > .community-profile-form { order: 4; }
+.community-page > .panel:has(h2):not(:has(.feed-section-heading)) { order: 5; }
+.community-page .feed-section-heading { align-items: center; }
+.community-page .feed-card {
+  padding: 18px 0;
+}
+.community-page .community-composer {
+  border: 1px solid #34483a;
+}
+.community-page .community-composer textarea {
+  min-height: 92px;
+  border-radius: 8px;
+}
+.community-page .community-post-text {
+  max-width: 72ch;
+}
+.community-page .workout-post-summary {
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+/* Keep the conversation as the Coach screen's main task. Planning and analysis
+   remain one scroll away instead of competing with the message composer. */
+.coach-page {
+  display: flex;
+  flex-direction: column;
+}
+.coach-page > .welcome { order: 0; }
+.coach-page > .coach-chat-layout { order: 1; }
+.coach-page > .progression-guidance { order: 2; }
+.coach-page > .coach-routine-builder { order: 3; }
+.coach-page .coach-chat-layout {
+  grid-template-columns: minmax(190px, .58fr) minmax(0, 1.7fr);
+  gap: 12px;
+}
+.coach-page .coach-chat-panel,
+.coach-page .coach-conversation-list {
+  border-radius: 9px;
+  box-shadow: none;
+}
+.coach-page .coach-chat-messages {
+  min-height: 340px;
+  padding: 14px 4px;
+}
+.coach-page .coach-chat-bubble {
+  border-radius: 9px;
+  box-shadow: none;
+}
+.coach-page .coach-chat-bubble p {
+  font-size: .88rem;
+}
+.coach-page .coach-chat-form textarea {
+  min-height: 76px;
+}
+.coach-page .progression-guidance-card {
+  border-radius: 8px;
+  box-shadow: none;
+}
+@media (max-width: 820px) {
+  .community-page > .panel:has(.feed-section-heading) { order: 1; }
+  .community-page > .community-composer { order: 2; }
+  .community-page > .content-grid { order: 3; }
+  .community-page > .community-profile-form { order: 4; }
+  .coach-page .coach-chat-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 560px) {
+  .community-page .feed-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .community-page .feed-heading time {
+    padding-left: 48px;
+    font-size: .7rem;
+  }
+  .coach-page .coach-chat-messages {
+    min-height: 280px;
+    max-height: 52vh;
+  }
+  .coach-page .coach-chat-form button {
+    width: 100%;
+  }
+}
+

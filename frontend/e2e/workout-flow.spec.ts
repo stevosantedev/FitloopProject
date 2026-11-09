@@ -1910,6 +1910,11 @@ test("captures current FitLoop screens for visual review", async ({ page }, test
   for (const screen of mobileScreens) {
     await mobileNavigation.getByRole("button", { name: screen.button }).click();
     await expect(screen.ready).toBeVisible();
+
+    // The phone layout must use its own screen hierarchy, not show the desktop workspace bar.
+    await expect(page.locator(".app-main > .topbar")).toBeHidden();
+    await expect(mobileNavigation).toBeVisible();
+    await expect(mobileNavigation).toHaveCSS("position", "fixed");
     await page.screenshot({ path: testInfo.outputPath(screen.name + "-mobile.png"), fullPage: true });
   }
 });

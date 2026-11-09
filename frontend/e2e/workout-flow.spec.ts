@@ -1727,7 +1727,7 @@ test("Community activity inbox marks items read and paginates older notification
 
   await inbox.getByRole("button", { name: "Load older activity" }).click();
   await expect(inbox.locator(".activity-notification-list li")).toHaveCount(21);
-  await expect(inbox.getByText("Activity item 21")).toBeVisible();
+  await expect(inbox.locator(".activity-notification-list li").last()).toContainText("Activity item 21");
   await inbox.getByRole("button", { name: "Mark all read" }).click();
   await expect(inbox.locator(".activity-unread-count")).toHaveCount(0);
   await expect(inbox.locator(".activity-notification-list li.is-unread")).toHaveCount(0);

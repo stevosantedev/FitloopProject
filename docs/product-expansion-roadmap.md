@@ -52,11 +52,11 @@ The existing Python rule-based coach remains a useful baseline and fallback. A l
    - Ask a clarifying question when goals, equipment, experience or constraints materially affect the answer.
 
 4. **Safety, privacy and evaluation**
-   - Define prohibited and escalation topics; do not diagnose injuries or illnesses or prescribe treatment.
-   - For pain, injury, disordered eating, medication or other high-risk topics, respond conservatively and direct users to appropriate qualified support.
+   - [x] Add deterministic guided-only handling and external-AI bypass for urgent symptoms, injury language, disordered eating, rapid weight-loss methods and steroid/drug/supplement dosing; add regression tests for unsafe weight-loss and steroid-use requests.
+   - Continue to avoid diagnosing injuries or illnesses or prescribing treatment; direct high-risk requests to appropriate qualified support.
    - Minimise context sent to any external model, exclude direct identifiers, document retention and provider settings, and make AI use clear to users.
-   - Add deterministic tests for context scoping, prompt-injection resistance, unsupported claims, unsafe requests, timeouts, provider failures and deletion.
-   - Evaluate response quality against a documented set of synthetic scenarios before enabling real user data.
+   - [x] Cover context scoping, prompt-injection resistance, urgent-symptom bypass, provider timeouts and provider failure with deterministic tests.
+   - [ ] Evaluate response quality against a documented set of synthetic scenarios before enabling real user data.
 
 ### AI Coach MVP exit criteria
 

@@ -133,3 +133,13 @@ Do not mark these checks complete based only on the Playwright suite. The tester
 - [ ] Profile shows the member's details and own shared workout posts without Explore relationship management.
 - [ ] Pings clearly explains that direct messaging is not enabled yet.
 - [ ] Switching tabs does not leave content from the previous tab visible below the current screen.
+
+
+## Explore public discovery
+
+- [ ] Public posts appear only from accounts with public profiles.
+- [ ] Private accounts do not appear in Explore.
+- [ ] Accounts blocked by the current user or accounts that have blocked the current user do not appear.
+- [ ] The friends Feed remains limited to the member and accepted friends.
+- [ ] Pagination loads the next public page without duplicating existing posts.
+- [ ] Reporting a public post remains available.

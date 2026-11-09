@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="FitLoop">
-  <rect width="512" height="512" rx="112" fill="#101c18"/>
-  <path d="M110 170h72v64h105c52 0 87 35 87 87s-35 87-87 87H166v-64h121c16 0 24-8 24-23s-8-23-24-23H110V170z" fill="#c5f28e"/>
-  <path d="M110 170h222v62H182v55h-72z" fill="#f0f5e9"/>
-  <circle cx="110" cy="170" r="24" fill="#c5f28e"/>
+  <rect width="512" height="512" rx="112" fill="#101210"/>
+  <path d="M110 170h72v64h105c52 0 87 35 87 87s-35 87-87 87H166v-64h121c16 0 24-8 24-23s-8-23-24-23H110V170z" fill="#d4ff62"/>
+  <path d="M110 170h222v62H182v55h-72z" fill="#f1f4ed"/>
+  <circle cx="110" cy="170" r="24" fill="#d4ff62"/>
 </svg>

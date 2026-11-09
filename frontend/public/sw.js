@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "fitloop-shell-";
-const CACHE_NAME = "fitloop-shell-v1";
+const CACHE_NAME = "fitloop-shell-v2";
 const APP_SHELL = ["/", "/manifest.webmanifest", "/icons/fitloop.svg"];
 
 // Pre-cache only the small public app shell. Authenticated data is deliberately fetched at runtime.

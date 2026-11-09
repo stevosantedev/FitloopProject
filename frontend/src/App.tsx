@@ -1579,7 +1579,7 @@ function signOut() {
       {dashboardLoading && <p className="load-state" role="status">Loading your overview…</p>}
       {dashboardError && <div className="load-error" role="alert"><span>{dashboardError}</span><button type="button" className="secondary" onClick={() => void loadDashboard()}>Try again</button></div>}
       <section className="welcome overview-welcome">
-        <button type="button" className="overview-settings-action" aria-label="Open account settings" title="Account settings" onClick={() => setShowAccountSettings(true)}><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-1.7 2.94-.09-.02a1.7 1.7 0 0 0-1.73.5l-.07.07h-3.4l-.02-.09a1.7 1.7 0 0 0-1.3-1.3l-.09-.02-1.7-2.94.06-.06A1.7 1.7 0 0 0 10.1 14l-.02-.09v-3.4l.09-.02a1.7 1.7 0 0 0 1.3-1.3l.02-.09h3.4l.07.07a1.7 1.7 0 0 0 1.73.5l.09-.02 1.7 2.94-.06.06A1.7 1.7 0 0 0 18.4 14l.09.02v.98Z"/></svg></button>
+        <button type="button" className="overview-settings-action" aria-label="Open account settings" title="Account settings" onClick={() => setShowAccountSettings(true)}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z"/><path d="m19.4 13.5 1.3 1-1.5 2.6-1.6-.5a7.8 7.8 0 0 1-2.2 1.3l-.3 1.7h-3l-.3-1.7a7.8 7.8 0 0 1-2.2-1.3l-1.6.5-1.5-2.6 1.3-1a7.6 7.6 0 0 1 0-3l-1.3-1 1.5-2.6 1.6.5a7.8 7.8 0 0 1 2.2-1.3l.3-1.7h3l.3 1.7a7.8 7.8 0 0 1 2.2 1.3l1.6-.5 1.5 2.6-1.3 1a7.6 7.6 0 0 1 0 3Z"/></svg></button>
         <div className="overview-welcome-copy">
           <p className="eyebrow">THIS WEEK</p>
           <h1>Your week</h1>

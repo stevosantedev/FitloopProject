@@ -303,6 +303,23 @@ test("guided sets mark only performed rows complete before saving", async ({ pag
   expect(savedSession.sets.map((set: any) => set.completed)).toEqual([true, true, false]);
 });
 
+// Skipping a set moves the guide forward but must not inflate completed-work totals.
+test("guided workout progress counts performed sets rather than skipped sets", async ({ page }) => {
+  await mockApplicationApi(page);
+  await signInAndOpenWorkouts(page);
+
+  await page.getByRole("button", { name: "Start guided workout" }).click();
+  await page.getByRole("button", { name: "Skip set" }).click();
+  await expect(page.getByText("Next set: Goblet squat · Set 2")).toBeVisible();
+
+  await page.getByRole("button", { name: "Set complete — start rest" }).click();
+  await page.getByRole("button", { name: "Skip rest" }).click();
+  await page.getByRole("button", { name: "Skip set" }).click();
+
+  await expect(page.getByRole("status").filter({ hasText: "Guided session finished. 1 of 3 sets completed." })).toBeVisible();
+  await expect(page.getByText("1 of 3 sets completed in guided mode")).toBeVisible();
+});
+
 // Prevent an empty or entirely skipped session from appearing as a completed workout.
 test("the workout cannot be saved until at least one set is completed", async ({ page }) => {
   await mockApplicationApi(page);

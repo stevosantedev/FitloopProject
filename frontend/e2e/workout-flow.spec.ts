@@ -1181,6 +1181,7 @@ test("Community feed retries an initial failure and then shows a genuine empty s
 // The moderation controls must submit the selected target to the server rather than only changing local UI.
 test("community block and report controls call the moderation API", async ({ page }) => {
   await mockApplicationApi(page);
+  await page.setViewportSize({ width: 390, height: 844 });
   const calls: Array<{ path: string; method: string }> = [];
   await page.route("http://localhost:4000/api/social/**", async route => {
     const request = route.request();
@@ -1191,6 +1192,12 @@ test("community block and report controls call the moderation API", async ({ pag
         id: "connection-1", status: "accepted",
         requester: { id: "user-1", username: "tester", displayName: "Tester" },
         addressee: { id: "user-2", username: "friend", displayName: "Friend" }
+      }] }) });
+      return;
+    }
+    if (url.pathname === "/api/social/friends/discover") {
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ people: [{
+        id: "user-2", username: "friend", displayName: "Friend"
       }] }) });
       return;
     }
@@ -1212,7 +1219,7 @@ test("community block and report controls call the moderation API", async ({ pag
   await clickWorkspaceDestination(page, "social", "Explore");
   await expect(page.locator('.community-page[data-social-view="explore"]')).toBeVisible();
   await expect(page.getByRole("heading", { name: "Discover the community" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Friends and requests" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Find friends" })).toBeVisible();
   await page.getByRole("button", { name: "Report account" }).click();
   await expect(page.getByRole("status")).toContainText("Report submitted privately");
   expect(calls.some(call => call.path === "/api/social/reports" && call.method === "POST")).toBeTruthy();
@@ -1226,6 +1233,7 @@ test("community block and report controls call the moderation API", async ({ pag
 test("Community members can search for people and send a friend request from a result", async ({ page }) => {
   // Reuse the shared auth and dashboard mocks; the more specific route below overrides only Community calls.
   await mockApplicationApi(page);
+  await page.setViewportSize({ width: 390, height: 844 });
   const calls: Array<{ path: string; method: string; body?: any }> = [];
   await page.route("http://localhost:4000/api/social/**", async route => {
     const request = route.request();

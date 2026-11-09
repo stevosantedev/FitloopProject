@@ -30,7 +30,7 @@ The muscle map is a training reference, not a clinical anatomy diagram. Set-volu
 ### Social and community
 
 - Account profiles with display names, short bios and visibility controls, plus a dedicated signed-in profile view backed by an owner-scoped, cursor-paginated history of the member's own shared posts and workout summaries.
-- Social workspace navigation with Feed, Explore, Pings and Profile destinations. Explore currently provides bounded people discovery; public post/video discovery is not implemented. Pings is a clearly labelled placeholder because private messaging is not implemented.
+- Social workspace navigation with Feed, Explore, Pings and Profile destinations. Explore combines bounded people discovery with a paginated public post feed containing text updates and workout summaries. Pings remains a clearly labelled placeholder because private messaging is not implemented.
 - Friend discovery, requests, accepted connections and relationship management.
 - A friends-oriented activity feed with workout summaries and text updates.
 - Reactions, comments, pagination and author controls for editing or deleting eligible posts and comments.

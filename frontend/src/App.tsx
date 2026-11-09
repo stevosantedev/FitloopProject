@@ -468,8 +468,8 @@ async function loadCommunity() {
       setFeedCursor(feedData.nextCursor ?? null);
       setFeedHasMore(Boolean(feedData.hasMore));
       setBlockedAccounts(blockData.blocks.map((item: any) => item.blockedUser));
-      setActivityNotifications(notificationData.notifications);
-      setUnreadNotificationCount(notificationData.unreadCount);
+      setActivityNotifications(notificationData.notifications ?? []);
+      setUnreadNotificationCount(notificationData.unreadCount ?? 0);
       // A moderator-only request is made only after the server confirms this account's capability.
       try {
         const capability = await request("/api/social/moderation/capability");

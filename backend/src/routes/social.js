@@ -17,6 +17,14 @@ const reactionInput = z.object({ value: z.enum(["like", "strong", "clap"]).defau
 const reportLimiter = rateLimit({ windowMs: 60 * 60 * 1000, limit: 5, standardHeaders: true, legacyHeaders: false, keyGenerator: req => req.userId });
 // Search is more expensive than reading an existing connection and could be used to enumerate usernames.
 const friendDiscoveryLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 30, standardHeaders: true, legacyHeaders: false, keyGenerator: req => req.userId });
+// Message requests and replies are rate-limited per signed-in account, not per IP address.
+const pingRequestLimiter = rateLimit({ windowMs: 60 * 60 * 1000, limit: 5, standardHeaders: true, legacyHeaders: false, keyGenerator: req => req.userId });
+const pingMessageLimiter = rateLimit({ windowMs: 60 * 1000, limit: 30, standardHeaders: true, legacyHeaders: false, keyGenerator: req => req.userId });
+const pingRequestInput = z.object({
+  username: z.string().trim().min(2).max(30).regex(/^[a-zA-Z0-9_]+$/),
+  message: z.string().trim().min(1).max(2000)
+}).strict();
+const pingMessageInput = z.object({ message: z.string().trim().min(1).max(2000) }).strict();
 const reportInput = z.object({
   targetType: z.enum(["user", "post"]),
   targetId: z.string().min(1).max(64),
@@ -516,6 +524,213 @@ router.patch("/moderation/reports/:id", requireModerator, async (req, res, next)
 
 
 // Posts are limited to accepted friends and plain text; the server does not accept arbitrary media URLs.
+// A request is a one-to-one conversation invitation with one introductory message.
+ // Sort participant IDs before persistence so both directions resolve to the same unique pair.
+router.post("/pings/requests", pingRequestLimiter, async (req, res, next) => {
+  try {
+    const input = pingRequestInput.parse(req.body);
+    const recipient = await prismaClient.user.findUnique({
+      where: { username: input.username.toLowerCase() },
+      select: { id: true, username: true, displayName: true }
+    });
+    // Use one generic response for unknown, self and blocked targets to avoid account discovery.
+    if (!recipient || recipient.id === req.userId) return res.status(404).json({ error: "This member is unavailable for a message request." });
+    const blocked = await blockedIds(req.userId);
+    if (blocked.includes(recipient.id)) return res.status(404).json({ error: "This member is unavailable for a message request." });
+
+    const [userAId, userBId] = [req.userId, recipient.id].sort();
+    const existing = await prismaClient.directConversation.findUnique({
+      where: { userAId_userBId: { userAId, userBId } },
+      select: { id: true, status: true, requesterId: true }
+    });
+    if (existing) {
+      const message = existing.status === "accepted" ? "You already have a conversation with this member."
+        : existing.status === "pending" ? "A message request already exists for this member."
+        : "A message request cannot be sent to this member.";
+      return res.status(409).json({ error: message });
+    }
+
+    const conversation = await prismaClient.directConversation.create({
+      data: {
+        userAId, userBId, requesterId: req.userId, status: "pending",
+        messages: { create: { senderId: req.userId, body: input.message } }
+      },
+      include: {
+        userA: { select: { id: true, username: true, displayName: true } },
+        userB: { select: { id: true, username: true, displayName: true } },
+        messages: { orderBy: [{ createdAt: "desc" }, { id: "desc" }], take: 1 }
+      }
+    });
+    return res.status(201).json({ conversation });
+  } catch (error) {
+    if (error?.code === "P2002") return res.status(409).json({ error: "A message request already exists for this member." });
+    return next(error);
+  }
+});
+
+// Incoming requests are visible only to their recipient. Block checks are repeated on every read.
+router.get("/pings/requests", async (req, res, next) => {
+  try {
+    const input = z.object({ cursor: z.string().min(1).max(64).optional(), limit: z.coerce.number().int().min(1).max(30).default(20) }).strict().parse(req.query);
+    const blocked = await blockedIds(req.userId);
+    const rows = await prismaClient.directConversation.findMany({
+      where: {
+        status: "pending", requesterId: { not: req.userId },
+        OR: [{ userAId: req.userId }, { userBId: req.userId }],
+        ...(blocked.length ? { AND: [{ userAId: { notIn: blocked } }, { userBId: { notIn: blocked } }] } : {})
+      },
+      include: {
+        requester: { select: { id: true, username: true, displayName: true } },
+        messages: { orderBy: [{ createdAt: "desc" }, { id: "desc" }], take: 1 }
+      },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      ...(input.cursor ? { cursor: { id: input.cursor }, skip: 1 } : {}),
+      take: input.limit + 1
+    });
+    const hasMore = rows.length > input.limit;
+    const requests = hasMore ? rows.slice(0, input.limit) : rows;
+    return res.json({ requests, hasMore, nextCursor: hasMore ? requests[requests.length - 1].id : null });
+  } catch (error) { return next(error); }
+});
+
+// Accepted conversations are returned only to a participant and disappear from both inboxes after a block.
+router.get("/pings/conversations", async (req, res, next) => {
+  try {
+    const input = z.object({ cursor: z.string().min(1).max(64).optional(), limit: z.coerce.number().int().min(1).max(30).default(20) }).strict().parse(req.query);
+    const blocked = await blockedIds(req.userId);
+    const rows = await prismaClient.directConversation.findMany({
+      where: {
+        status: "accepted",
+        OR: [{ userAId: req.userId }, { userBId: req.userId }],
+        ...(blocked.length ? { AND: [{ userAId: { notIn: blocked } }, { userBId: { notIn: blocked } }] } : {})
+      },
+      include: {
+        userA: { select: { id: true, username: true, displayName: true } },
+        userB: { select: { id: true, username: true, displayName: true } },
+        messages: { orderBy: [{ createdAt: "desc" }, { id: "desc" }], take: 1 }
+      },
+      orderBy: [{ lastMessageAt: "desc" }, { id: "desc" }],
+      ...(input.cursor ? { cursor: { id: input.cursor }, skip: 1 } : {}),
+      take: input.limit + 1
+    });
+    const hasMore = rows.length > input.limit;
+    const conversations = hasMore ? rows.slice(0, input.limit) : rows;
+    return res.json({ conversations, hasMore, nextCursor: hasMore ? conversations[conversations.length - 1].id : null });
+  } catch (error) { return next(error); }
+});
+
+// Only the person who received a request can accept it. A block makes it unavailable immediately.
+router.post("/pings/requests/:id/accept", async (req, res, next) => {
+  try {
+    const blocked = await blockedIds(req.userId);
+    const result = await prismaClient.directConversation.updateMany({
+      where: {
+        id: req.params.id, status: "pending", requesterId: { not: req.userId },
+        OR: [{ userAId: req.userId }, { userBId: req.userId }],
+        ...(blocked.length ? { AND: [{ userAId: { notIn: blocked } }, { userBId: { notIn: blocked } }] } : {})
+      },
+      data: { status: "accepted" }
+    });
+    if (!result.count) return res.status(404).json({ error: "Message request not found." });
+    const conversation = await prismaClient.directConversation.findUnique({
+      where: { id: req.params.id },
+      include: {
+        userA: { select: { id: true, username: true, displayName: true } },
+        userB: { select: { id: true, username: true, displayName: true } }
+      }
+    });
+    return res.json({ conversation });
+  } catch (error) { return next(error); }
+});
+
+// Declining removes the introductory message but keeps a minimal declined pair record,
+// preventing a second request from being used to repeatedly contact the same member.
+router.post("/pings/requests/:id/decline", async (req, res, next) => {
+  try {
+    const result = await prismaClient.directConversation.updateMany({
+      where: {
+        id: req.params.id, status: "pending", requesterId: { not: req.userId },
+        OR: [{ userAId: req.userId }, { userBId: req.userId }]
+      },
+      data: { status: "declined" }
+    });
+    if (!result.count) return res.status(404).json({ error: "Message request not found." });
+    await prismaClient.directMessage.deleteMany({ where: { conversationId: req.params.id } });
+    return res.json({ declined: true });
+  } catch (error) { return next(error); }
+});
+
+// Message history is participant-scoped and uses a stable descending cursor for older pages.
+router.get("/pings/conversations/:id/messages", async (req, res, next) => {
+  try {
+    const input = z.object({ cursor: z.string().min(1).max(64).optional(), limit: z.coerce.number().int().min(1).max(50).default(30) }).strict().parse(req.query);
+    const blocked = await blockedIds(req.userId);
+    const conversation = await prismaClient.directConversation.findFirst({
+      where: {
+        id: req.params.id, status: { in: ["accepted", "pending"] },
+        OR: [{ userAId: req.userId }, { userBId: req.userId }],
+        ...(blocked.length ? { AND: [{ userAId: { notIn: blocked } }, { userBId: { notIn: blocked } }] } : {})
+      },
+      select: { id: true }
+    });
+    if (!conversation) return res.status(404).json({ error: "Conversation not found." });
+    const rows = await prismaClient.directMessage.findMany({
+      where: { conversationId: conversation.id },
+      include: { sender: { select: { id: true, username: true, displayName: true } } },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      ...(input.cursor ? { cursor: { id: input.cursor }, skip: 1 } : {}),
+      take: input.limit + 1
+    });
+    const hasMore = rows.length > input.limit;
+    const messages = hasMore ? rows.slice(0, input.limit) : rows;
+    return res.json({ messages, hasMore, nextCursor: hasMore ? messages[messages.length - 1].id : null });
+  } catch (error) { return next(error); }
+});
+
+// A reply requires an accepted conversation; a pending request cannot be used to bypass consent.
+router.post("/pings/conversations/:id/messages", pingMessageLimiter, async (req, res, next) => {
+  try {
+    const input = pingMessageInput.parse(req.body);
+    const blocked = await blockedIds(req.userId);
+    const conversation = await prismaClient.directConversation.findFirst({
+      where: {
+        id: req.params.id, status: "accepted",
+        OR: [{ userAId: req.userId }, { userBId: req.userId }],
+        ...(blocked.length ? { AND: [{ userAId: { notIn: blocked } }, { userBId: { notIn: blocked } }] } : {})
+      },
+      select: { id: true }
+    });
+    if (!conversation) return res.status(404).json({ error: "Conversation not found." });
+    const message = await prismaClient.directMessage.create({
+      data: { conversationId: conversation.id, senderId: req.userId, body: input.message },
+      include: { sender: { select: { id: true, username: true, displayName: true } } }
+    });
+    await prismaClient.directConversation.update({ where: { id: conversation.id }, data: { lastMessageAt: message.createdAt } });
+    return res.status(201).json({ message });
+  } catch (error) { return next(error); }
+});
+
+// Read receipts are written only for messages addressed to the signed-in participant.
+router.patch("/pings/conversations/:id/read", async (req, res, next) => {
+  try {
+    const blocked = await blockedIds(req.userId);
+    const conversation = await prismaClient.directConversation.findFirst({
+      where: {
+        id: req.params.id, status: "accepted",
+        OR: [{ userAId: req.userId }, { userBId: req.userId }],
+        ...(blocked.length ? { AND: [{ userAId: { notIn: blocked } }, { userBId: { notIn: blocked } }] } : {})
+      },
+      select: { id: true }
+    });
+    if (!conversation) return res.status(404).json({ error: "Conversation not found." });
+    const result = await prismaClient.directMessage.updateMany({
+      where: { conversationId: conversation.id, senderId: { not: req.userId }, readAt: null },
+      data: { readAt: new Date() }
+    });
+    return res.json({ read: result.count });
+  } catch (error) { return next(error); }
+});
+
 router.post("/posts", async (req, res, next) => {
   try {
     const input = postInput.parse(req.body);

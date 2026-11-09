@@ -207,7 +207,8 @@ The app shell is moving from one mixed navigation model to two workspaces. The t
 - [x] Add request-based contact with an introductory message, recipient-only accept/decline, private-profile friend boundaries, rate-limited replies, block checks and read receipts.
 - [x] Build the first Pings inbox and chat screen for sending requests, accepting/declining invitations, reading conversation history and replying.
 - [x] Add per-conversation unread counts and member-level report/block controls within the chat thread.
-- [ ] Add message-level reporting, inbox notifications, delivery preferences and message retention rules.
+- [x] Add message-level reporting with participant-scoped access and moderator-queue message context.
+- [ ] Add inbox notifications, delivery preferences and message retention rules.
 - [ ] Complete the privacy/security review and phone, tablet, desktop, keyboard and screen-reader QA for Pings.
 - [ ] Add workout photo/video uploads with secure object storage, file validation, ownership checks, deletion, audience controls and moderation.
 - [ ] Build public post/video Explore only after a clear public/private audience model and server-side visibility checks are agreed.

@@ -70,7 +70,7 @@ type PingParticipant = { id: string; username: string; displayName?: string | nu
 type PingMessage = { id: string; conversationId: string; senderId: string; body: string; createdAt: string; readAt?: string | null; sender?: PingParticipant };
 type PingConversation = {
   id: string; userAId: string; userBId: string; requesterId: string; status: "pending" | "accepted" | "declined";
-  lastMessageAt: string; userA?: PingParticipant; userB?: PingParticipant; requester?: PingParticipant; messages: PingMessage[];
+  lastMessageAt: string; unreadCount?: number; userA?: PingParticipant; userB?: PingParticipant; requester?: PingParticipant; messages: PingMessage[];
 };
 type FeedPost = {
   id: string;

@@ -2061,3 +2061,37 @@ test("Social and You switch between the correct destinations", async ({ page }) 
   await expect(page.getByRole("heading", { name: "Your week" })).toBeVisible();
   await expect(page.locator(".mobile-nav button")).toHaveCount(5);
 });
+
+
+// The signed-in profile is built from the same safe post summaries used in the social feed.
+test("the member profile shows the signed-in user's own shared workout posts", async ({ page }) => {
+  const socialPosts = await mockApplicationApi(page);
+  socialPosts.push({
+    id: "my-workout-post",
+    createdAt: "2026-11-09T10:00:00.000Z",
+    text: "A steady session before lectures.",
+    type: "workout",
+    user: { id: "user-1", username: "tester", displayName: "Test Athlete" },
+    session: {
+      id: "session-1",
+      startedAt: "2026-11-09T09:00:00.000Z",
+      routine: { name: "Full body" },
+      sets: [{ id: "set-1", reps: 10, weightKg: 20, completed: true, exercise: { id: "exercise-1", name: "Goblet squat" } }]
+    },
+    reactions: [],
+    comments: [],
+    _count: { comments: 0 }
+  });
+  await page.goto("/");
+  await page.getByLabel("Email").fill("tester@example.com");
+  await page.getByLabel("Password").fill("test-password");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.locator(".workspace-switch-bar").getByRole("button", { name: "Social" }).click();
+  await page.locator(".mobile-nav").getByRole("button", { name: "Profile" }).click();
+
+  await expect(page.getByRole("heading", { name: "Test Athlete" })).toBeVisible();
+  await expect(page.getByText("A steady session before lectures.")).toBeVisible();
+  await expect(page.locator(".profile-posts")).toContainText("1 posts");
+  await expect(page.locator(".profile-posts")).toContainText("10");
+  await expect(page.locator(".profile-posts")).toContainText("Goblet squat");
+});

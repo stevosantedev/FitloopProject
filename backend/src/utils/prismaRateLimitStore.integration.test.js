@@ -9,6 +9,7 @@ test("Coach rate-limit buckets are shared across store instances and expire clea
   skip: !process.env.DATABASE_URL
 }, async () => {
   const key = "coach-rate-limit-test:" + randomUUID();
+  const expiryKey = key + ":expiry";
   const firstInstance = new PrismaRateLimitStore(prisma);
   const secondInstance = new PrismaRateLimitStore(prisma);
   firstInstance.init({ windowMs: 60 * 60 * 1000 });
@@ -40,7 +41,17 @@ test("Coach rate-limit buckets are shared across store instances and expire clea
     await secondInstance.resetKey(key);
     const afterReset = await firstInstance.increment(key);
     assert.equal(afterReset.totalHits, 1);
+
+    // A new window starts from one hit once the previous bucket has expired.
+    const shortWindow = new PrismaRateLimitStore(prisma);
+    shortWindow.init({ windowMs: 40 });
+    const beforeExpiry = await shortWindow.increment(expiryKey);
+    await new Promise(resolve => setTimeout(resolve, 60));
+    const afterExpiry = await shortWindow.increment(expiryKey);
+    assert.equal(afterExpiry.totalHits, 1);
+    assert.ok(afterExpiry.resetTime.getTime() > beforeExpiry.resetTime.getTime());
   } finally {
     await firstInstance.resetKey(key);
+    await firstInstance.resetKey(expiryKey);
   }
 });

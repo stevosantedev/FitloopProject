@@ -2438,3 +2438,68 @@ input::placeholder, textarea::placeholder { color: #777f84; }
 .explore-workout-summary > div { color: var(--fitloop-muted); font-size: .84rem; }
 .explore-post-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; color: var(--fitloop-muted); font-size: .78rem; }
 .explore-empty { padding: 22px 0; }
+
+
+/* Pings keeps the request queue, conversation list and active thread distinct.
+   On narrow screens the sections stack in the order people need them. */
+.pings-page { display: grid; gap: 16px; }
+.pings-request-panel, .pings-inbox, .pings-conversations, .pings-thread {
+  border: 1px solid var(--fitloop-border);
+  border-radius: 18px;
+  background: var(--fitloop-surface);
+}
+.pings-request-panel .section-heading-row { margin-bottom: 14px; }
+.pings-request-panel h2, .pings-inbox h2, .pings-conversations h2, .pings-thread h2 { margin-bottom: 4px; }
+.pings-request-panel .muted { margin: 4px 0 0; }
+.pings-request-form { display: grid; gap: 12px; }
+.pings-request-form label { display: grid; gap: 7px; color: var(--fitloop-muted); font-size: .82rem; font-weight: 650; }
+.pings-request-form input, .pings-request-form textarea, .ping-reply-form textarea {
+  width: 100%; border: 1px solid var(--fitloop-border); border-radius: 12px;
+  background: #101416; color: var(--fitloop-text); padding: 12px 13px; font: inherit;
+}
+.pings-request-form textarea, .ping-reply-form textarea { resize: vertical; line-height: 1.5; }
+.pings-layout { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: 16px; align-items: start; }
+.pings-inbox, .pings-conversations, .pings-thread { min-width: 0; padding: 18px; }
+.pings-inbox .section-heading-row > span { color: var(--fitloop-muted); font-size: .8rem; }
+.pings-list { display: grid; gap: 10px; }
+.ping-request-card { padding: 13px; border: 1px solid var(--fitloop-border); border-radius: 13px; background: #111618; }
+.ping-person { display: grid; gap: 3px; }
+.ping-person small { color: var(--fitloop-muted); font-size: .75rem; }
+.ping-request-card > p { margin: 12px 0; line-height: 1.5; overflow-wrap: anywhere; }
+.ping-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.ping-actions button { min-height: 40px; padding: 0 16px; }
+.ping-conversation-row {
+  display: flex; align-items: center; gap: 11px; width: 100%; min-width: 0;
+  padding: 12px; border: 1px solid transparent; border-radius: 13px;
+  background: #111618; color: var(--fitloop-text); text-align: left; cursor: pointer;
+}
+.ping-conversation-row:hover, .ping-conversation-row.is-selected {
+  border-color: var(--fitloop-accent); background: var(--fitloop-accent-soft);
+}
+.ping-avatar {
+  display: grid; flex: 0 0 38px; width: 38px; height: 38px; place-items: center;
+  border: 1px solid #555d62; border-radius: 50%; background: #252b2f; color: #f4f5f3; font-weight: 750;
+}
+.ping-conversation-copy { display: grid; flex: 1; min-width: 0; gap: 4px; }
+.ping-conversation-copy small { overflow: hidden; color: var(--fitloop-muted); font-size: .76rem; text-overflow: ellipsis; white-space: nowrap; }
+.ping-conversation-row time { color: var(--fitloop-muted); font-size: .68rem; white-space: nowrap; }
+.pings-thread { grid-column: 1 / -1; }
+.ping-message-list { display: flex; flex-direction: column; gap: 9px; max-height: 440px; min-height: 90px; overflow-y: auto; padding: 10px 0 14px; }
+.ping-message { align-self: flex-start; max-width: min(78%, 620px); padding: 10px 13px; border: 1px solid var(--fitloop-border); border-radius: 14px 14px 14px 4px; background: #202629; }
+.ping-message.is-mine { align-self: flex-end; border-color: #75402d; border-radius: 14px 14px 4px 14px; background: #392319; }
+.ping-message p { margin: 0 0 5px; line-height: 1.5; overflow-wrap: anywhere; white-space: pre-wrap; }
+.ping-message time { color: var(--fitloop-muted); font-size: .68rem; }
+.ping-reply-form { display: flex; align-items: end; gap: 10px; padding-top: 12px; border-top: 1px solid var(--fitloop-border); }
+.ping-reply-form textarea { min-height: 48px; max-height: 140px; }
+.ping-reply-form button { min-height: 48px; padding: 0 20px; }
+@media (max-width: 820px) {
+  .pings-layout { grid-template-columns: 1fr; gap: 12px; }
+  .pings-inbox, .pings-conversations, .pings-thread { padding: 15px; }
+  .pings-request-panel { padding: 16px; }
+  .ping-message-list { max-height: 48vh; }
+}
+@media (max-width: 420px) {
+  .ping-reply-form { align-items: stretch; }
+  .ping-reply-form button { padding: 0 14px; }
+  .ping-message { max-width: 88%; }
+}

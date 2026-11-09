@@ -1838,6 +1838,7 @@ test("Community opens on activity and Coach opens on the conversation", async ({
   await expect(page.locator(".community-page > .community-profile-form")).toHaveCSS("order", "5");
   await expect(page.locator(".community-page > .community-blocked-panel")).toHaveCSS("order", "6");
 
+  await page.locator(".workspace-switch-bar").getByRole("button", { name: "You" }).click();
   await page.locator(".sidebar-nav").getByRole("button", { name: "Coach" }).click();
   await expect(page.locator(".coach-page > .coach-chat-layout")).toHaveCSS("order", "3");
   await expect(page.locator(".coach-page > .progression-guidance")).toHaveCSS("order", "2");
@@ -1981,6 +1982,7 @@ test("captures current FitLoop screens for visual review", async ({ page }, test
 
   for (const screen of desktopScreens) {
     if (screen.name === "community") await page.locator(".workspace-switch-bar").getByRole("button", { name: "Social" }).click();
+    else if (screen.name === "coach") { await page.locator(".workspace-switch-bar").getByRole("button", { name: "You" }).click(); await desktopNavigation.getByRole("button", { name: "Coach" }).click(); }
     else if (screen.button) await desktopNavigation.getByRole("button", { name: screen.button }).click();
     await expect(screen.ready).toBeVisible();
     await page.screenshot({ path: testInfo.outputPath(screen.name + "-desktop.png"), fullPage: true });
@@ -1998,6 +2000,7 @@ test("captures current FitLoop screens for visual review", async ({ page }, test
 
   for (const screen of mobileScreens) {
     if (screen.name === "community") await page.locator(".workspace-switch-bar").getByRole("button", { name: "Social" }).click();
+    else if (screen.name === "coach") { await page.locator(".workspace-switch-bar").getByRole("button", { name: "You" }).click(); await mobileNavigation.getByRole("button", { name: "Coach" }).click(); }
     else await mobileNavigation.getByRole("button", { name: screen.button }).click();
     await expect(screen.ready).toBeVisible();
 

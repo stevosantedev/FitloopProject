@@ -1626,3 +1626,25 @@ test("Coach settings disclose optional AI processing and keep consent off by def
   await expect(page.getByLabel(/Use AI-generated coaching replies/)).not.toBeChecked();
 });
 
+
+
+// The overview should offer direct destinations without making users hunt through navigation.
+test("overview quick actions open the workout builder and Coach", async ({ page }) => {
+  await mockApplicationApi(page);
+  await page.goto("/");
+  await page.getByLabel("Email").fill("tester@example.com");
+  await page.getByLabel("Password").fill("test-password");
+  await page.getByRole("button", { name: "Sign in" }).click();
+
+  await expect(page.getByRole("heading", { name: "Your week" })).toBeVisible();
+  await page.getByRole("button", { name: "Start a workout" }).click();
+  await expect(page.getByRole("heading", { name: "Build a workout" })).toBeVisible();
+
+  // Return to the overview through the responsive navigation before checking the second shortcut.
+  const isMobileLayout = (page.viewportSize()?.width ?? 1280) <= 820;
+  const navigation = page.locator(isMobileLayout ? ".mobile-nav" : ".sidebar-nav");
+  await navigation.getByRole("button", { name: isMobileLayout ? "Home" : "Overview" }).click();
+  await expect(page.getByRole("heading", { name: "Your week" })).toBeVisible();
+  await page.getByRole("button", { name: "Open coach" }).click();
+  await expect(page.locator(".topbar strong")).toHaveText("Coach");
+});

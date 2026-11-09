@@ -137,3 +137,15 @@ The phone layout is being treated as the primary product experience. The current
 The first screenshot artifact exposed that the phone screens still read as long web pages. The fixed tab bar also appears partway down full-page captures because the browser screenshot includes a viewport-fixed element at its viewport position. Review screenshots at the viewport level as well as full-page captures. A 52px minimum tab target is now the intended value and is covered by the navigation test.
 
 The previous visual-review run exposed a strict heading assertion and an extra desktop navigation item after Progress was introduced. The duplicate item has been removed, Progress is present on mobile, and the browser suite now checks the five destinations and the Home activity strip. The latest branch-head run still needs to complete before these changes can be marked verified.
+
+
+## Social and You navigation foundation
+
+- Replaced the single five-destination navigation with two top-level workspaces: **Social** and **You**. The selected workspace controls the lower navigation on phone and the sidebar destinations on desktop.
+- Social destinations are Feed, Explore, Pings and Profile. Feed retains the existing friends-only workout/update feed, reactions, comments, composer and private activity inbox. Explore currently uses the existing bounded friend-discovery workflow; it does not yet expose public posts or video discovery. Pings is an explicit not-yet-available state, not a working messaging feature.
+- Added a signed-in user's Profile page with identity, editable display name/bio, and a list of their shared feed posts and workout summaries. Settings opens the existing account settings sheet. Photo attachments and a full media grid are not implemented.
+- You destinations are Home, Workout, Stats, Plan and Library. Plan opens the existing weekly programme builder and progression guidance, with the Coach conversation still available within that destination and from Home.
+- The previous account profile editor has been moved into the dedicated Profile experience. The server's existing privacy and ownership rules remain authoritative; this UI change does not make friends-only posts public.
+- Added browser coverage for workspace switching, all destination labels, profile editing entry points, Explore's current people-discovery scope and the Pings unavailable state.
+- The prior branch-head CI run [42666525207](https://github.com/stevosantedev/FitloopProject/actions/runs/42666525207) passed both jobs before this navigation refactor. CI for the current commits is required before this slice is marked verified.
+- The Club workspace remains intentionally out of the active navigation. It should only be introduced if distinct group training, challenges or club-level activity become part of the agreed scope.

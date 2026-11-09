@@ -1212,3 +1212,44 @@ footer { border-color: #2b322b; }
   }
 }
 
+/* Sign-in is an app entry point, not a marketing card: keep the form quiet and focused. */
+.auth-shell {
+  align-content: center;
+  background: var(--fitloop-bg);
+}
+.auth-card {
+  width: min(100%, 420px);
+  padding: 24px 20px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.auth-card h1 {
+  margin: 12px 0 8px;
+  font-size: clamp(2.25rem, 7vw, 2.8rem);
+}
+.auth-card form {
+  margin-top: 28px;
+}
+.auth-card label {
+  margin: 18px 0;
+}
+.auth-card input {
+  min-height: 48px;
+  margin-top: 8px;
+}
+.auth-card form button {
+  min-height: 48px;
+  margin-top: 14px;
+}
+.auth-card > .text-button {
+  width: auto;
+  margin-top: 12px;
+  text-align: left;
+}
+@media (max-width: 520px) {
+  .auth-shell { align-content: start; padding: max(14vh, 56px) 22px 32px; }
+  .auth-card { padding: 16px 0; }
+}
+

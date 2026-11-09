@@ -334,6 +334,7 @@ model ContentReport {
   reporterId     String
   reportedUserId String?
   postId         String?
+  messageId      String?
   reason         String
   details        String?  @db.VarChar(1000)
   status         String   @default("open")
@@ -345,10 +346,12 @@ model ContentReport {
   reportedUser   User?    @relation("ReportedUser", fields: [reportedUserId], references: [id], onDelete: SetNull)
   reviewer       User?    @relation("ReportReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
   post           FeedPost? @relation(fields: [postId], references: [id], onDelete: SetNull)
+  message        DirectMessage? @relation(fields: [messageId], references: [id], onDelete: SetNull)
 
   @@index([status, createdAt])
   @@index([reportedUserId, createdAt])
   @@index([postId, createdAt])
+  @@index([messageId, createdAt])
   @@index([reviewedById, reviewedAt])
 }
 
@@ -411,6 +414,7 @@ model DirectMessage {
   readAt         DateTime?
   conversation   DirectConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   sender         User     @relation("DirectMessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  reports        ContentReport[]
 
   @@index([conversationId, createdAt, id])
   @@index([senderId, createdAt])

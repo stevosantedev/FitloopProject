@@ -259,6 +259,23 @@ test("personal records show the best completed load, reps and set volume", async
   await expect(record.getByText("320 kg")).toBeVisible();
 });
 
+// Training stays one main destination, with short links for the separate jobs users return to most often.
+test("Training shortcuts lead to the session, exercise library, routines and history", async ({ page }) => {
+  await mockApplicationApi(page);
+  await signInAndOpenWorkouts(page);
+
+  const shortcuts = page.locator(".workout-subnav");
+  await expect(shortcuts.getByRole("link")).toHaveCount(4);
+  await expect(shortcuts.getByRole("link", { name: "Session" })).toHaveAttribute("href", "#workout-session");
+  await expect(shortcuts.getByRole("link", { name: "Exercises" })).toHaveAttribute("href", "#exercise-library");
+  await expect(shortcuts.getByRole("link", { name: "Routines" })).toHaveAttribute("href", "#training-routines");
+  await expect(shortcuts.getByRole("link", { name: "History" })).toHaveAttribute("href", "#workout-history");
+
+  await shortcuts.getByRole("link", { name: "Exercises" }).click();
+  await expect(page.locator("#exercise-library")).toBeInViewport();
+  await expect(page.getByRole("heading", { name: "Choose movements" })).toBeVisible();
+});
+
 // Editing and deletion must preserve the selected routine identity and leave the builder usable.
 test("saved routines can be edited and deleted without losing the workout builder", async ({ page }) => {
   await mockApplicationApi(page);

@@ -31,14 +31,14 @@ The muscle map is a training reference, not a clinical anatomy diagram. Set-volu
 
 - Account profiles with display names, short bios and visibility controls, plus a dedicated signed-in profile view backed by an owner-scoped, cursor-paginated history of the member's own shared posts and workout summaries.
 - Social workspace navigation with Feed, Explore, Pings and Profile destinations. Explore combines bounded people discovery with a paginated public post feed containing text updates and workout summaries.
-- Pings request-based one-to-one messaging: introductory message requests, recipient-only accept/decline, private-profile friend boundaries, participant-scoped conversation history, rate-limited replies, block checks, read receipts, unread counts and in-thread member reporting/blocking.
+- Pings request-based one-to-one messaging: introductory message requests, recipient-only accept/decline, private-profile friend boundaries, participant-scoped conversation history, rate-limited replies, block checks, read receipts, unread counts, and in-thread message/member reporting and blocking.
 - Friend discovery, requests, accepted connections and relationship management.
 - A friends-oriented activity feed with workout summaries and text updates.
 - Reactions, comments, pagination and author controls for editing or deleting eligible posts and comments.
 - Blocking and reporting controls, with server-side audience and relationship checks.
 - A private in-app activity inbox for friend requests, accepted requests, reactions and comments.
 
-The current feed supports text updates and workout activity. Pings now has a working request-and-reply flow with unread counts and member-level report/block controls, but message-level reporting, inbox notifications, delivery preferences and retention rules still need implementation and review. Image uploads, private media storage and push/email notifications are not implemented.
+The current feed supports text updates and workout activity. Pings now has a working request-and-reply flow with unread counts and member-level report/block controls, but inbox notifications, delivery preferences and retention rules still need implementation and review. Image uploads, private media storage and push/email notifications are not implemented.
 
 ### Coach
 

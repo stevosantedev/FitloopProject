@@ -140,8 +140,16 @@ def conversation(payload: ConversationRequest):
     # This early safety route avoids pretending to diagnose pain or medical symptoms.
     urgent_terms = ("chest pain", "faint", "fainted", "cannot breathe", "can't breathe", "severe dizziness")
     injury_terms = ("injury", "injured", "pain", "hurt", "swollen", "strain", "tear")
-    # Urgent and injury language is handled before general intent matching so it cannot
-    # fall through into routine or progress advice.
+    # Requests involving disordered eating, unsafe weight-loss methods or drug dosing
+    # stay in the conservative rules path instead of being sent to an external model.
+    high_risk_terms = (
+        "eating disorder", "anorexia", "bulimia", "purging", "purge",
+        "laxative", "starving", "starve myself", "rapid weight loss",
+        "lose weight fast", "weight loss pills", "anabolic steroid",
+        "steroid cycle", "supplement dosage", "medication dosage",
+    )
+    # Urgent, injury and other high-risk language is handled before general intent matching
+    # so it cannot fall through into routine or progress advice.
     if any(term in lowered for term in urgent_terms):
         reply = (
             "Please stop exercising. Chest pain, fainting or serious breathing difficulty may require emergency medical attention. "
@@ -152,6 +160,13 @@ def conversation(payload: ConversationRequest):
             "I can't diagnose an injury or tell you whether it is safe to train through pain. Stop or modify the movement that causes pain, "
             "and consider advice from a qualified healthcare professional, especially if symptoms are severe, worsening or persistent. "
             "If you want, tell me which movement is uncomfortable and I can help identify non-medical training alternatives to discuss."
+        )
+    elif any(term in lowered for term in high_risk_terms):
+        reply = (
+            "I can't advise on disordered eating, drug or supplement dosing, steroid use or rapid weight-loss methods. "
+            "These can carry serious health risks, so speak with a qualified healthcare professional or registered dietitian. "
+            "If you may have taken something harmful or feel in immediate danger, seek urgent medical help. "
+            "I can still help with non-restrictive training habits and recovery."
         )
     # Progress comparisons use only the recent sessions supplied by the authenticated API.
     elif any(term in lowered for term in ("progress", "stronger", "getting stronger", "improve", "lifting more")):
@@ -215,7 +230,7 @@ def conversation(payload: ConversationRequest):
     # configured a provider key. Safety routes above always remain rule-guided.
     # Keep the guided reply ready as a fallback. Only non-safety requests with explicit
     # account consent and a configured server key are eligible for model processing.
-    if payload.aiEnabled and os.getenv("AI_COACH_API_KEY") and not any(term in lowered for term in urgent_terms + injury_terms):
+    if payload.aiEnabled and os.getenv("AI_COACH_API_KEY") and not any(term in lowered for term in urgent_terms + injury_terms + high_risk_terms):
         try:
             generated = generate_ai_reply(payload)
             if generated:

@@ -1702,8 +1702,11 @@ test("overview quick actions open the workout builder and Coach", async ({ page 
   await page.getByRole("button", { name: "Sign in" }).click();
 
   await expect(page.getByRole("heading", { name: "Your week" })).toBeVisible();
+  // The overview hero owns its primary action; other screens keep the persistent header shortcut.
+  await expect(page.locator(".topbar-action")).toBeHidden();
   await page.getByRole("button", { name: "Start a workout", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Build a workout" })).toBeVisible();
+  await expect(page.locator(".topbar-action")).toBeVisible();
 
   // Return to the overview through the responsive navigation before checking the second shortcut.
   const isMobileLayout = (page.viewportSize()?.width ?? 1280) <= 820;

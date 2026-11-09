@@ -629,7 +629,22 @@ router.get("/pings/conversations", async (req, res, next) => {
     });
     const hasMore = rows.length > input.limit;
     const conversations = hasMore ? rows.slice(0, input.limit) : rows;
-    return res.json({ conversations, hasMore, nextCursor: hasMore ? conversations[conversations.length - 1].id : null });
+    // One grouped query supplies unread totals for the visible page without fetching message bodies.
+    const unreadRows = conversations.length ? await prismaClient.directMessage.groupBy({
+      by: ["conversationId"],
+      where: {
+        conversationId: { in: conversations.map(conversation => conversation.id) },
+        senderId: { not: req.userId },
+        readAt: null
+      },
+      _count: { _all: true }
+    }) : [];
+    const unreadByConversation = new Map(unreadRows.map(row => [row.conversationId, row._count._all]));
+    const conversationsWithUnread = conversations.map(conversation => ({
+      ...conversation,
+      unreadCount: unreadByConversation.get(conversation.id) ?? 0
+    }));
+    return res.json({ conversations: conversationsWithUnread, hasMore, nextCursor: hasMore ? conversations[conversations.length - 1].id : null });
   } catch (error) { return next(error); }
 });
 

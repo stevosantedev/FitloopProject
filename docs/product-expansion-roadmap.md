@@ -12,7 +12,7 @@ The work should be delivered in small vertical slices. Each slice includes its i
 
 ## Latest interface direction
 
-The current UI refresh takes its main cues from Strava and openGym.ch: clear information hierarchy, direct navigation, compact training controls and a restrained visual system. FitLoop keeps its own identity and does not copy either product. The Workouts screen now gives the active session builder more space and improves exercise discovery. Community places the friends' activity feed and composer ahead of profile and connection management. Coach puts the conversation before progression analysis and weekly planning. Desktop and mobile layouts retain the same task order, with a single-column layout on smaller screens. These are incremental refinements; browser coverage now verifies the feed-first and conversation-first screen order at desktop and mobile widths. The complete screen-by-screen design review and physical-device checks are still open. The latest CI suite verifies the Community feed-first and Coach conversation-first order at desktop and mobile widths.
+The current UI refresh takes its main cues from Strava and openGym.ch: clear information hierarchy, direct navigation, compact training controls and a restrained visual system. FitLoop keeps its own identity and does not copy either product. The Workouts screen gives the active session builder more space and improves exercise discovery. Community places the friends' activity feed and composer ahead of profile and connection management. Coach puts the active conversation before its history, progression analysis and weekly planning; an empty conversation offers editable starter questions that are never sent automatically. On mobile, the active chat stays above conversation history. Browser coverage verifies these screen priorities at desktop and mobile widths. The complete screen-by-screen design review and physical-device checks are still open.
 
 ## Workstream A: AI Coach
 
@@ -33,7 +33,8 @@ The existing Python rule-based coach remains a useful baseline and fallback. A l
    - [x] Add an optional AI-generated reply path using a server-side OpenAI-compatible Chat Completions endpoint. It is disabled by default, requires an account preference opt-in and configured server key, sends only the bounded recent-workout summary, and falls back to guided rules on provider failure.
    - [x] Allow the full OpenAI-compatible chat-completions URL to be configured by deployment without changing the coaching rules.
    - [x] Add a 30-message-per-account hourly ceiling before context lookup and provider processing.
-   - [ ] Use a shared limiter store for multi-instance deployments, verify a live provider with an operator-supplied key, and complete data-protection/retention review plus independent safety evaluation before enabling this path for real users.
+   - [x] Add a PostgreSQL-backed shared limiter store for multi-instance deployments; integration tests verify that separate store instances increment the same account bucket atomically.
+   - [ ] Verify a live provider with an operator-supplied key, and complete data-protection/retention review plus independent safety evaluation before enabling this path for real users.
    - Conversation replies are guided by default. An optional generative path now exists behind explicit consent and server configuration; when it is not enabled or available, the service returns a guided reply. The UI identifies which mode produced the latest reply. Live provider behaviour remains unverified until a key is configured and tested.
 
 2. **Grounded FitLoop context**

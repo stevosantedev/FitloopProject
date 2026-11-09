@@ -95,6 +95,18 @@ test("account deletion removes owned records and private exercises while preserv
     const post = await prisma.feedPost.create({
       data: { userId: owner.id, type: "update", text: "Deletion fixture post" }
     });
+    // Recipient-owned inbox rows cascade; actor-only rows for the friend survive with the actor anonymised.
+    await Promise.all([
+      prisma.activityNotification.create({
+        data: { recipientId: owner.id, actorId: friend.id, type: "friend_request" }
+      }),
+      prisma.activityNotification.create({
+        data: { recipientId: friend.id, actorId: owner.id, type: "friend_accepted" }
+      }),
+      prisma.activityNotification.create({
+        data: { recipientId: friend.id, actorId: owner.id, postId: post.id, type: "comment" }
+      })
+    ]);
     await prisma.coachConversation.create({
       data: {
         userId: owner.id,
@@ -171,6 +183,8 @@ test("account deletion removes owned records and private exercises while preserv
       friendships,
       reactions,
       comments,
+      receivedNotifications,
+      survivingActorNotifications,
       blocksInvolvingOwner,
       reportsFiledByOwner,
       survivingFriendReports,
@@ -193,6 +207,11 @@ test("account deletion removes owned records and private exercises while preserv
       prisma.friendConnection.count({ where: { OR: [{ requesterId: owner.id }, { addresseeId: owner.id }] } }),
       prisma.reaction.count({ where: { userId: owner.id } }),
       prisma.feedComment.count({ where: { userId: owner.id } }),
+      prisma.activityNotification.count({ where: { recipientId: owner.id } }),
+      prisma.activityNotification.findMany({
+        where: { recipientId: friend.id },
+        select: { actorId: true, postId: true, type: true }
+      }),
       prisma.userBlock.count({
         where: { OR: [{ blockerId: owner.id }, { blockedUserId: owner.id }] }
       }),
@@ -211,7 +230,7 @@ test("account deletion removes owned records and private exercises while preserv
     for (const count of [
       dailyLogs, routines, sessions, plannedSessions, trainingPlans, trainingPlanDays, coachEvents, coachPreferences,
       coachConversations, coachMessages, posts, friendships, reactions, comments,
-      blocksInvolvingOwner, reportsFiledByOwner, privateExercises
+      receivedNotifications, blocksInvolvingOwner, reportsFiledByOwner, privateExercises
     ]) {
       assert.equal(count, 0);
     }
@@ -219,6 +238,9 @@ test("account deletion removes owned records and private exercises while preserv
     assert.equal(survivingFriendReports.length, 2);
     assert.ok(survivingFriendReports.every(report => report.reportedUserId === null));
     assert.ok(survivingFriendReports.every(report => report.postId === null));
+    assert.equal(survivingActorNotifications.length, 1);
+    assert.equal(survivingActorNotifications[0].actorId, null);
+    assert.equal(survivingActorNotifications[0].postId, null);
     assert.equal(sharedExerciseAfterDeletion, 1);
     assert.ok(survivingFriend);
   } finally {

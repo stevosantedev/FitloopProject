@@ -44,12 +44,13 @@ For each area below, check the initial load, a slow connection, a failed request
 - [ ] Friend request, acceptance, reaction and comment success/error feedback is visible.
 - [ ] Private feed content is only shown to the expected account and accepted connections.
 - [ ] Social and You remain separate workspaces, and the bottom navigation changes when the top switch changes.
-- Feed shows friends' activity before secondary relationship management.
-- Explore currently provides bounded people discovery only; do not expect public posts or video discovery yet.
-- Pings clearly states that private messaging is not available; it must not imply that messages can be sent.
-- The signed-in Profile shows only that member's shared feed posts and workout summaries, offers profile editing and opens account settings.
-- Profile content does not expose private session notes, wellbeing logs or account credentials.
-- The friends' activity feed appears before friend management and blocked-account controls.
+- [ ] Feed shows friends' activity before secondary relationship management.
+- [ ] Explore currently provides bounded people discovery only; do not expect public posts or video discovery yet.
+- [ ] Pings clearly states that private messaging is not available; it must not imply that messages can be sent.
+- [ ] The signed-in Profile shows only that member's own shared posts and workout summaries, offers profile editing and opens account settings.
+- [ ] Profile history can load older posts independently of the friends feed.
+- [ ] Profile content does not expose private session notes, wellbeing logs or account credentials.
+- [ ] The friends' activity feed appears before friend management and blocked-account controls.
 - [ ] The post composer remains easy to reach on desktop and mobile; character limits and friends-only audience copy are clear.
 - [ ] Profile previews, report actions, block/unblock and friend-request controls remain understandable at narrow widths.
 - [ ] Activity inbox shows friend requests, accepted requests, reactions and comments only to the recipient.

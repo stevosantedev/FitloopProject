@@ -124,3 +124,12 @@ Do not mark these checks complete based only on the Playwright suite. The tester
 - [ ] The bottom navigation stays above the device safe area and does not cover the last action.
 - [ ] Reduced-motion preference disables non-essential transitions.
 - [ ] Repeat the same screens at tablet and desktop widths to check that the phone layout has not damaged larger layouts.
+
+
+## Social tab separation
+
+- [ ] Feed shows the post composer, activity inbox and friends' activity.
+- [ ] Explore shows people search, friend requests and blocked-account management without the feed composer or inbox.
+- [ ] Profile shows the member's details and own shared workout posts without Explore relationship management.
+- [ ] Pings clearly explains that direct messaging is not enabled yet.
+- [ ] Switching tabs does not leave content from the previous tab visible below the current screen.

@@ -221,6 +221,8 @@ async function mockApplicationApi(page: Page, onSessionSave?: (body: any) => voi
       body = { posts: socialPosts.filter(post => post.user.id === "user-1"), hasMore: false, nextCursor: null };
     } else if (url.pathname === "/api/social/feed") {
       body = { posts: socialPosts };
+    } else if (url.pathname === "/api/social/explore") {
+      body = { posts: [], hasMore: false, nextCursor: null };
     }
 
     await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
@@ -2217,4 +2219,20 @@ test("Social bottom tabs show their own focused screen content", async ({ page }
   await expect(page.locator(".pings-placeholder")).toBeVisible();
   await expect(page.locator(".profile-home")).toHaveCount(0);
   await expect(page.locator(".content-grid")).toHaveCount(0);
+});
+
+
+test("Explore shows public training discovery separately from friend search", async ({ page }) => {
+  await mockApplicationApi(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await page.getByLabel("Email").fill("tester@example.com");
+  await page.getByLabel("Password").fill("test-password");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.locator(".mobile-nav").getByRole("button", { name: "Explore" }).click();
+
+  await expect(page.getByRole("heading", { name: "Discover the community" })).toBeVisible();
+  await expect(page.getByText("No public posts yet.")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Find friends" })).toBeVisible();
+  await expect(page.locator(".community-composer")).toHaveCount(0);
 });

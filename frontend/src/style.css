@@ -2503,3 +2503,10 @@ input::placeholder, textarea::placeholder { color: #777f84; }
   .ping-reply-form button { padding: 0 14px; }
   .ping-message { max-width: 88%; }
 }
+
+/* Unread counts stay compact so they never compete with the conversation preview. */
+.ping-unread-count {
+  display: inline-grid; flex: 0 0 auto; min-width: 21px; height: 21px; place-items: center;
+  padding: 0 6px; border-radius: 999px; background: var(--fitloop-accent); color: #17110e;
+  font-size: .68rem; font-weight: 800; font-variant-numeric: tabular-nums;
+}

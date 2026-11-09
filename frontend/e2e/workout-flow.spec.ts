@@ -234,14 +234,24 @@ async function mockApplicationApi(page: Page, onSessionSave?: (body: any) => voi
 // Choose the correct workspace first, then use the navigation that is actually visible
 // at the current viewport. This keeps the same journey valid on desktop and phones.
 async function clickWorkspaceDestination(page: Page, workspace: "social" | "you", destination: string) {
-  await page.locator(".workspace-switch-bar").getByRole("button", { name: workspace === "social" ? "Social" : "You" }).click();
+  // Avoid re-clicking an already selected workspace: the switch is a state change,
+  // not a navigation reset, and repeated clicks can obscure which tab owns the screen.
+  await expect(page.locator(".app-shell")).toBeVisible();
+  const workspaceButton = page.locator(".workspace-switch-bar").getByRole("button", { name: workspace === "social" ? "Social" : "You" });
+  if (await workspaceButton.getAttribute("aria-pressed") !== "true") {
+    await workspaceButton.click();
+  }
+
   const navigation = page.locator((page.viewportSize()?.width ?? 1280) <= 820 ? ".mobile-nav" : ".sidebar-nav");
+  await expect(navigation).toBeVisible();
   const accessibleName = destination === "Feed" ? "Community"
     : destination === "Workout" ? "Workouts"
     : destination === "Stats" ? "Progress"
     : destination === "Plan" ? "Coach"
     : destination;
-  await navigation.getByRole("button", { name: accessibleName, exact: true }).click();
+  const destinationButton = navigation.getByRole("button", { name: accessibleName, exact: true });
+  await expect(destinationButton).toBeVisible();
+  await destinationButton.click();
 }
 
 async function clickWorkoutsNavigation(page: Page) {
@@ -1199,6 +1209,8 @@ test("community block and report controls call the moderation API", async ({ pag
   await page.getByRole("button", { name: "Sign in" }).click();
   await page.locator(".workspace-switch-bar").getByRole("button", { name: "Social" }).click();
   await clickWorkspaceDestination(page, "social", "Explore");
+  await expect(page.locator('.community-page[data-social-view="explore"]')).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Discover the community" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Friends and requests" })).toBeVisible();
   await page.getByRole("button", { name: "Report account" }).click();
   await expect(page.getByRole("status")).toContainText("Report submitted privately");
@@ -1249,7 +1261,9 @@ test("Community members can search for people and send a friend request from a r
   await page.locator(".workspace-switch-bar").getByRole("button", { name: "Social" }).click();
   await clickWorkspaceDestination(page, "social", "Explore");
 
-  await page.getByLabel("Search by username or display name").fill("runner");
+  await expect(page.locator('.community-page[data-social-view="explore"]')).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Find friends" })).toBeVisible();
+  await page.locator(".content-grid input").fill("runner");
   await page.getByRole("button", { name: "Search people" }).click();
   await expect(page.getByRole("list", { name: "People you can connect with" }).getByText("Runner Candidate")).toBeVisible();
   await page.getByRole("button", { name: "Add friend" }).click();
@@ -2139,7 +2153,7 @@ test("the member profile shows the signed-in user's own shared workout posts", a
   await page.locator(".workspace-switch-bar").getByRole("button", { name: "Social" }).click();
   await clickWorkspaceDestination(page, "social", "Profile");
 
-  await expect(page.getByRole("heading", { name: "tester", exact: true })).toBeVisible();
+  await expect(page.locator(".profile-identity h2")).toHaveText("tester");
   await expect(page.getByText("A steady session before lectures.")).toBeVisible();
   await expect(page.locator(".profile-posts")).toContainText("1 posts");
   await expect(page.locator(".profile-stats")).toContainText("1");
@@ -2174,10 +2188,11 @@ test("Social and You navigation remain usable across phone widths", async ({ pag
   await page.getByLabel("Password").fill("test-password");
   await page.getByRole("button", { name: "Sign in" }).click();
 
-  await page.locator(".workspace-switch-bar").getByRole("button", { name: "You" }).click();
   for (const width of [320, 360, 390, 430]) {
-    await clickWorkspaceDestination(page, "you", "Home");
+    // Set the viewport before selecting a destination so the helper chooses the
+    // navigation variant that the app actually renders at this phone width.
     await page.setViewportSize({ width, height: 844 });
+    await clickWorkspaceDestination(page, "you", "Home");
     const workspaceSwitch = page.locator(".workspace-switch-bar");
     const bottomNavigation = page.locator(".mobile-nav");
 

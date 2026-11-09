@@ -1535,7 +1535,7 @@ function signOut() {
     <div className="app-main">
       <header className="topbar">
         <div><p className="topbar-kicker">{activeTab === "home" ? "YOUR TRAINING" : activeTab === "workouts" ? "PLAN / LOG / REVIEW" : activeTab === "community" ? "TRAIN TOGETHER" : "GUIDANCE / PROGRESS"}</p><strong>{activeTab === "home" ? "Overview" : activeTab === "workouts" ? "Workouts" : activeTab === "community" ? "Community" : "Coach"}</strong></div>
-        <div className="account">{pendingWorkoutCount > 0 && <span className="offline-queue-status" role="status">{pendingWorkoutCount} workout{pendingWorkoutCount === 1 ? "" : "s"} waiting to sync</span>}<span className="account-status"><i /> Your space</span><button className="topbar-action" onClick={() => setActiveTab("workouts")}>Start a workout <span>↗</span></button></div>
+        <div className="account">{pendingWorkoutCount > 0 && <span className="offline-queue-status" role="status">{pendingWorkoutCount} workout{pendingWorkoutCount === 1 ? "" : "s"} waiting to sync</span>}<span className="account-status"><i /> Your space</span>{activeTab !== "home" && <button className="topbar-action" onClick={() => setActiveTab("workouts")}>Start a workout <span aria-hidden="true">↗</span></button>}</div>
       </header>
       <nav className="mobile-nav" aria-label="Main sections">
         <button aria-current={activeTab === "home" ? "page" : undefined} className={activeTab === "home" ? "active" : ""} onClick={() => setActiveTab("home")}><span><svg className="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7"/><path d="M5 9.5V21h14V9.5"/><path d="M9 21v-7h6v7"/></svg></span>Home</button>

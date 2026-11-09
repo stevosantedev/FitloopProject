@@ -1722,7 +1722,7 @@ test("overview quick actions open the workout builder and Coach", async ({ page 
   await page.getByLabel("Password").fill("test-password");
   await page.getByRole("button", { name: "Sign in" }).click();
 
-  await expect(page.getByRole("heading", { name: "Your week" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Your week", exact: true })).toBeVisible();
   // The overview hero owns its primary action; other screens keep the persistent header shortcut.
   await expect(page.locator(".topbar-action")).toBeHidden();
   await page.getByRole("button", { name: "Start a workout", exact: true }).click();
@@ -1733,7 +1733,7 @@ test("overview quick actions open the workout builder and Coach", async ({ page 
   const isMobileLayout = (page.viewportSize()?.width ?? 1280) <= 820;
   const navigation = page.locator(isMobileLayout ? ".mobile-nav" : ".sidebar-nav");
   await navigation.getByRole("button", { name: isMobileLayout ? "Home" : "Overview" }).click();
-  await expect(page.getByRole("heading", { name: "Your week" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Your week", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Open coach" }).click();
   await expect(page.locator(".topbar strong")).toHaveText("Coach");
 });
@@ -1754,7 +1754,7 @@ test("Progress is a separate destination with compact weekly metrics", async ({ 
   await expect(page.getByRole("heading", { name: "Progress", exact: true })).toBeVisible();
   await expect(page.getByText("Workouts this week")).toBeVisible();
   await expect(page.getByText("Sleep, steps, mood and focus")).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Your week" })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Your week", exact: true })).toHaveCount(0);
 
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.locator(".mobile-nav button")).toHaveCount(5);
@@ -1912,11 +1912,11 @@ test("captures current FitLoop screens for visual review", async ({ page }, test
   await page.getByLabel("Email").fill("tester@example.com");
   await page.getByLabel("Password").fill("test-password");
   await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page.getByRole("heading", { name: "Your week" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Your week", exact: true })).toBeVisible();
 
   const desktopNavigation = page.locator(".sidebar-nav");
   const desktopScreens = [
-    { name: "overview", ready: page.getByRole("heading", { name: "Your week" }) },
+    { name: "overview", ready: page.getByRole("heading", { name: "Your week", exact: true }) },
     { name: "workouts", button: "Workouts", ready: page.getByRole("heading", { name: "Build a workout" }) },
     { name: "community", button: "Community", ready: page.getByRole("heading", { name: "Activity", exact: true }) },
     { name: "coach", button: "Coach", ready: page.locator(".coach-chat-panel") }
@@ -1932,7 +1932,7 @@ test("captures current FitLoop screens for visual review", async ({ page }, test
   await page.setViewportSize({ width: 390, height: 844 });
   const mobileNavigation = page.locator(".mobile-nav");
   const mobileScreens = [
-    { name: "overview", button: "Home", ready: page.getByRole("heading", { name: "Your week" }) },
+    { name: "overview", button: "Home", ready: page.getByRole("heading", { name: "Your week", exact: true }) },
     { name: "workouts", button: "Workouts", ready: page.getByRole("heading", { name: "Build a workout" }) },
     { name: "community", button: "Community", ready: page.getByRole("heading", { name: "Activity", exact: true }) },
     { name: "coach", button: "Coach", ready: page.locator(".coach-chat-panel") }

@@ -2517,3 +2517,9 @@ input::placeholder, textarea::placeholder { color: #777f84; }
   .pings-thread .section-heading-row { align-items: flex-start; }
   .ping-thread-actions { justify-content: flex-end; }
 }
+
+.ping-message-report {
+  display: block; margin-top: 7px; padding: 0; border: 0; background: transparent;
+  color: var(--fitloop-muted); font-size: .68rem; text-decoration: underline; cursor: pointer;
+}
+.ping-message-report:hover { color: var(--fitloop-text); }

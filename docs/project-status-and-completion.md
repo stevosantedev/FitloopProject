@@ -176,3 +176,13 @@ The previous visual-review run exposed a strict heading assertion and an extra d
 - Added reduced-motion handling so decorative transitions do not override a member's system preference.
 - Added a responsive browser test at 320px, 360px, 390px and 430px. It checks navigation visibility, fixed bottom navigation bounds, workspace tab counts and horizontal overflow.
 - The redesign remains in progress until screenshots from the running build have been inspected at phone, tablet and desktop sizes.
+
+
+## Social screen separation
+
+- Feed now contains only publishing, the activity inbox and friends' posts.
+- Explore contains friend discovery, connection requests and blocked-account controls.
+- Profile contains the member's profile summary, editable identity and shared post history. The duplicate profile editor that previously appeared on every Social screen has been removed.
+- Pings remains a clear placeholder. Private messaging is not enabled until message privacy, requests, blocking, reporting and notification handling are implemented.
+- The current Explore page is connection discovery, not public post/video discovery. That wider discovery feature remains future work.
+- Added browser coverage to check that each Social destination shows its own content and does not repeat the other tabs' main sections.

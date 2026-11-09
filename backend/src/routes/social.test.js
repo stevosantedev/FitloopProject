@@ -1084,3 +1084,32 @@ test("POST notifications read-all marks only unread notifications for the authen
   assert.deepEqual(query.where, { recipientId: "user-a", readAt: null });
   assert.ok(query.data.readAt instanceof Date);
 });
+
+
+// Explore returns only public accounts and removes both directions of a block before pagination.
+test("GET explore limits discovery to public, non-blocked accounts", async () => {
+  let query;
+  const prisma = {
+    userBlock: { findMany: async () => [{ blockerId: "user-a", blockedUserId: "blocked-user" }, { blockerId: "other-user", blockedUserId: "user-a" }] },
+    feedPost: { findMany: async args => { query = args; return [{ id: "public-post" }]; } }
+  };
+  await withSocialApi(prisma, async base => {
+    const response = await fetch(base + "/api/social/explore?limit=12");
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { posts: [{ id: "public-post" }], hasMore: false, nextCursor: null });
+  });
+  assert.deepEqual(query.where, { userId: { not: "user-a", notIn: ["blocked-user", "other-user"] }, user: { privateAccount: false } });
+  assert.equal(query.take, 13);
+  assert.deepEqual(query.include.user.select, { id: true, username: true, displayName: true, bio: true });
+});
+
+// A malformed page size must fail before any public content is queried.
+test("GET explore rejects invalid pagination", async () => {
+  let reads = 0;
+  const prisma = { userBlock: { findMany: async () => [], feedPost: { findMany: async () => { reads += 1; return []; } } } };
+  await withSocialApi(prisma, async base => {
+    const response = await fetch(base + "/api/social/explore?limit=100");
+    assert.equal(response.status, 400);
+  });
+  assert.equal(reads, 0);
+});

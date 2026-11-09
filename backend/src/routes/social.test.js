@@ -979,6 +979,39 @@ test("GET notifications is private, filters blocked actors and returns an unread
   assert.deepEqual(countQuery.where, { ...query.where, readAt: null });
 });
 
+// Cursor paging asks Prisma for one extra row so the API can tell whether another page exists.
+test("GET notifications applies a stable cursor and returns the next page boundary", async () => {
+  let query;
+  let countQuery;
+  const rows = [
+    { id: "notice-older-1", type: "reaction" },
+    { id: "notice-older-2", type: "comment" },
+    { id: "notice-extra", type: "friend_request" }
+  ];
+  const prisma = {
+    userBlock: { findMany: async () => [] },
+    activityNotification: {
+      findMany: async args => { query = args; return rows; },
+      count: async args => { countQuery = args; return 3; }
+    }
+  };
+  await withSocialApi(prisma, async base => {
+    const response = await fetch(base + "/api/social/notifications?cursor=notice-cursor&limit=2");
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), {
+      notifications: rows.slice(0, 2),
+      unreadCount: 3,
+      hasMore: true,
+      nextCursor: "notice-older-2"
+    });
+  });
+  assert.deepEqual(query.cursor, { id: "notice-cursor" });
+  assert.equal(query.skip, 1);
+  assert.equal(query.take, 3);
+  assert.deepEqual(query.orderBy, [{ createdAt: "desc" }, { id: "desc" }]);
+  assert.deepEqual(countQuery.where, { recipientId: "user-a", readAt: null });
+});
+
 // A notification ID is not authority; the recipient ID is part of the update condition.
 test("PATCH notifications read only updates a notification owned by the authenticated account", async () => {
   let query;

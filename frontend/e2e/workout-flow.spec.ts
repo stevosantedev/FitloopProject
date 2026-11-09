@@ -223,6 +223,10 @@ async function mockApplicationApi(page: Page, onSessionSave?: (body: any) => voi
       body = { posts: socialPosts };
     } else if (url.pathname === "/api/social/explore") {
       body = { posts: [], hasMore: false, nextCursor: null };
+    }    } else if (url.pathname === "/api/social/pings/requests" && method === "GET") {
+      body = { requests: [], hasMore: false, nextCursor: null };
+    } else if (url.pathname === "/api/social/pings/conversations" && method === "GET") {
+      body = { conversations: [], hasMore: false, nextCursor: null };
     }
 
     await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
@@ -254,9 +258,15 @@ async function clickWorkspaceDestination(page: Page, workspace: "social" | "you"
   const destinationButton = navigation.getByRole("button", { name: accessibleName, exact: true });
   await expect(destinationButton).toBeVisible();
   await destinationButton.click();
-  // The navigation is rebuilt when the workspace changes, so confirm the destination
-  // through the persistent page heading rather than retaining a locator for the old tab bar.
-  await expect(page.locator(".topbar strong")).toHaveText(destination);
+  // The shell exposes the selected destination independently of the responsive
+  // navigation, which is hidden or rebuilt at different viewport sizes.
+  const appShell = page.locator(".app-shell");
+  if (workspace === "social") {
+    await expect(appShell).toHaveAttribute("data-social-view", destination.toLowerCase());
+  } else {
+    const view = ({ Home: "home", Workout: "workout", Stats: "stats", Plan: "plan", Library: "library" } as Record<string, string>)[destination];
+    await expect(appShell).toHaveAttribute("data-you-view", view);
+  }
 }
 
 async function clickWorkoutsNavigation(page: Page) {
@@ -1208,6 +1218,10 @@ test("community block and report controls call the moderation API", async ({ pag
       await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ blocks: [] }) });
       return;
     }
+    if (url.pathname === "/api/social/explore") {
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ posts: [], hasMore: false, nextCursor: null }) });
+      return;
+    }
     if (url.pathname === "/api/social/feed") {
       await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ posts: [] }) });
       return;
@@ -1253,6 +1267,10 @@ test("Community members can search for people and send a friend request from a r
     }
     if (url.pathname === "/api/social/friends" || url.pathname === "/api/social/blocks") {
       await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ connections: [], blocks: [] }) });
+      return;
+    }
+    if (url.pathname === "/api/social/explore") {
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ posts: [], hasMore: false, nextCursor: null }) });
       return;
     }
     if (url.pathname === "/api/social/feed") {
@@ -2356,9 +2374,9 @@ test("Pings supports message requests, acceptance, private history and replies",
 
   await page.getByRole("button", { name: "Accept" }).click();
   await expect(page.getByRole("heading", { name: "Runner One" })).toBeVisible();
-  await expect(page.getByText("Good work on your last session.")).toBeVisible();
+  await expect(page.locator(".ping-message-list").getByText("Good work on your last session.")).toBeVisible();
   await page.getByLabel("Write a message").fill("Thanks, that means a lot.");
   await page.getByRole("button", { name: "Send", exact: true }).click();
-  await expect(page.getByText("Thanks, that means a lot.")).toBeVisible();
+  await expect(page.locator(".ping-message-list").getByText("Thanks, that means a lot.")).toBeVisible();
   expect(sentReply).toEqual({ message: "Thanks, that means a lot." });
 });

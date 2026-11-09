@@ -68,7 +68,7 @@ The application has an installable app shell with persistent desktop navigation 
 - [ ] Complete the full screen-by-screen visual redesign. The overview has direct training/Coach actions, the workout workspace prioritises the active session, exercise discovery has a cleaner search/filter hierarchy, Community prioritises the activity feed, and Coach prioritises the conversation. The full visual review of typography, spacing, media, active workout mode, forms and empty/error states is still open.
 - [ ] Review visual consistency and content density across desktop, tablet and mobile, including active workout mode, dialogs, forms, charts, feed cards and empty/error states.
 - [x] Inventory all 51 source, test, schema and migration files for comment coverage. No code file is left without rationale comments, and every automated test case has a nearby explanation of its purpose.
-- [ ] Finish the qualitative comment-density pass against the supplied dashboard example. Add comments only where they explain intent, constraints, data boundaries or non-obvious decisions; do not inflate short files or repeat straightforward code.
+- [x] Complete the qualitative comment review across all 51 source, test, schema and migration files. Every automated test case has a nearby explanation of its purpose; comments focus on intent, constraints, data boundaries and non-obvious decisions rather than restating straightforward code.
 - [ ] Conduct a structured usability evaluation with representative users after ethics approval where required.
 - [ ] Fix issues found in onboarding, workout creation, guided workout use, exercise search, history and social flows.
 - [x] Deliver the in-app activity inbox for social events; it does not send push notifications or email.

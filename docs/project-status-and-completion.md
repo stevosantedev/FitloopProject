@@ -165,3 +165,14 @@ The previous visual-review run exposed a strict heading assertion and an extra d
 - Added a compact profile activity summary for loaded posts, shared workout posts and completed sets.
 - The labels deliberately describe the currently loaded page rather than implying lifetime totals. Older posts remain available through pagination.
 - Added browser assertions for the summary so the counts remain connected to the actual profile data.
+
+
+## Latest phone-screen refinement
+
+- Tightened the visual hierarchy on Home, Workout, Feed and Profile.
+- Refined the workspace switch for narrow screens and kept it visible as the member scrolls.
+- Improved workout sub-navigation, exercise session surfaces, feed author rows, workout summaries and profile identity styling.
+- Added phone-specific spacing and compact metric layouts at 420px and below.
+- Added reduced-motion handling so decorative transitions do not override a member's system preference.
+- Added a responsive browser test at 320px, 360px, 390px and 430px. It checks navigation visibility, fixed bottom navigation bounds, workspace tab counts and horizontal overflow.
+- The redesign remains in progress until screenshots from the running build have been inspected at phone, tablet and desktop sizes.

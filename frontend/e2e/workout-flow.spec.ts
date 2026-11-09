@@ -2179,3 +2179,39 @@ test("Social and You navigation remain usable across phone widths", async ({ pag
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   }
 });
+
+
+// Social destinations should show one task at a time. This prevents the phone
+// layout from becoming one long page containing every community management tool.
+test("Social bottom tabs show their own focused screen content", async ({ page }) => {
+  await mockApplicationApi(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await page.getByLabel("Email").fill("tester@example.com");
+  await page.getByLabel("Password").fill("test-password");
+  await page.getByRole("button", { name: "Sign in" }).click();
+
+  const nav = page.locator(".mobile-nav");
+  await expect(page.locator(".community-composer")).toBeVisible();
+  await expect(page.locator(".activity-inbox")).toBeVisible();
+  await expect(page.locator(".feed-section-heading")).toBeVisible();
+  await expect(page.locator(".content-grid")).toHaveCount(0);
+
+  await nav.getByRole("button", { name: "Explore" }).click();
+  await expect(page.locator(".content-grid")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Find friends" })).toBeVisible();
+  await expect(page.locator(".community-composer")).toHaveCount(0);
+  await expect(page.locator(".activity-inbox")).toHaveCount(0);
+  await expect(page.locator(".feed-section-heading")).toHaveCount(0);
+
+  await nav.getByRole("button", { name: "Profile" }).click();
+  await expect(page.locator(".profile-home")).toBeVisible();
+  await expect(page.locator(".community-profile-form")).toHaveCount(0);
+  await expect(page.locator(".content-grid")).toHaveCount(0);
+  await expect(page.locator(".community-composer")).toHaveCount(0);
+
+  await nav.getByRole("button", { name: "Pings" }).click();
+  await expect(page.locator(".pings-placeholder")).toBeVisible();
+  await expect(page.locator(".profile-home")).toHaveCount(0);
+  await expect(page.locator(".content-grid")).toHaveCount(0);
+});

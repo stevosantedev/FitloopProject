@@ -1914,30 +1914,6 @@ function signOut() {
 
     {activeTab === "coach" && <section className="page-section coach-page">
       <div className="welcome compact"><p className="eyebrow">COACH</p><h1>Ask about your training.</h1><p className="muted">Get help with logged sessions, exercise technique or your next routine.</p></div>
-      <section className="panel progression-guidance" aria-labelledby="progression-guidance-title">
-        <div><p className="eyebrow">BASED ON YOUR LOGGED WORKOUTS</p><h2 id="progression-guidance-title">Training progression</h2>
-          <p className="muted">Suggestions compare your two latest completed sessions for each movement. They are optional guidance, not instructions to train through discomfort.</p></div>
-        {progressionLoading && <p role="status" className="muted">Reviewing your recent completed sets…</p>}
-        {progressionError && <div className="load-error" role="alert"><span>{progressionError}</span><button type="button" className="secondary" onClick={() => void loadProgressionSuggestions()}>Try again</button></div>}
-        {!progressionLoading && !progressionError && progressionSuggestions.length === 0 && <p className="muted">Complete at least two sessions for a movement to receive a comparison here.</p>}
-        <div className="progression-guidance-list">{progressionSuggestions.map(item => <article className="progression-guidance-card" key={item.exerciseId}>
-          <div className="section-heading-row"><strong>{item.exerciseName}</strong><span className={"progression-status " + item.recommendation}>{item.recommendation === "consider_small_increase" ? "Consider a small increase" : item.recommendation === "repeat_or_reduce" ? "Repeat or reduce" : "Maintain"}</span></div>
-          <p>{item.reason}</p>
-          <small>Latest: {item.latest.reps} reps at {item.latest.weightKg == null ? "bodyweight / unweighted" : item.latest.weightKg + " kg"} · Previous: {item.previous.reps} reps at {item.previous.weightKg == null ? "bodyweight / unweighted" : item.previous.weightKg + " kg"}</small>
-          {item.recentSessions.length > 2 && <small>Recent history ({item.recentSessions.length} sessions, newest first): {item.recentSessions.map((session, index) => `${session.reps} reps · ${session.weightKg == null ? "unweighted" : session.weightKg + " kg"}`).join(" → ")}</small>}
-        </article>)}</div>
-        <button type="button" className="secondary-action" onClick={() => void loadProgressionSuggestions()} disabled={progressionLoading}>Refresh progression guidance</button>
-      </section>
-      <CoachRoutineDraft
-        exercises={exercises}
-        plans={trainingPlans}
-        plansLoading={trainingPlansLoading}
-        saving={trainingPlanSaving}
-        onSavePlan={saveTrainingPlan}
-        onUpdatePlan={updateTrainingPlan}
-        onDeletePlan={deleteTrainingPlan}
-        onStartDay={startTrainingPlanDay}
-      />
       <div className="coach-chat-layout">
         <aside className="panel coach-conversation-list">
           <div className="section-heading-row"><h2>Conversations</h2><button type="button" className="small-button" onClick={() => void createCoachConversation()}>New chat +</button></div>
@@ -1976,6 +1952,30 @@ function signOut() {
           <p className="coach-context-disclosure"><strong>What informs a reply:</strong> When you send a message, FitLoop shares your message, coaching tone/focus preferences and up to five of your most recent logged workout sessions, including dates, routine names and completed exercise reps and loads. Private session notes, daily wellbeing logs and account identifiers are excluded.</p>
         </section>
       </div>
+      <section className="panel progression-guidance" aria-labelledby="progression-guidance-title">
+        <div><p className="eyebrow">BASED ON YOUR LOGGED WORKOUTS</p><h2 id="progression-guidance-title">Training progression</h2>
+          <p className="muted">Suggestions compare your two latest completed sessions for each movement. They are optional guidance, not instructions to train through discomfort.</p></div>
+        {progressionLoading && <p role="status" className="muted">Reviewing your recent completed sets…</p>}
+        {progressionError && <div className="load-error" role="alert"><span>{progressionError}</span><button type="button" className="secondary" onClick={() => void loadProgressionSuggestions()}>Try again</button></div>}
+        {!progressionLoading && !progressionError && progressionSuggestions.length === 0 && <p className="muted">Complete at least two sessions for a movement to receive a comparison here.</p>}
+        <div className="progression-guidance-list">{progressionSuggestions.map(item => <article className="progression-guidance-card" key={item.exerciseId}>
+          <div className="section-heading-row"><strong>{item.exerciseName}</strong><span className={"progression-status " + item.recommendation}>{item.recommendation === "consider_small_increase" ? "Consider a small increase" : item.recommendation === "repeat_or_reduce" ? "Repeat or reduce" : "Maintain"}</span></div>
+          <p>{item.reason}</p>
+          <small>Latest: {item.latest.reps} reps at {item.latest.weightKg == null ? "bodyweight / unweighted" : item.latest.weightKg + " kg"} · Previous: {item.previous.reps} reps at {item.previous.weightKg == null ? "bodyweight / unweighted" : item.previous.weightKg + " kg"}</small>
+          {item.recentSessions.length > 2 && <small>Recent history ({item.recentSessions.length} sessions, newest first): {item.recentSessions.map((session, index) => `${session.reps} reps · ${session.weightKg == null ? "unweighted" : session.weightKg + " kg"}`).join(" → ")}</small>}
+        </article>)}</div>
+        <button type="button" className="secondary-action" onClick={() => void loadProgressionSuggestions()} disabled={progressionLoading}>Refresh progression guidance</button>
+      </section>
+      <CoachRoutineDraft
+        exercises={exercises}
+        plans={trainingPlans}
+        plansLoading={trainingPlansLoading}
+        saving={trainingPlanSaving}
+        onSavePlan={saveTrainingPlan}
+        onUpdatePlan={updateTrainingPlan}
+        onDeletePlan={deleteTrainingPlan}
+        onStartDay={startTrainingPlanDay}
+      />
     </section>}
 
     {activeTab === "community" && <section className="page-section community-page">

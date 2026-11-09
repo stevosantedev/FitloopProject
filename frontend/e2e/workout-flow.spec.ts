@@ -429,6 +429,20 @@ test("the app uses persistent navigation on desktop and a bottom tab bar on mobi
   await expect(page.locator(".mobile-nav button[aria-current=page]")).toHaveText("Community");
   await expect(page.getByRole("heading", { name: "Your community." })).toBeVisible();
   await expect(page.locator(".app-sidebar")).toBeHidden();
+
+  // A narrow phone should keep every main destination inside the viewport without sideways scrolling.
+  await page.setViewportSize({ width: 320, height: 740 });
+  const assertNoHorizontalOverflow = async () => {
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  };
+  await page.locator(".mobile-nav").getByRole("button", { name: "Home" }).click();
+  await assertNoHorizontalOverflow();
+  await page.locator(".mobile-nav").getByRole("button", { name: "Workouts" }).click();
+  await assertNoHorizontalOverflow();
+  await page.locator(".mobile-nav").getByRole("button", { name: "Community" }).click();
+  await assertNoHorizontalOverflow();
+  await page.locator(".mobile-nav").getByRole("button", { name: "Coach" }).click();
+  await assertNoHorizontalOverflow();
 });
 
 // Render the profile fields returned by the API without exposing fields the response omits.

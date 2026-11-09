@@ -190,6 +190,8 @@ export default function App() {
   // The top switch separates the social experience from personal training tools.
   // A social subtab is kept independently so moving to You and back preserves the feed/profile location.
   const [workspace, setWorkspace] = useState<"social" | "you">("you");
+  // Workout and Library share existing catalogue data but have separate navigation destinations.
+  const [youView, setYouView] = useState<"home" | "workout" | "stats" | "plan" | "library">("home");
   const [socialView, setSocialView] = useState<"feed" | "explore" | "pings" | "profile">("feed");
   const [activeTab, setActiveTab] = useState<"home" | "workouts" | "progress" | "community" | "coach">("home");
   // Account controls stay behind a deliberate settings action instead of extending the Home feed.
@@ -1547,7 +1549,7 @@ function signOut() {
   return <main className="app-shell">
     <aside className="app-sidebar" aria-label="Application navigation">
       <a className="brand" href="/">FitLoop<span>.</span></a>
-      <p className="sidebar-label">YOUR TRAINING</p>
+      <p className="sidebar-label">{workspace === "social" ? "YOUR COMMUNITY" : "YOUR TRAINING"}</p>
       {/* Desktop navigation mirrors the two top-level workspaces shown on mobile. */}
       <nav className="sidebar-nav" aria-label={workspace === "social" ? "Social navigation" : "Your training navigation"}>
         {workspace === "social" ? <>
@@ -1556,13 +1558,13 @@ function signOut() {
           <button aria-current={socialView === "pings" ? "page" : undefined} className={socialView === "pings" ? "active" : ""} onClick={() => { setActiveTab("community"); setSocialView("pings"); }}>Pings</button>
           <button aria-current={socialView === "profile" ? "page" : undefined} className={socialView === "profile" ? "active" : ""} onClick={() => { setActiveTab("community"); setSocialView("profile"); }}>Profile</button>
         </> : <>
-          <button aria-label="Overview" aria-current={activeTab === "home" ? "page" : undefined} className={activeTab === "home" ? "active" : ""} onClick={() => setActiveTab("home")}>Home</button>
-          <button aria-label="Workouts" aria-current={activeTab === "workouts" ? "page" : undefined} className={activeTab === "workouts" ? "active" : ""} onClick={() => setActiveTab("workouts")}>Workout</button>
-          <button aria-label="Progress" aria-current={activeTab === "progress" ? "page" : undefined} className={activeTab === "progress" ? "active" : ""} onClick={() => setActiveTab("progress")}>Stats</button>
-          <button aria-label="Coach" aria-current={activeTab === "coach" ? "page" : undefined} className={activeTab === "coach" ? "active" : ""} onClick={() => setActiveTab("coach")}>Plan</button>
-          <button aria-current={activeTab === "workouts" ? "page" : undefined} className={activeTab === "workouts" ? "active" : ""} onClick={() => { setActiveTab("workouts"); window.setTimeout(() => document.getElementById("exercise-library")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0); }}>Library</button>
+          <button aria-label="Overview" aria-current={youView === "home" ? "page" : undefined} className={youView === "home" ? "active" : ""} onClick={() => { setYouView("home"); setActiveTab("home"); }}>Home</button>
+          <button aria-label="Workouts" aria-current={youView === "workout" ? "page" : undefined} className={youView === "workout" ? "active" : ""} onClick={() => { setYouView("workout"); setActiveTab("workouts"); }}>Workout</button>
+          <button aria-label="Progress" aria-current={youView === "stats" ? "page" : undefined} className={youView === "stats" ? "active" : ""} onClick={() => { setYouView("stats"); setActiveTab("progress"); }}>Stats</button>
+          <button aria-label="Coach" aria-current={youView === "plan" ? "page" : undefined} className={youView === "plan" ? "active" : ""} onClick={() => { setYouView("plan"); setActiveTab("coach"); }}>Plan</button>
+          <button aria-current={youView === "library" ? "page" : undefined} className={youView === "library" ? "active" : ""} onClick={() => { setYouView("library"); setActiveTab("workouts"); window.setTimeout(() => document.getElementById("exercise-library")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0); }}>Library</button>
         </>}
-        {workspace === "you" && <button className="sidebar-coach-link" onClick={() => setActiveTab("coach")}>Coach</button>}
+        {workspace === "you" && <button className="sidebar-coach-link" onClick={() => { setYouView("plan"); setActiveTab("coach"); }}>Coach</button>}
       </nav>
       <div className="sidebar-bottom">
         <div className="sidebar-profile"><span className="profile-avatar">{(user?.username ?? "F").slice(0, 1).toUpperCase()}</span><span><strong>{user?.username ?? "Your account"}</strong><small>Personal workspace</small></span></div>
@@ -1575,11 +1577,11 @@ function signOut() {
       {/* This switch stays visible on phones and desktop so the two workspaces never feel like separate apps. */}
       <div className="workspace-switch-bar" role="group" aria-label="Choose workspace">
         <button type="button" className={workspace === "social" ? "active" : ""} aria-pressed={workspace === "social"} onClick={() => { setWorkspace("social"); setActiveTab("community"); }}>Social</button>
-        <button type="button" className={workspace === "you" ? "active" : ""} aria-pressed={workspace === "you"} onClick={() => { setWorkspace("you"); setActiveTab("home"); }}>You</button>
+        <button type="button" className={workspace === "you" ? "active" : ""} aria-pressed={workspace === "you"} onClick={() => { setWorkspace("you"); setYouView("home"); setActiveTab("home"); }}>You</button>
       </div>
       <header className="topbar">
-        <div><p className="topbar-kicker">{activeTab === "home" ? "YOUR TRAINING" : activeTab === "workouts" ? "PLAN / LOG / REVIEW" : activeTab === "progress" ? "TRAINING / DAILY PATTERNS" : activeTab === "community" ? "TRAIN TOGETHER" : "GUIDANCE"}</p><strong>{activeTab === "home" ? "Overview" : activeTab === "workouts" ? "Workouts" : activeTab === "progress" ? "Progress" : activeTab === "community" ? "Community" : "Coach"}</strong></div>
-        <div className="account">{pendingWorkoutCount > 0 && <span className="offline-queue-status" role="status">{pendingWorkoutCount} workout{pendingWorkoutCount === 1 ? "" : "s"} waiting to sync</span>}<span className="account-status"><i /> Your space</span>{activeTab !== "home" && <button className="topbar-action" onClick={() => setActiveTab("workouts")}>Start a workout <span aria-hidden="true">↗</span></button>}</div>
+        <div><p className="topbar-kicker">{activeTab === "community" ? "SOCIAL" : activeTab === "home" ? "YOUR TRAINING" : activeTab === "workouts" ? "TRAINING" : activeTab === "progress" ? "YOUR HISTORY" : "YOUR PLAN"}</p><strong>{activeTab === "community" ? (socialView === "feed" ? "Feed" : socialView === "explore" ? "Explore" : socialView === "pings" ? "Pings" : "Profile") : activeTab === "home" ? "Home" : activeTab === "workouts" ? (youView === "library" ? "Library" : "Workout") : activeTab === "progress" ? "Stats" : "Plan"}</strong></div>
+        <div className="account">{pendingWorkoutCount > 0 && <span className="offline-queue-status" role="status">{pendingWorkoutCount} workout{pendingWorkoutCount === 1 ? "" : "s"} waiting to sync</span>}<span className="account-status"><i /> Your space</span>{activeTab !== "home" && <button className="topbar-action" onClick={() => { setYouView("workout"); setActiveTab("workouts"); }}>Start a workout <span aria-hidden="true">↗</span></button>}</div>
       </header>
       {/* The tab bar stays available while a user scrolls through a long screen.
           Safe-area spacing is handled in CSS for gesture bars and notched devices. */}
@@ -1613,7 +1615,7 @@ function signOut() {
         </div>
         <div className="overview-actions" aria-label="Quick actions">
           <button type="button" onClick={() => setActiveTab("workouts")}>Start a workout <span aria-hidden="true">↗</span></button>
-          <button type="button" className="overview-secondary-action" onClick={() => setActiveTab("coach")}>Open coach</button>
+          <button type="button" className="overview-secondary-action" onClick={() => { setYouView("plan"); setActiveTab("coach"); }}>Open coach</button>
         </div>
       </section>
 
@@ -1665,7 +1667,7 @@ function signOut() {
       </section>
       <section className="progress-preview panel section-gap">
         <div><p className="eyebrow">YOUR PROGRESS</p><h2>See how your week is taking shape</h2><p className="muted">Training totals and daily patterns live together in Progress.</p></div>
-        <button type="button" className="subtle-action" onClick={() => setActiveTab("progress")}>View progress <span aria-hidden="true">↗</span></button>
+        <button type="button" className="subtle-action" onClick={() => { setYouView("stats"); setActiveTab("progress"); }}>View progress <span aria-hidden="true">↗</span></button>
       </section>
 
     </>}

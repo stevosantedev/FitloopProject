@@ -2250,3 +2250,175 @@ input::placeholder, textarea::placeholder { color: #777f84; }
   .profile-stats strong { font-size: 1.2rem; }
   .profile-stats span { font-size: .68rem; }
 }
+
+
+/* Final phone-screen pass: remove the leftover dashboard feel from the main
+   destinations. The feed and workout are treated as focused tasks, while the
+   workspace switch and lower navigation remain stable app chrome. */
+.overview-welcome {
+  align-items: center;
+  gap: 22px;
+  padding-top: 24px;
+  padding-bottom: 22px;
+}
+.overview-welcome h1 { letter-spacing: -.045em; }
+.overview-welcome-copy > .muted { max-width: 42ch; }
+.overview-actions button { border-radius: 12px; }
+.overview-actions .overview-secondary-action { border-radius: 12px; }
+
+.workout-subnav {
+  background: linear-gradient(180deg, var(--fitloop-bg) 84%, rgb(11 13 15 / 0%));
+}
+.workout-subnav a {
+  border-color: var(--fitloop-border);
+  border-radius: 999px;
+  background: var(--fitloop-surface);
+  color: var(--fitloop-muted);
+}
+.workout-subnav a:hover,
+.workout-subnav a:focus-visible {
+  border-color: var(--fitloop-accent);
+  background: var(--fitloop-accent-soft);
+  color: #ffb49b;
+}
+.workout-builder-panel .exercise-session-card {
+  border-color: #343a3e;
+  background: #191e21;
+}
+.workout-builder-panel > button[type="submit"] {
+  background: var(--fitloop-accent);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 35%);
+}
+
+.community-composer,
+.activity-inbox,
+.community-page > .panel:has(.feed-section-heading) {
+  border-radius: 18px;
+}
+.community-composer textarea {
+  min-height: 104px;
+  border-radius: 13px;
+  line-height: 1.5;
+}
+.feed-card {
+  padding: 20px 0;
+}
+.feed-heading { align-items: center; }
+.feed-author { gap: 11px; }
+.feed-avatar {
+  border-color: #555d62;
+  background: #252b2f;
+  color: #f4f5f3;
+}
+.feed-author button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--fitloop-text);
+  font-weight: 750;
+  text-align: left;
+}
+.feed-author button:hover { color: #ff9a75; }
+.feed-author small { color: var(--fitloop-muted); }
+.feed-card > time { color: var(--fitloop-muted); font-size: .72rem; }
+.community-post-text { color: #e9ecea; }
+.workout-post-summary {
+  border-color: #343a3e;
+  border-radius: 15px;
+  background: linear-gradient(145deg, #1b2023, #14181a);
+}
+.workout-post-movement {
+  border-radius: 10px;
+  background: #242a2e;
+}
+.reaction-button, .small-button { border-radius: 999px; }
+
+.profile-hero {
+  border-color: #343a3e;
+  border-radius: 20px;
+}
+.profile-avatar-large {
+  border: 2px solid #ff875d;
+  background: #2b201b;
+  color: #ffad91;
+}
+.profile-posts {
+  border-radius: 18px;
+}
+.profile-posts .feed-card {
+  border-bottom-color: #2b3034;
+}
+
+@media (max-width: 820px) {
+  /* On a phone the workspace switch sits directly below the status-bar area.
+     Keeping it sticky makes the Social/You context visible after long screens. */
+  .workspace-switch-bar {
+    width: 100%;
+    justify-content: stretch;
+    gap: 5px;
+    padding: 7px 16px 9px;
+    margin-bottom: 0;
+    border-color: #252a2e;
+    background: rgb(11 13 15 / 96%);
+  }
+  .workspace-switch-bar button {
+    flex: 1;
+    min-width: 0;
+    min-height: 42px;
+    border-radius: 12px;
+    font-size: .9rem;
+  }
+  .app-main { padding-bottom: calc(92px + env(safe-area-inset-bottom)); }
+  .overview-welcome {
+    gap: 15px;
+    padding-top: 18px;
+    padding-bottom: 18px;
+  }
+  .overview-welcome h1 { font-size: clamp(1.9rem, 8vw, 2.5rem); }
+  .overview-actions { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); }
+  .overview-actions button { min-height: 50px; }
+  .stats { gap: 9px; }
+  .stats article {
+    min-height: 100px;
+    padding: 14px;
+    border-radius: 13px;
+  }
+  .stats article strong { font-size: 1.7rem; }
+  .workout-subnav {
+    top: 0;
+    gap: 7px;
+    margin-right: -16px;
+    margin-left: -16px;
+    padding: 8px 16px 12px;
+    background: rgb(11 13 15 / 96%);
+    backdrop-filter: blur(14px);
+  }
+  .workout-subnav a { min-height: 40px; padding: 0 14px; }
+  .community-composer { margin-top: 10px; }
+  .community-composer,
+  .activity-inbox,
+  .community-page > .panel:has(.feed-section-heading) { padding: 15px; }
+  .feed-card { padding: 17px 0; }
+  .profile-home { gap: 11px; }
+  .profile-hero { gap: 12px; }
+  .profile-posts { padding: 15px; }
+}
+
+@media (max-width: 420px) {
+  .workspace-switch-bar { padding-right: 12px; padding-left: 12px; }
+  .overview-actions { grid-template-columns: 1fr; }
+  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .stats article { min-height: 92px; }
+  .workout-post-metrics { gap: 10px; }
+  .profile-stats article { min-width: 0; }
+  .profile-stats span { overflow-wrap: anywhere; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}

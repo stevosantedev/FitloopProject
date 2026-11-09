@@ -15,7 +15,7 @@ The idea is straightforward: make it easier to notice patterns and keep going, w
 
 ## Product roadmap
 
-The next major workstreams are the AI Coach and the Community experience. See the [product expansion roadmap](docs/product-expansion-roadmap.md) for their delivery slices, privacy and safety requirements, and acceptance criteria.
+The AI Coach and Community now have connected MVP foundations, including private conversations, optional consent-gated AI replies, a friends-only activity feed, profiles, reactions, comments and an in-app activity inbox. The next phase focuses on validating these experiences, improving the app interface and closing the privacy, safety and evaluation gaps. See the [product expansion roadmap](docs/product-expansion-roadmap.md) for delivery details and acceptance criteria.
 
 ## Development standards
 
@@ -46,7 +46,7 @@ Read [the implementation standards](docs/implementation-standards.md) before ext
 7. Start the frontend and API with `npm run dev`.
 8. In another terminal, install `coach/requirements.txt` in a Python virtual environment, then run `uvicorn main:app --app-dir coach --reload --port 8000`.
 
-The frontend runs on port 5173, the API on port 4000 and the coach on port 8000. The coach must be running before the coaching check-in button can return suggestions.
+The frontend runs on port 5173, the API on port 4000 and the coaching service on port 8000. The coaching service must be running for check-in suggestions and guided coaching replies; optional AI-generated replies also require explicit user opt-in and server-side provider configuration.
 
 ## Useful commands
 

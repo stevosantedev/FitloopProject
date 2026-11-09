@@ -1350,3 +1350,33 @@ test("POST pings requests respects private profile visibility", async () => {
   });
   assert.equal(conversationLookups, 0);
 });
+
+
+// Unread totals are grouped for the visible page and count only messages sent by the other participant.
+test("GET pings conversations returns per-thread unread counts without message bodies", async () => {
+  let countQuery;
+  const rows = [{ id: "conversation-a", userAId: "user-a", userBId: "user-b", messages: [{ id: "latest-message" }] }];
+  const prisma = {
+    userBlock: { findMany: async () => [] },
+    directConversation: { findMany: async () => rows },
+    directMessage: { groupBy: async args => {
+      countQuery = args;
+      return [{ conversationId: "conversation-a", _count: { _all: 3 } }];
+    } }
+  };
+  await withSocialApi(prisma, async base => {
+    const response = await fetch(base + "/api/social/pings/conversations");
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), {
+      conversations: [{ ...rows[0], unreadCount: 3 }],
+      hasMore: false,
+      nextCursor: null
+    });
+  });
+  assert.deepEqual(countQuery.by, ["conversationId"]);
+  assert.deepEqual(countQuery.where, {
+    conversationId: { in: ["conversation-a"] },
+    senderId: { not: "user-a" },
+    readAt: null
+  });
+});

@@ -968,3 +968,29 @@ footer { border-color: #2b322b; }
 @media (prefers-reduced-motion: reduce) {
  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+/* Dashboard sections should read as a training log, not a stack of interchangeable cards. */
+.stats article { border: 0; border-left: 2px solid var(--fitloop-accent); border-radius: 0; background: transparent; padding: 10px 16px; }
+.stats article strong { font-size: clamp(1.8rem, 3vw, 2.25rem); }
+.panel { border: 0; border-top: 1px solid var(--fitloop-border); border-radius: 0; background: transparent; padding: 21px 0; }
+.panel.section-gap { margin-top: 18px; }
+.panel h2 { letter-spacing: -.025em; }
+.recent-training { border-bottom: 1px solid var(--fitloop-border); }
+.content-grid > .panel { min-width: 0; }
+.mini-chart { border: 0; border-bottom: 1px solid var(--fitloop-border); border-radius: 0; background: transparent; padding: 10px 4px 15px; }
+.mini-chart > strong { color: var(--fitloop-text); font-size: .84rem; }
+.exercise-session-card { border: 0; border-top: 1px solid var(--fitloop-border); border-radius: 0; background: transparent; padding: 16px 0; }
+.coach-panel { border-bottom: 1px solid var(--fitloop-border); }
+.account-danger { border: 1px solid #795049; border-radius: 8px; background: #211917; padding: 18px; }
+.section-heading-row h2 { letter-spacing: -.03em; }
+.feed-card { padding: 20px 0; }
+.feed-heading { align-items: baseline; }
+@media (max-width: 700px) {
+ .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+ .stats article { min-height: 88px; padding: 8px 9px; }
+ .stats article span { font-size: .72rem; line-height: 1.35; }
+ .stats article strong { font-size: 1.65rem; }
+ .stats article small { font-size: .66rem; }
+ .panel { padding: 17px 0; }
+ .account-danger { padding: 15px; }
+}

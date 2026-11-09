@@ -1341,9 +1341,9 @@ function signOut() {
   if (!token) {
     return <main className="auth-shell">
       <section className="auth-card">
-        <p className="eyebrow">YOUR ROUTINE, YOUR PACE</p>
+        <p className="eyebrow">FITLOOP</p>
         <h1>FitLoop<span>.</span></h1>
-        <p className="muted">A calmer way to keep track of the habits that help you feel good.</p>
+        <p className="muted">Log workouts and daily habits. See what changes over time.</p>
         <form onSubmit={authenticate}>
           {registering && <label>Username<input required minLength={3} value={username} onChange={event => setUsername(event.target.value)} /></label>}
           <label>Email<input required type="email" value={email} onChange={event => setEmail(event.target.value)} /></label>
@@ -1472,9 +1472,9 @@ function signOut() {
       {dashboardLoading && <p className="load-state" role="status">Loading your overview…</p>}
       {dashboardError && <div className="load-error" role="alert"><span>{dashboardError}</span><button type="button" className="secondary" onClick={() => void loadDashboard()}>Try again</button></div>}
       <section className="welcome">
-        <p className="eyebrow">YOUR TRAINING SPACE</p>
-        <h1>Your training, at a glance.</h1>
-        <p className="muted">Pick up where you left off. Every session adds up.</p>
+        <p className="eyebrow">THIS WEEK</p>
+        <h1>Your week</h1>
+        <p className="muted">Training and daily check-ins, together.</p>
       </section>
       <section className="stats">
         <article><span>Workouts this week</span><strong>{sessionsThisWeek.length}</strong><small>Last 7 days</small></article>
@@ -1482,7 +1482,7 @@ function signOut() {
         <article><span>Daily check-ins</span><strong>{logs.length}<small> / 7</small></strong><small>Last 7 days</small></article>
       </section>
       <section className="panel section-gap recent-training">
-        <div className="section-heading-row"><div><p className="eyebrow">KEEP YOUR MOMENTUM</p><h2>Recent training</h2></div><button className="subtle-action" onClick={() => setActiveTab("workouts")}>Open training <span>↗</span></button></div>
+        <div className="section-heading-row"><div><p className="eyebrow">WORKOUT HISTORY</p><h2>Recent sessions</h2></div><button className="subtle-action" onClick={() => setActiveTab("workouts")}>View workouts <span>↗</span></button></div>
         {sessions.length === 0 && dashboardLoading ? <p className="muted" role="status">Loading recent training…</p> : sessions.length === 0 && dashboardError ? <p className="muted">Recent training is unavailable until the overview can be refreshed.</p> : sessions.length === 0 ? <div className="empty-training"><p className="muted">Your completed sessions will appear here. Start with a routine or build a one-off workout.</p><button onClick={() => setActiveTab("workouts")}>Build your first workout</button></div> :
           <div className="recent-session-list">{sessions.slice(0, 3).map(session => {
             const names = session.sets.map(set => set.exercise.name).filter((name, index, all) => all.indexOf(name) === index);
@@ -1496,7 +1496,7 @@ function signOut() {
       </section>
       <section className="content-grid">
         <form className="panel" onSubmit={saveCheckIn}>
-          <p className="eyebrow">DAILY CHECK-IN</p><h2>How's today going?</h2>
+          <p className="eyebrow">DAILY CHECK-IN</p><h2>Log today's check-in</h2>
           <label>Hours of sleep<input name="sleepHours" type="number" min="0" max="24" step="0.5" placeholder="e.g. 7.5" /></label>
           <label>Steps<input name="steps" type="number" min="0" placeholder="e.g. 6500" /></label>
           <label>Mood<select name="mood" defaultValue=""><option value="">Choose a mood</option>{[1,2,3,4,5].map(value => <option key={value} value={value}>{value} / 5</option>)}</select></label>
@@ -1504,7 +1504,7 @@ function signOut() {
           <button>Save check-in</button>
         </form>
         <section className="panel">
-          <p className="eyebrow">RECENT ACTIVITY</p><h2>Your last seven days</h2>
+          <p className="eyebrow">CHECK-IN HISTORY</p><h2>Last seven days</h2>
           {logs.length === 0 && dashboardLoading ? <p className="muted" role="status">Loading your check-ins…</p> : logs.length === 0 && dashboardError ? <p className="muted">Check-ins are unavailable until the overview can be refreshed.</p> : logs.length === 0 ? <p className="muted">Your check-ins will appear here once you log a day.</p> :
             <ul className="log-list">{logs.map(log => <li key={log.id}>
               <strong>{new Date(log.date).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" })}</strong>
@@ -1513,7 +1513,7 @@ function signOut() {
         </section>
       </section>
       <section className="panel section-gap">
-        <p className="eyebrow">YOUR RECENT PATTERNS</p><h2>Small signals over seven days</h2>
+        <p className="eyebrow">DAILY CHECK-INS</p><h2>Sleep, steps, mood and focus</h2>
         <div className="mini-charts">
           <article className="mini-chart"><strong>Sleep</strong><div className="bar-row">{chartLogs.map(log => <div className="bar-column" key={log.id} title={log.sleepMinutes == null ? "No sleep entry" : (log.sleepMinutes / 60).toFixed(1) + " hours"}><span style={{ height: (log.sleepMinutes == null ? 0 : Math.max(4, log.sleepMinutes / maxSleep * 100)) + "%" }} /><small>{new Date(log.date).toLocaleDateString(undefined, { weekday: "short" })}</small></div>)}</div></article>
           <article className="mini-chart"><strong>Steps</strong><div className="bar-row">{chartLogs.map(log => <div className="bar-column" key={log.id} title={log.steps == null ? "No step entry" : log.steps.toLocaleString() + " steps"}><span style={{ height: (log.steps == null ? 0 : Math.max(4, log.steps / maxSteps * 100)) + "%" }} /><small>{new Date(log.date).toLocaleDateString(undefined, { weekday: "short" })}</small></div>)}</div></article>
@@ -1523,7 +1523,7 @@ function signOut() {
         <p className="chart-note">Blank bars mean no entry was logged. These charts describe your records; they do not score your health.</p>
       </section>
       <section className="panel coach-panel">
-        <div><p className="eyebrow">YOUR COACH</p><h2>Patterns, not pressure.</h2><p className="muted">Get a short explanation based on the check-ins you've logged.</p></div>
+        <div><p className="eyebrow">COACH</p><h2>Review your recent activity.</h2><p className="muted">Get one practical suggestion based on the check-ins you've logged.</p></div>
         <button onClick={askCoach}>Review my recent trends</button>
         <form className="coach-preferences" onSubmit={saveCoachPreference}>
           <p className="field-heading">Coaching style</p>
@@ -1560,7 +1560,7 @@ function signOut() {
     {activeTab === "workouts" && <section className="page-section">
       {workoutsLoading && <p className="load-state" role="status">Loading your training data…</p>}
       {workoutsError && <div className="load-error" role="alert"><span>{workoutsError}</span><button type="button" className="secondary" onClick={() => void loadWorkouts()}>Try again</button></div>}
-      <div className="welcome compact"><p className="eyebrow">MOVE AT YOUR OWN PACE</p><h1>Your workouts.</h1><p className="muted">Build a routine, log a session and keep a record of what you did.</p></div>
+      <div className="welcome compact"><p className="eyebrow">TRAINING</p><h1>Workouts</h1><p className="muted">Build routines, record sets and review your training history.</p></div>
       <div className="content-grid">
         <form className="panel" onSubmit={createRoutine}>
           <p className="eyebrow">ROUTINE BUILDER</p><h2>{editingRoutineId ? "Edit routine" : "Create a routine"}</h2>
@@ -1826,7 +1826,7 @@ function signOut() {
     </section>}
 
     {activeTab === "coach" && <section className="page-section">
-      <div className="welcome compact"><p className="eyebrow">YOUR TRAINING COMPANION</p><h1>Meet your coach.</h1><p className="muted">Ask about your logged training, exercise technique or how to shape your next routine.</p></div>
+      <div className="welcome compact"><p className="eyebrow">COACH</p><h1>Ask about your training.</h1><p className="muted">Get help with logged sessions, exercise technique or your next routine.</p></div>
       <section className="panel progression-guidance" aria-labelledby="progression-guidance-title">
         <div><p className="eyebrow">BASED ON YOUR LOGGED WORKOUTS</p><h2 id="progression-guidance-title">Training progression</h2>
           <p className="muted">Suggestions compare your two latest completed sessions for each movement. They are optional guidance, not instructions to train through discomfort.</p></div>
@@ -1885,16 +1885,16 @@ function signOut() {
     {activeTab === "community" && <section className="page-section">
       {communityLoading && <p className="load-state" role="status">Loading your community…</p>}
       {communityError && <div className="load-error" role="alert"><span>{communityError}</span><button type="button" className="secondary" onClick={() => void loadCommunity()}>Try again</button></div>}
-      <div className="welcome compact"><p className="eyebrow">BETTER TOGETHER</p><h1>Your community.</h1><p className="muted">Share completed workouts with people you've connected with.</p></div>
+      <div className="welcome compact"><p className="eyebrow">FRIENDS</p><h1>Your community.</h1><p className="muted">Share completed workouts and updates with accepted friends.</p></div>
       <form className="panel community-profile-form" onSubmit={saveProfile}>
-        <div><p className="eyebrow">YOUR PROFILE</p><h2>Make it yours</h2><p className="muted">Choose how your name and short introduction appear to accepted friends. Your email and private account details are never shown.</p></div>
+        <div><p className="eyebrow">PROFILE</p><h2>Edit your profile</h2><p className="muted">Choose how your name and short introduction appear to accepted friends. Your email and private account details are never shown.</p></div>
         <label>Display name<input value={profileNameDraft} onChange={event => setProfileNameDraft(event.target.value)} maxLength={40} placeholder={user?.username ?? "Your name"} /></label>
         <label>Short bio<textarea value={profileBioDraft} onChange={event => setProfileBioDraft(event.target.value)} maxLength={160} rows={3} placeholder="A little about your training…" /></label>
         <div className="composer-footer"><small>{profileBioDraft.length}/160 · Visible to accepted friends</small><button disabled={profileSaving}>{profileSaving ? "Saving…" : "Save profile"}</button></div>
       </form>
       <div className="content-grid">
         <section className="panel">
-          <p className="eyebrow">FIND YOUR PEOPLE</p><h2>Discover people</h2>
+          <p className="eyebrow">FRIENDS</p><h2>Find friends</h2>
           <form onSubmit={searchFriends}>
             <label>Search by username or display name
               <input required minLength={3} maxLength={24} value={friendUsername}
@@ -1935,14 +1935,14 @@ function signOut() {
         {blockedAccounts.length === 0 ? <p className="muted">You haven't blocked anyone.</p> : <ul className="log-list">{blockedAccounts.map(account => <li key={account.id}><strong>{account.displayName || "@" + account.username}</strong><span>@{account.username}</span><button type="button" className="small-button secondary" onClick={() => void unblockCommunityUser(account.id)}>Unblock</button></li>)}</ul>}
       </section>
       <form className="panel community-composer" onSubmit={createCommunityPost}>
-        <p className="eyebrow">SHARE A MOMENT</p><h2>What's on your training mind?</h2>
+        <p className="eyebrow">POST</p><h2>Share an update</h2>
         <label className="sr-only" htmlFor="community-post">Write a community update</label>
         <textarea id="community-post" value={communityPostDraft} onChange={event => setCommunityPostDraft(event.target.value)} placeholder="Share a win, a goal or a training thought with your friends…" rows={3} maxLength={500} />
         <div className="composer-footer"><small>{communityPostDraft.trim().length}/500 · Shared with accepted friends</small><button disabled={!communityPostDraft.trim()}>Share update</button></div>
       </form>
       <section className="panel section-gap">
         <div className="feed-section-heading">
-          <div><p className="eyebrow">FRIENDS-ONLY FEED</p><h2>Recent activity</h2></div>
+          <div><p className="eyebrow">FRIENDS</p><h2>Friends' activity</h2></div>
           <button type="button" className="small-button secondary feed-refresh" onClick={() => void refreshCommunityFeed()} disabled={feedRefreshing || feedLoadingMore}>
             {feedRefreshing ? "Refreshing…" : "Refresh feed"}
           </button>

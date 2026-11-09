@@ -556,6 +556,45 @@ test("a block hides a public profile even when it is otherwise discoverable", as
 
 
 // Feed pagination stays bounded and applies friendship plus block visibility in the database query.
+// Profile history is owner-only and independent of the friends feed's pagination cursor.
+test("GET profile me posts returns a bounded page for the authenticated account", async () => {
+  let query;
+  const rows = [
+    { id: "post-new", userId: "user-a" },
+    { id: "post-next", userId: "user-a" },
+    { id: "post-older", userId: "user-a" }
+  ];
+  const prisma = { feedPost: { findMany: async args => { query = args; return rows; } } };
+  await withSocialApi(prisma, async base => {
+    const response = await fetch(base + "/api/social/profile/me/posts?limit=2&cursor=post-cursor");
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), {
+      posts: rows.slice(0, 2),
+      hasMore: true,
+      nextCursor: "post-next"
+    });
+  });
+  assert.deepEqual(query.where, { userId: "user-a" });
+  assert.deepEqual(query.orderBy, [{ createdAt: "desc" }, { id: "desc" }]);
+  assert.deepEqual(query.cursor, { id: "post-cursor" });
+  assert.equal(query.skip, 1);
+  assert.equal(query.take, 3);
+  assert.deepEqual(query.include.session.select.sets.select.exercise.select, { id: true, name: true });
+  assert.equal("notes" in query.include.session.select, false);
+});
+
+test("GET profile me posts rejects invalid pagination before querying", async () => {
+  let reads = 0;
+  const prisma = { feedPost: { findMany: async () => { reads += 1; return []; } } };
+  await withSocialApi(prisma, async base => {
+    for (const query of ["?limit=0", "?limit=51", "?cursor=" + "x".repeat(65), "?unexpected=true"]) {
+      const response = await fetch(base + "/api/social/profile/me/posts" + query);
+      assert.equal(response.status, 400);
+    }
+  });
+  assert.equal(reads, 0);
+});
+
 test("GET feed returns a bounded cursor page and scopes it to visible friends", async () => {
   let query;
   const rows = [{ id: "post-new" }, { id: "post-next" }, { id: "lookahead" }];

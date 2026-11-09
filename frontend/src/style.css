@@ -2204,3 +2204,49 @@ input::placeholder, textarea::placeholder { color: #777f84; }
   }
   .mobile-nav { padding-bottom: max(8px, env(safe-area-inset-bottom)); }
 }
+
+
+/* A compact profile summary gives the page a clear identity before the activity list.
+   Labels describe the loaded page, not lifetime totals hidden behind pagination. */
+.profile-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.profile-stats article {
+  min-width: 0;
+  padding: 14px 16px;
+  border: 1px solid var(--fitloop-border);
+  border-radius: 14px;
+  background: var(--fitloop-surface);
+}
+.profile-stats strong {
+  display: block;
+  color: var(--fitloop-text);
+  font-size: 1.35rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.profile-stats span {
+  display: block;
+  margin-top: 4px;
+  color: var(--fitloop-muted);
+  font-size: .76rem;
+}
+.profile-hero {
+  border-radius: 18px;
+  background: linear-gradient(135deg, #1b1f22, #131618 72%);
+}
+.profile-identity h2 { margin-bottom: 5px; }
+.profile-identity p { margin: 4px 0; }
+.profile-posts > .section-heading-row { align-items: end; }
+.profile-posts > .section-heading-row > span { color: var(--fitloop-muted); font-size: .8rem; }
+.profile-posts .feed-card { padding: 18px 0; }
+.profile-posts .feed-card > time { color: var(--fitloop-muted); font-size: .75rem; }
+.profile-posts .feed-card > p { margin: 8px 0 12px; color: var(--fitloop-text); }
+@media (max-width: 560px) {
+  .profile-stats { gap: 7px; }
+  .profile-stats article { padding: 12px 10px; }
+  .profile-stats strong { font-size: 1.2rem; }
+  .profile-stats span { font-size: .68rem; }
+}

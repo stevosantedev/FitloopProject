@@ -1609,7 +1609,7 @@ function signOut() {
                 <span className="exercise-choice-copy"><strong>{exercise.name}</strong><small>{exercise.muscleGroup} · {exercise.equipment ?? "Equipment varies"}</small>{exercise.movementPattern && <small>{exercise.movementPattern}</small>}</span>
                 <span className="exercise-choice-indicator" aria-hidden="true">{selectedExerciseIds.includes(exercise.id) ? "✓" : "+"}</span>
               </label>
-              <button type="button" className="exercise-detail-trigger" onClick={() => setExerciseDetailId(current => current === exercise.id ? "" : exercise.id)} aria-expanded={exerciseDetailId === exercise.id}>{exerciseDetailId === exercise.id ? "Close guide" : "Guide"}</button>
+              <button type="button" className="exercise-detail-trigger" onClick={() => setExerciseDetailId(current => current === exercise.id ? "" : exercise.id)} aria-expanded={exerciseDetailId === exercise.id}>{exerciseDetailId === exercise.id ? "Close guide" : "Details"}</button>
             </article>)}
             {visibleExercises.length === 0 && workoutsLoading && <p className="muted exercise-empty-state" role="status">Loading the exercise library…</p>}
             {visibleExercises.length === 0 && !workoutsLoading && (!workoutsError || exercises.length > 0) && <p className="muted exercise-empty-state">No movements match your search and filters. Try a different term or clear the filters.</p>}

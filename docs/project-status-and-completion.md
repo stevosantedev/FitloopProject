@@ -26,7 +26,7 @@ The application has an installable app shell with persistent desktop navigation 
 ## Remaining work before the university project can be called complete
 
 ### 1. Stabilise and verify the current implementation
-- [x] Latest branch-head CI passes both application and coaching-service jobs (run 42546425468): 122 backend tests and 50 Playwright browser tests passed. The application job validates Prisma migrations/schema, seeds the catalogue, runs backend tests, builds the frontend and completes the browser suite.
+- [x] Latest branch-head CI passes both application and coaching-service jobs (run 42549836336): 127 backend tests and 50 Playwright browser tests passed. The application job validates Prisma migrations/schema, seeds the catalogue, runs backend tests, builds the frontend and completes the browser suite.
 - [x] Full browser suite passes on the current feature branch, including offline/reconnection flows, author-only comment editing/deletion, reaction selection/change/removal, immediate optimistic reaction updates with rollback after a simulated server failure, per-post comment pagination, movement-level workout summary cards and explicit loading/retry behaviour for the exercise library.
 - [x] Browser coverage verifies account-scoped queueing and cleanup, persistence across reload and sign-out/sign-in, retry after an expired session, removal of permanently invalid queued payloads, a clear error when IndexedDB is unavailable, and loading/error/retry states for workout data.
 - [x] Account deletion is tested at unit level and against PostgreSQL. The integration test verifies removal of daily logs, routines, sessions/sets, planned sessions, coaching records, preferences, social posts, friendships, reactions, comments and private custom exercises, while preserving shared exercises and other users.
@@ -60,7 +60,8 @@ The application has an installable app shell with persistent desktop navigation 
 - [x] Add first-page feed refresh with an accessible loading state, retry after failure and preservation of already loaded posts when refresh fails.
 - [x] Give feed timestamps semantic `<time>` markup and separate discussion sections with explicit comment counts.
 - [ ] Add image upload only after storage, access control, file validation, metadata stripping, deletion and media-rights decisions are implemented.
-- [ ] Deliver the in-app activity inbox after core coach and community interactions; consider push notifications only with explicit preferences and permission handling.
+- [x] Deliver a private in-app activity inbox for friend requests, accepted requests, reactions and comments, with recipient-only access, blocked-actor filtering, unread count, individual/bulk read actions and account/post deletion rules.
+- [ ] Add notification preferences and optional push/email delivery only after explicit user permission, delivery infrastructure and permission-denied behaviour are designed.
 - [ ] Follow `docs/product-expansion-roadmap.md` for the detailed delivery slices and acceptance criteria.
 
 ### 4. Complete the wider product experience
@@ -70,7 +71,8 @@ The application has an installable app shell with persistent desktop navigation 
 - [ ] Finish the qualitative comment-density pass against the supplied dashboard example. Add comments only where they explain intent, constraints, data boundaries or non-obvious decisions; do not inflate short files or repeat straightforward code.
 - [ ] Conduct a structured usability evaluation with representative users after ethics approval where required.
 - [ ] Fix issues found in onboarding, workout creation, guided workout use, exercise search, history and social flows.
-- [ ] Decide and implement the intended notification scope (for example, workout reminders or friend activity), including user controls and permission-denied states. Notifications are not currently a delivered feature.
+- [x] Deliver the in-app activity inbox for social events; it does not send push notifications or email.
+- [ ] Decide whether workout reminders or push/email delivery are in scope, then add user controls, explicit consent and permission-denied states.
 - [ ] Review accessibility against WCAG 2.2 AA for contrast, focus, labels, keyboard use, touch targets, motion and screen-reader announcements.
 - [ ] Add clear account, privacy, data export and deletion explanations appropriate to the final project scope.
 

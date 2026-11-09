@@ -1637,7 +1637,7 @@ test("overview quick actions open the workout builder and Coach", async ({ page 
   await page.getByRole("button", { name: "Sign in" }).click();
 
   await expect(page.getByRole("heading", { name: "Your week" })).toBeVisible();
-  await page.getByRole("button", { name: "Start a workout" }).click();
+  await page.getByRole("button", { name: "Start a workout", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Build a workout" })).toBeVisible();
 
   // Return to the overview through the responsive navigation before checking the second shortcut.

@@ -114,3 +114,23 @@ The feature branch and pull request remain in draft and unmerged. The project is
 ## Weekly training programme implementation
 
 The Coach builds editable 2–6 day drafts from catalogue movement patterns, equipment, goal and experience. The backend stores an account-owned `TrainingPlan` with ordered `TrainingPlanDay` records and creates each day's routine and exercise links in one nested write. Users review every day's movements before saving; saved programmes can be edited, show an adjustable seven-day training/rest spread, and load individual days into the existing workout builder. Updating a plan creates replacement day routines so completed workout history remains linked to the original routine. The current split selects movements and structure only; it does not prescribe sets, reps or loads, schedule calendar events, or track weekly completion. The latest branch-head CI run [42608496812](https://github.com/stevosantedev/FitloopProject/actions/runs/42608496812) passed both jobs; the weekly programme journey and backend ownership/validation paths remain covered by the current suite.
+
+
+## Mobile-first interface review
+
+The phone layout is being treated as the primary product experience. The current branch removes the desktop workspace header at phone widths, keeps a fixed bottom tab bar, accounts for device safe areas and uses full-width sections for the main destinations. This is an initial layout pass, not completion of the visual redesign.
+
+- [x] Add browser screenshots for Overview, Workouts, Community and Coach at desktop and phone widths.
+- [x] Publish the screenshot set as a seven-day CI artifact for visual review.
+- [x] Add browser assertions for the phone tab bar, hidden desktop sidebar/header, touch-target size and horizontal overflow at 320px.
+- [ ] Review the captured phone screenshots and revise each screen's content hierarchy, spacing, typography and control density.
+- [ ] Make the Overview feel like a training activity home screen, with the daily check-in easy to reach and account administration kept out of the main flow.
+- [ ] Make Workouts usable during a gym session, with the active session action first and library, routines, muscle map and history easier to move between.
+- [ ] Keep the Community feed as the main destination and move profile/relationship management into secondary, clearly labelled areas.
+- [ ] Keep the Coach conversation as the first task and make progression/programme tools easier to reach without interrupting chat.
+- [ ] Inspect real browser captures at 320px, 390px, 430px, tablet and desktop widths. Record visual defects and fixes rather than treating the overflow test as visual sign-off.
+- [ ] Complete keyboard, screen-reader, contrast, safe-area and physical-device checks.
+
+The first screenshot artifact exposed that the phone screens still read as long web pages. The fixed tab bar also appears partway down full-page captures because the browser screenshot includes a viewport-fixed element at its viewport position. Review screenshots at the viewport level as well as full-page captures. A 52px minimum tab target is now the intended value and is covered by the navigation test.
+
+The last run before the follow-up fix had 55 browser tests pass and one navigation assertion fail because the stylesheet set a 50px tab target while the test expected 52px. The stylesheet has been corrected. The next branch-head CI run must confirm the correction before this slice is marked verified.

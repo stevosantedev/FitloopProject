@@ -187,7 +187,7 @@ export default function App() {
   const [feedLoadMoreError, setFeedLoadMoreError] = useState("");
   const [feedRefreshing, setFeedRefreshing] = useState(false);
   const [feedRefreshError, setFeedRefreshError] = useState("");
-  const [activeTab, setActiveTab] = useState<"home" | "workouts" | "community" | "coach">("home");
+  const [activeTab, setActiveTab] = useState<"home" | "workouts" | "progress" | "community" | "coach">("home");
   const [notice, setNotice] = useState("");
   // Keep first-load and refresh failures separate from legitimate empty account data.
   const [dashboardLoading, setDashboardLoading] = useState(false);
@@ -1528,6 +1528,8 @@ function signOut() {
       <nav className="sidebar-nav" aria-label="Main sections">
         <button aria-current={activeTab === "home" ? "page" : undefined} className={activeTab === "home" ? "active" : ""} onClick={() => setActiveTab("home")}><span className="nav-symbol"><svg className="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7"/><path d="M5 9.5V21h14V9.5"/><path d="M9 21v-7h6v7"/></svg></span><span>Overview</span></button>
         <button aria-current={activeTab === "workouts" ? "page" : undefined} className={activeTab === "workouts" ? "active" : ""} onClick={() => setActiveTab("workouts")}><span className="nav-symbol"><svg className="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5v14M18 5v14M3 9v6M21 9v6M6 12h12"/></svg></span><span>Workouts</span></button>
+        <button aria-current={activeTab === "progress" ? "page" : undefined} className={activeTab === "progress" ? "active" : ""} onClick={() => setActiveTab("progress")}><span className="nav-symbol"><svg className="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V5M4 19h16"/><path d="m7 15 4-4 3 2 5-7"/></svg></span><span>Progress</span></button>
+        <button aria-current={activeTab === "progress" ? "page" : undefined} className={activeTab === "progress" ? "active" : ""} onClick={() => setActiveTab("progress")}><span><svg className="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V5M4 19h16"/><path d="m7 15 4-4 3 2 5-7"/></svg></span>Progress</button>
         <button aria-label={unreadNotificationCount > 0 ? `Community, ${unreadNotificationCount} unread ${unreadNotificationCount === 1 ? "notification" : "notifications"}` : "Community"} aria-current={activeTab === "community" ? "page" : undefined} className={activeTab === "community" ? "active" : ""} onClick={() => setActiveTab("community")}><span className="nav-symbol"><svg className="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M20 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><span>Community</span>{unreadNotificationCount > 0 && <span className="nav-unread-count" aria-hidden="true">{unreadNotificationCount > 99 ? "99+" : unreadNotificationCount}</span>}</button>
         <button aria-current={activeTab === "coach" ? "page" : undefined} className={activeTab === "coach" ? "active" : ""} onClick={() => setActiveTab("coach")}><span className="nav-symbol"><svg className="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 1.9 5.8L20 11l-6.1 2.2L12 19l-1.9-5.8L4 11l6.1-2.2L12 3Z"/><path d="m19 14 1.1 2.9L23 18l-2.9 1.1L19 22l-1.1-2.9L15 18l2.9-1.1L19 14Z"/></svg></span><span>Coach</span></button>
       </nav>
@@ -1540,7 +1542,7 @@ function signOut() {
       {/* Desktop keeps a compact workspace header. Phones use the page heading
           and bottom tabs instead, so a second header does not waste vertical space. */}
       <header className="topbar">
-        <div><p className="topbar-kicker">{activeTab === "home" ? "YOUR TRAINING" : activeTab === "workouts" ? "PLAN / LOG / REVIEW" : activeTab === "community" ? "TRAIN TOGETHER" : "GUIDANCE / PROGRESS"}</p><strong>{activeTab === "home" ? "Overview" : activeTab === "workouts" ? "Workouts" : activeTab === "community" ? "Community" : "Coach"}</strong></div>
+        <div><p className="topbar-kicker">{activeTab === "home" ? "YOUR TRAINING" : activeTab === "workouts" ? "PLAN / LOG / REVIEW" : activeTab === "progress" ? "TRAINING / DAILY PATTERNS" : activeTab === "community" ? "TRAIN TOGETHER" : "GUIDANCE"}</p><strong>{activeTab === "home" ? "Overview" : activeTab === "workouts" ? "Workouts" : activeTab === "progress" ? "Progress" : activeTab === "community" ? "Community" : "Coach"}</strong></div>
         <div className="account">{pendingWorkoutCount > 0 && <span className="offline-queue-status" role="status">{pendingWorkoutCount} workout{pendingWorkoutCount === 1 ? "" : "s"} waiting to sync</span>}<span className="account-status"><i /> Your space</span>{activeTab !== "home" && <button className="topbar-action" onClick={() => setActiveTab("workouts")}>Start a workout <span aria-hidden="true">↗</span></button>}</div>
       </header>
       {/* The tab bar stays available while a user scrolls through a long screen.
@@ -1568,11 +1570,7 @@ function signOut() {
           <button type="button" className="overview-secondary-action" onClick={() => setActiveTab("coach")}>Open coach</button>
         </div>
       </section>
-      <section className="stats">
-        <article><span>Workouts this week</span><strong>{sessionsThisWeek.length}</strong><small>Last 7 days</small></article>
-        <article><span>Sets completed</span><strong>{completedSetsThisWeek}</strong><small>Across your sessions</small></article>
-        <article><span>Daily check-ins</span><strong>{logs.length}<small> / 7</small></strong><small>Last 7 days</small></article>
-      </section>
+
       <section className="panel section-gap recent-training">
         <div className="section-heading-row"><div><p className="eyebrow">WORKOUT HISTORY</p><h2>Recent sessions</h2></div><button className="subtle-action" onClick={() => setActiveTab("workouts")}>View workouts <span>↗</span></button></div>
         {sessions.length === 0 && dashboardLoading ? <p className="muted" role="status">Loading recent training…</p> : sessions.length === 0 && dashboardError ? <p className="muted">Recent training is unavailable until the overview can be refreshed.</p> : sessions.length === 0 ? <div className="empty-training"><p className="muted">Your completed sessions will appear here. Start with a routine or build a one-off workout.</p><button onClick={() => setActiveTab("workouts")}>Build your first workout</button></div> :
@@ -1604,15 +1602,9 @@ function signOut() {
             </li>)}</ul>}
         </section>
       </section>
-      <section className="panel section-gap">
-        <p className="eyebrow">DAILY CHECK-INS</p><h2>Sleep, steps, mood and focus</h2>
-        <div className="mini-charts">
-          <article className="mini-chart"><strong>Sleep</strong><div className="bar-row">{chartLogs.map(log => <div className="bar-column" key={log.id} title={log.sleepMinutes == null ? "No sleep entry" : (log.sleepMinutes / 60).toFixed(1) + " hours"}><span style={{ height: (log.sleepMinutes == null ? 0 : Math.max(4, log.sleepMinutes / maxSleep * 100)) + "%" }} /><small>{new Date(log.date).toLocaleDateString(undefined, { weekday: "short" })}</small></div>)}</div></article>
-          <article className="mini-chart"><strong>Steps</strong><div className="bar-row">{chartLogs.map(log => <div className="bar-column" key={log.id} title={log.steps == null ? "No step entry" : log.steps.toLocaleString() + " steps"}><span style={{ height: (log.steps == null ? 0 : Math.max(4, log.steps / maxSteps * 100)) + "%" }} /><small>{new Date(log.date).toLocaleDateString(undefined, { weekday: "short" })}</small></div>)}</div></article>
-          <article className="mini-chart"><strong>Mood (out of 5)</strong><div className="bar-row">{chartLogs.map(log => <div className="bar-column" key={log.id} title={log.mood == null ? "No mood entry" : "Mood " + log.mood + " out of 5"}><span style={{ height: (log.mood == null ? 0 : log.mood / 5 * 100) + "%" }} /><small>{new Date(log.date).toLocaleDateString(undefined, { weekday: "short" })}</small></div>)}</div></article>
-          <article className="mini-chart"><strong>Focus (minutes)</strong><div className="bar-row">{chartLogs.map(log => <div className="bar-column" key={log.id} title={log.focusMinutes == null ? "No focus entry" : log.focusMinutes + " focused minutes"}><span style={{ height: (log.focusMinutes == null ? 0 : Math.max(4, log.focusMinutes / maxFocus * 100)) + "%" }} /><small>{new Date(log.date).toLocaleDateString(undefined, { weekday: "short" })}</small></div>)}</div></article>
-        </div>
-        <p className="chart-note">Blank bars mean no entry was logged. These charts describe your records; they do not score your health.</p>
+      <section className="progress-preview panel section-gap">
+        <div><p className="eyebrow">YOUR PROGRESS</p><h2>See how your week is taking shape</h2><p className="muted">Training totals and daily patterns live together in Progress.</p></div>
+        <button type="button" className="subtle-action" onClick={() => setActiveTab("progress")}>View progress <span aria-hidden="true">↗</span></button>
       </section>
       <section className="panel coach-panel">
         <div><p className="eyebrow">COACH</p><h2>Review your recent activity.</h2><p className="muted">Get one practical suggestion based on the check-ins you've logged.</p></div>
@@ -1648,6 +1640,33 @@ function signOut() {
         </form>
       </section>
     </>}
+
+    {/* Progress is a separate destination so the Home screen stays focused on the next useful action.
+        The charts describe recorded behaviour; they are not health scores or medical recommendations. */}
+    {activeTab === "progress" && <section className="page-section progress-page">
+      <div className="welcome compact"><p className="eyebrow">YOUR HISTORY</p><h1>Progress</h1><p className="muted">Training consistency and the everyday patterns around it.</p></div>
+      <section className="stats">
+        <article><span>Workouts this week</span><strong>{sessionsThisWeek.length}</strong><small>Last 7 days</small></article>
+        <article><span>Sets completed</span><strong>{completedSetsThisWeek}</strong><small>Across your sessions</small></article>
+        <article><span>Daily check-ins</span><strong>{logs.length}<small> / 7</small></strong><small>Last 7 days</small></article>
+      </section>
+      <section className="panel section-gap">
+        <p className="eyebrow">DAILY CHECK-INS</p><h2>Sleep, steps, mood and focus</h2>
+        <div className="mini-charts">
+          <article className="mini-chart"><strong>Sleep</strong><div className="bar-row">{chartLogs.map(log => <div className="bar-column" key={log.id} title={log.sleepMinutes == null ? "No sleep entry" : (log.sleepMinutes / 60).toFixed(1) + " hours"}><span style={{ height: (log.sleepMinutes == null ? 0 : Math.max(4, log.sleepMinutes / maxSleep * 100)) + "%" }} /><small>{new Date(log.date).toLocaleDateString(undefined, { weekday: "short" })}</small></div>)}</div></article>
+          <article className="mini-chart"><strong>Steps</strong><div className="bar-row">{chartLogs.map(log => <div className="bar-column" key={log.id} title={log.steps == null ? "No step entry" : log.steps.toLocaleString() + " steps"}><span style={{ height: (log.steps == null ? 0 : Math.max(4, log.steps / maxSteps * 100)) + "%" }} /><small>{new Date(log.date).toLocaleDateString(undefined, { weekday: "short" })}</small></div>)}</div></article>
+          <article className="mini-chart"><strong>Mood (out of 5)</strong><div className="bar-row">{chartLogs.map(log => <div className="bar-column" key={log.id} title={log.mood == null ? "No mood entry" : "Mood " + log.mood + " out of 5"}><span style={{ height: (log.mood == null ? 0 : log.mood / 5 * 100) + "%" }} /><small>{new Date(log.date).toLocaleDateString(undefined, { weekday: "short" })}</small></div>)}</div></article>
+          <article className="mini-chart"><strong>Focus (minutes)</strong><div className="bar-row">{chartLogs.map(log => <div className="bar-column" key={log.id} title={log.focusMinutes == null ? "No focus entry" : log.focusMinutes + " focused minutes"}><span style={{ height: (log.focusMinutes == null ? 0 : Math.max(4, log.focusMinutes / maxFocus * 100)) + "%" }} /><small>{new Date(log.date).toLocaleDateString(undefined, { weekday: "short" })}</small></div>)}</div></article>
+        </div>
+        <p className="chart-note">Blank bars mean no entry was logged. These charts describe your records; they do not score your health.</p>
+      </section>
+      <section className="panel section-gap progress-context">
+        <p className="eyebrow">KEEP THE CONTEXT</p>
+        <h2>Small patterns are more useful than a perfect week.</h2>
+        <p className="muted">Missing entries stay blank. FitLoop does not fill gaps with estimates or turn your records into a health score.</p>
+        <button type="button" className="subtle-action" onClick={() => setActiveTab("home")}>Log a daily check-in <span aria-hidden="true">↗</span></button>
+      </section>
+    </section>}
 
     {/* The workout workspace keeps the live session builder separate from reusable
         routines, exercise reference material and historical training summaries. */}

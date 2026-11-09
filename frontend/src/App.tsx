@@ -2122,6 +2122,14 @@ function signOut() {
           <div className="profile-identity"><h2>{user?.displayName || user?.username || "Your profile"}</h2><p>@{user?.username}</p><p>{user?.bio || "Add a short introduction to your profile."}</p></div>
           <button type="button" className="small-button secondary" onClick={() => setShowAccountSettings(true)}>Settings</button>
         </div>
+        {/* These counts describe the posts currently loaded on this profile page.
+            They are deliberately not presented as lifetime totals because older
+            posts are fetched in separate pages when the member asks for them. */}
+        <div className="profile-stats" aria-label="Profile activity summary">
+          <article><strong>{myProfilePosts.length}</strong><span>Posts loaded</span></article>
+          <article><strong>{myProfilePosts.filter(post => Boolean(post.session)).length}</strong><span>Workouts</span></article>
+          <article><strong>{myProfilePosts.reduce((total, post) => total + (post.session?.sets.filter(set => set.completed).length ?? 0), 0)}</strong><span>Completed sets</span></article>
+        </div>
         <form className="panel profile-edit-card" onSubmit={saveProfile}>
           <div><p className="eyebrow">PROFILE DETAILS</p><h2>Edit profile</h2></div>
           <label>Display name<input value={profileNameDraft} onChange={event => setProfileNameDraft(event.target.value)} maxLength={40} placeholder={user?.username ?? "Your name"} /></label>

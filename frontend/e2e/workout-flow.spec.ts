@@ -1713,22 +1713,26 @@ test("Coach settings disclose optional AI processing and keep consent off by def
   await page.getByLabel("Password").fill("test-password");
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page.getByRole("button", { name: /Overview/ })).toBeVisible();
-  const consent = page.getByLabel(/Use AI-generated coaching replies/);
+
+  // Preferences now live in Settings so they do not interrupt the daily Home flow.
+  await page.getByRole("button", { name: "Open account settings" }).click();
+  const settings = page.getByRole("dialog", { name: "Settings" });
+  const consent = settings.getByLabel(/Use AI-generated coaching replies/);
   await expect(consent).not.toBeChecked();
-  await expect(page.getByText(/message and up to five recent completed workout summaries are sent/i)).toBeVisible();
+  await expect(settings.getByText(/message and up to five recent completed workout summaries are sent/i)).toBeVisible();
   await consent.check();
-  await page.getByRole("button", { name: "Save coach preferences" }).click();
+  await settings.getByRole("button", { name: "Save coach preferences" }).click();
   await expect(page.getByText("Your coaching preferences have been saved.")).toBeVisible();
   await expect(consent).toBeChecked();
 
   // Turning consent off must persist, not merely change the checkbox until the next reload.
   await consent.uncheck();
-  await page.getByRole("button", { name: "Save coach preferences" }).click();
+  await settings.getByRole("button", { name: "Save coach preferences" }).click();
   await expect(page.getByText("Your coaching preferences have been saved.")).toBeVisible();
   await page.reload();
-  await expect(page.getByLabel(/Use AI-generated coaching replies/)).not.toBeChecked();
+  await page.getByRole("button", { name: "Open account settings" }).click();
+  await expect(page.getByRole("dialog", { name: "Settings" }).getByLabel(/Use AI-generated coaching replies/)).not.toBeChecked();
 });
-
 
 
 // The overview should offer direct destinations without making users hunt through navigation.

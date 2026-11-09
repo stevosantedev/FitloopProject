@@ -1938,6 +1938,7 @@ function signOut() {
           {coachChatError && <div className="load-error" role="alert"><span>{coachChatError}</span><button type="button" className="secondary" onClick={() => activeCoachConversationId ? void loadCoachChat(activeCoachConversationId) : void loadCoachConversations()}>Try again</button></div>}
           <div className="coach-chat-messages" aria-live="polite">
             {coachChatMessages.length === 0 && <div className="coach-chat-empty">
+              {/* Give first-time users examples while keeping every message under their control. */}
               <strong>What would you like help with?</strong>
               <p className="muted">Choose a starting point or write your own question.</p>
               <div className="coach-prompt-chips" aria-label="Suggested coach questions">

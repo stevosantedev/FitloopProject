@@ -2146,6 +2146,8 @@ function signOut() {
         </section>
       </section>}
       {socialView === "pings" && <section className="panel pings-placeholder"><span className="pings-symbol">↗</span><h2>Private conversations, done properly.</h2><p className="muted">Messaging is not switched on yet. It needs message privacy, blocking integration, request controls and notification handling before conversations are enabled.</p></section>}
+      {/* Explore owns connection discovery and privacy management. Keeping these tools
+          off the feed and profile stops the Social workspace becoming one long form. */}
       {socialView === "explore" && <>
       <div className="content-grid">
         <section className="panel">
@@ -2185,13 +2187,13 @@ function signOut() {
             })}</ul>}
         </section>
       </div>
-      </div>
       <section className="panel section-gap community-blocked-panel">
         <p className="eyebrow">PRIVACY & SAFETY</p><h2>Blocked accounts</h2>
         {blockedAccounts.length === 0 ? <p className="muted">You haven't blocked anyone.</p> : <ul className="log-list">{blockedAccounts.map(account => <li key={account.id}><strong>{account.displayName || "@" + account.username}</strong><span>@{account.username}</span><button type="button" className="small-button secondary" onClick={() => void unblockCommunityUser(account.id)}>Unblock</button></li>)}</ul>}
       </section>
       </>}
 
+      {/* The feed is the only place for publishing updates, inbox activity and friend posts. */}
       {socialView === "feed" && (
       <form className="panel community-composer" onSubmit={createCommunityPost}>
         <p className="eyebrow">POST</p><h2>Share an update</h2>

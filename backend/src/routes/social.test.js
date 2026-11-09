@@ -1380,3 +1380,53 @@ test("GET pings conversations returns per-thread unread counts without message b
     readAt: null
   });
 });
+
+
+// A report can reference only a message visible in one of the reporter's own private conversations.
+test("POST reports accepts a visible message and records its sender", async () => {
+  let messageQuery;
+  let createArgs;
+  const report = { id: "report-message", reason: "other", status: "open" };
+  const prisma = {
+    userBlock: { findMany: async () => [] },
+    directMessage: { findFirst: async args => {
+      messageQuery = args;
+      return { id: "message-b", senderId: "user-b" };
+    } },
+    contentReport: { create: async args => { createArgs = args; return report; } }
+  };
+  await withSocialApi(prisma, async base => {
+    const response = await fetch(base + "/api/social/reports", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ targetType: "message", targetId: "message-b", reason: "other" })
+    });
+    assert.equal(response.status, 201);
+    assert.deepEqual(await response.json(), { report });
+  });
+  assert.deepEqual(messageQuery.where, {
+    id: "message-b", senderId: { not: "user-a" },
+    conversation: { status: { in: ["accepted", "pending"] }, OR: [{ userAId: "user-a" }, { userBId: "user-a" }] }
+  });
+  assert.equal(createArgs.data.reporterId, "user-a");
+  assert.equal(createArgs.data.reportedUserId, "user-b");
+  assert.equal(createArgs.data.messageId, "message-b");
+  assert.equal(createArgs.data.postId, null);
+});
+
+// A report cannot be used to inspect or flag a message from someone else's conversation.
+test("POST reports hides messages outside the reporter's conversations", async () => {
+  let creates = 0;
+  const prisma = {
+    userBlock: { findMany: async () => [] },
+    directMessage: { findFirst: async () => null },
+    contentReport: { create: async () => { creates += 1; return {}; } }
+  };
+  await withSocialApi(prisma, async base => {
+    const response = await fetch(base + "/api/social/reports", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ targetType: "message", targetId: "message-outside", reason: "harassment" })
+    });
+    assert.equal(response.status, 404);
+  });
+  assert.equal(creates, 0);
+});

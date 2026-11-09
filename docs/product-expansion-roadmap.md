@@ -12,7 +12,7 @@ The work should be delivered in small vertical slices. Each slice includes its i
 
 ## Latest interface direction
 
-The current UI refresh takes its main cues from Strava and openGym.ch: clear information hierarchy, direct navigation, compact training controls and a restrained visual system. FitLoop keeps its own identity and does not copy either product. The Workouts screen now gives the active session builder more space and improves exercise discovery. Community places the friends' activity feed and composer ahead of profile and connection management. Coach puts the conversation before progression analysis and weekly planning. Desktop and mobile layouts retain the same task order, with a single-column layout on smaller screens. These are incremental refinements; the complete screen-by-screen design review and physical-device checks are still open.
+The current UI refresh takes its main cues from Strava and openGym.ch: clear information hierarchy, direct navigation, compact training controls and a restrained visual system. FitLoop keeps its own identity and does not copy either product. The Workouts screen now gives the active session builder more space and improves exercise discovery. Community places the friends' activity feed and composer ahead of profile and connection management. Coach puts the conversation before progression analysis and weekly planning. Desktop and mobile layouts retain the same task order, with a single-column layout on smaller screens. These are incremental refinements; browser coverage now verifies the feed-first and conversation-first screen order at desktop and mobile widths. The complete screen-by-screen design review and physical-device checks are still open.
 
 ## Workstream A: AI Coach
 

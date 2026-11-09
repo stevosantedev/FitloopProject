@@ -18,20 +18,28 @@ export class PrismaRateLimitStore {
     const now = new Date();
     const resetAt = new Date(now.getTime() + this.windowMs);
 
-    // Expired buckets no longer affect a request, so remove them before writing the new count.
-    // The indexed expiry column keeps this cleanup bounded to stale rows rather than a full scan.
+    // Clear stale buckets other than this key; its expiry is handled atomically below.
+    // Keeping the active key in the upsert avoids a delete/insert race at the window boundary.
     await this.prisma.$executeRaw`
       DELETE FROM "CoachRateLimitBucket"
-      WHERE "resetAt" <= ${now}
+      WHERE "resetAt" <= ${now} AND "key" <> ${key}
     `;
 
-    // The unique key makes concurrent requests increment one shared counter instead of
-    // creating competing per-process counts. The first request establishes the reset time.
+    // The unique key and conditional upsert make concurrent requests share one counter.
+    // An expired window resets to one hit and a fresh expiry in the same database statement.
     const rows = await this.prisma.$queryRaw`
       INSERT INTO "CoachRateLimitBucket" ("key", "hits", "resetAt")
       VALUES (${key}, 1, ${resetAt})
       ON CONFLICT ("key")
-      DO UPDATE SET "hits" = "CoachRateLimitBucket"."hits" + 1
+      DO UPDATE SET
+        "hits" = CASE
+          WHEN "CoachRateLimitBucket"."resetAt" <= ${now} THEN 1
+          ELSE "CoachRateLimitBucket"."hits" + 1
+        END,
+        "resetAt" = CASE
+          WHEN "CoachRateLimitBucket"."resetAt" <= ${now} THEN ${resetAt}
+          ELSE "CoachRateLimitBucket"."resetAt"
+        END
       RETURNING "hits", "resetAt"
     `;
 

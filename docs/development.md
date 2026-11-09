@@ -73,7 +73,7 @@ Community reports are private records and are not returned by feed or profile en
 
 Signed-in clients can check `GET /api/social/moderation/capability`; only allowlisted accounts can call `GET /api/social/moderation/reports` or `PATCH /api/social/moderation/reports/:id`. The queue returns a minimal identity projection, is status-filtered and cursor-paginated, and excludes email addresses and credentials. Closing a report as resolved or dismissed requires a reasoned resolution note. The latest reviewer ID and timestamp are stored with the report; concurrent decisions are rejected rather than silently overwriting a newer status.
 
-Provision moderator IDs through trusted deployment operations only. Treat report details as sensitive user-submitted content, restrict access to the smallest operational group, and establish a retention and escalation policy before public launch. This MVP stores the latest review decision on the report; a full immutable moderation event ledger and moderator UI remain future work.
+Provision moderator IDs through trusted deployment operations only. Treat report details as sensitive user-submitted content, restrict access to the smallest operational group, and establish a retention and escalation policy before public launch. This MVP stores the latest review decision on the report and provides an allowlisted moderation queue and review actions. A full immutable moderation event ledger and broader audit controls remain future work.
 
 
 ## Optional AI Coach provider configuration

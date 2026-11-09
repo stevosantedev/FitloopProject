@@ -121,3 +121,44 @@ test("DELETE conversation returns not found for another account's conversation",
     assert.equal(response.status, 404);
   });
 });
+
+
+// The message cap is account-scoped and checked before workout context or provider work is requested.
+test("POST conversation messages enforces the hourly per-account limit", async () => {
+  let providerCalls = 0;
+  let messageId = 0;
+  const prisma = {
+    coachConversation: {
+      findFirst: async () => ({ id: "conversation-a", title: "Existing conversation" })
+    },
+    workoutSession: { findMany: async () => [] },
+    coachPreference: { findUnique: async () => null },
+    $transaction: async callback => callback({
+      coachMessage: {
+        create: async ({ data }) => ({ id: "message-" + (++messageId), ...data, createdAt: new Date() })
+      },
+      coachConversation: { update: async () => ({}) }
+    })
+  };
+
+  await withCoachApi(prisma, async base => {
+    for (let attempt = 0; attempt < 30; attempt += 1) {
+      const response = await fetch(base + "/api/coach/conversations/conversation-a/messages", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ message: "Help me stay consistent." })
+      });
+      assert.equal(response.status, 201);
+    }
+
+    // The 31st request must stop before it reaches the coaching service or persistence transaction.
+    const limited = await fetch(base + "/api/coach/conversations/conversation-a/messages", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ message: "One more question." })
+    });
+    assert.equal(limited.status, 429);
+    assert.match((await limited.json()).error, /hourly Coach message limit/);
+  });
+  assert.equal(messageId, 60);
+});

@@ -1013,3 +1013,25 @@ footer { border-color: #2b322b; }
 @media (max-width: 380px) {
  .overview-actions { grid-template-columns: 1fr; }
 }
+
+
+/* Training gets the larger workspace; routine setup stays available without competing for attention. */
+.workout-workspace { grid-template-columns: minmax(245px, .72fr) minmax(0, 1.55fr); align-items: start; gap: 16px; }
+.workout-workspace > .panel { min-width: 0; }
+.workout-workspace .routine-builder-panel { position: sticky; top: 18px; }
+.workout-panel-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.workout-panel-heading h2 { margin: 0; }
+.workout-panel-heading .eyebrow { margin-bottom: 5px; }
+.workout-panel-heading > span { color: #89998e; font-size: .72rem; text-align: right; }
+.workout-builder-panel .exercise-choice-grid { max-height: 340px; }
+.workout-builder-panel .exercise-session-card { background: #141f18; border-color: #35483a; }
+.workout-builder-panel > button[type="submit"] { position: sticky; bottom: 12px; z-index: 2; box-shadow: 0 8px 24px #080e0a99; }
+@media (max-width: 900px) {
+ .workout-workspace { grid-template-columns: minmax(0, 1fr); }
+ .workout-workspace .routine-builder-panel { position: static; }
+}
+@media (max-width: 520px) {
+ .workout-panel-heading { align-items: flex-start; flex-direction: column; gap: 5px; }
+ .workout-panel-heading > span { text-align: left; }
+ .workout-builder-panel > button[type="submit"] { position: static; }
+}

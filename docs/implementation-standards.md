@@ -4,7 +4,7 @@ This document records the product and code-quality requirements for the next Fit
 
 ## Writing style
 
-Use the project's writing guidance below when editing prose.
+Use the project's writing guidance below when editing prose. The source guide is [Humanizer](https://github.com/blader/humanizer/blob/main/SKILL.md). Apply it to README text, documentation, comments, commit messages and user-facing copy.
 
 - Write in plain, natural technical English. Keep the tone appropriate to the audience: neutral and precise in code, API and architecture documentation.
 - Preserve the actual meaning and every supported technical detail when editing prose. Do not invent behaviour, test results, metrics, citations or implementation status.
@@ -60,7 +60,6 @@ Use the supplied `dashboard.js` example as the density reference. FitLoop code s
 - For migrations and seed data, explain compatibility assumptions, defaults, constraints and intentionally conservative or incomplete mappings.
 - Add a comment whenever the reader reaches a new logical phase or a decision whose reason is not obvious. Small, self-explanatory helpers do not need filler comments.
 
-### Comment quality
 ### Comment quality
 
 - Prefer useful explanations over restating the syntax. For example, explain why a query is scoped to the authenticated user, rather than writing "find the user".
@@ -126,3 +125,18 @@ A feature is not complete merely because its screen renders. Check that:
 6. Comments explain the non-obvious code paths and are accurate.
 7. User-facing and developer-facing prose follows the writing guidance above.
 8. Documentation describes the behaviour that is actually implemented.
+
+
+## Mobile-first interface work
+
+FitLoop is designed as a phone app that also works in a desktop browser. Treat the phone layout as the primary experience when changing navigation or screen composition.
+
+- Keep the four main destinations reachable through a fixed, safe-area-aware bottom tab bar on phones.
+- Give the first screen of each destination a clear primary task. Avoid leading with settings, long explanations or secondary management forms.
+- Keep workout controls usable with one hand and prevent the keyboard, tab bar or device safe areas from covering important actions.
+- Use full-width mobile sections where they improve reading and interaction. Avoid shrinking desktop columns into narrow cards.
+- Keep desktop layouts useful, but do not let desktop navigation or page structure dictate the phone experience.
+- Check actual browser screenshots at narrow phone, standard phone, tablet and desktop widths. A passing overflow test alone does not prove that the screen is usable.
+- Keep the same account permissions, validation and data behaviour across screen sizes. Responsive styling must not hide a feature's only route of access.
+
+For each visual change, add a nearby code comment explaining the layout decision when it is not obvious from the selector or component name. Add a browser assertion for important navigation, hierarchy, touch-target or overflow behaviour. Update the README and project status when the change affects the product description or completion plan.

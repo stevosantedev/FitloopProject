@@ -109,6 +109,20 @@ async function friendIds(userId) {
   return connections.map(item => item.requesterId === userId ? item.addresseeId : item.requesterId).filter(id => !blocked.has(id));
 }
 
+// Resolve posts that the signed-in member is allowed to discover or interact with.
+// Friends can see each other's posts even when their profiles are private; public accounts
+// are discoverable by everyone. A block overrides both paths, in either direction.
+async function visiblePostWhere(userId) {
+  const [friends, blocked] = await Promise.all([friendIds(userId), blockedIds(userId)]);
+  return {
+    OR: [
+      { userId: { in: [userId, ...friends] } },
+      { user: { privateAccount: false } }
+    ],
+    ...(blocked.length ? { userId: { notIn: blocked } } : {})
+  };
+}
+
 // Notifications are secondary to the social action; a failed inbox insert must not undo
 // a successful friend request, reaction or comment. The failure is logged for operations.
 async function recordActivityNotification(data) {
@@ -674,10 +688,10 @@ router.get("/feed", async (req, res, next) => {
 router.post("/posts/:id/reactions", async (req, res, next) => {
   try {
     const input = reactionInput.parse(req.body);
-    const ids = [req.userId, ...await friendIds(req.userId)];
+    const visiblePosts = await visiblePostWhere(req.userId);
 
-    // A user can react only to a post they can already see in their friends-only feed.
-    const post = await prismaClient.feedPost.findFirst({ where: { id: req.params.id, userId: { in: ids } }, select: { id: true, userId: true } });
+    // Resolve the post against the same public, friend and block rules used by discovery.
+    const post = await prismaClient.feedPost.findFirst({ where: { id: req.params.id, ...visiblePosts }, select: { id: true, userId: true } });
     if (!post) return res.status(404).json({ error: "Post not found." });
 
     const key = { userId: req.userId, postId: post.id };
@@ -714,9 +728,9 @@ router.get("/posts/:id/comments", async (req, res, next) => {
       cursor: z.string().min(1).max(64).optional(),
       limit: z.coerce.number().int().min(1).max(50).default(20)
     }).strict().parse(req.query);
-    const ids = [req.userId, ...await friendIds(req.userId)];
+    const visiblePosts = await visiblePostWhere(req.userId);
     const post = await prismaClient.feedPost.findFirst({
-      where: { id: req.params.id, userId: { in: ids } },
+      where: { id: req.params.id, ...visiblePosts },
       select: { id: true }
     });
     if (!post) return res.status(404).json({ error: "Post not found." });
@@ -740,10 +754,10 @@ router.get("/posts/:id/comments", async (req, res, next) => {
 router.post("/posts/:id/comments", async (req, res, next) => {
   try {
     const input = commentInput.parse(req.body);
-    const ids = [req.userId, ...await friendIds(req.userId)];
+    const visiblePosts = await visiblePostWhere(req.userId);
 
-    // Re-check feed visibility before allowing a comment, rather than trusting a post ID from the browser.
-    const post = await prismaClient.feedPost.findFirst({ where: { id: req.params.id, userId: { in: ids } }, select: { id: true, userId: true } });
+    // Re-check current visibility before allowing a comment, rather than trusting a post ID from the browser.
+    const post = await prismaClient.feedPost.findFirst({ where: { id: req.params.id, ...visiblePosts }, select: { id: true, userId: true } });
     if (!post) return res.status(404).json({ error: "Post not found." });
 
     const comment = await prismaClient.feedComment.create({
@@ -765,9 +779,9 @@ router.post("/posts/:id/comments", async (req, res, next) => {
 router.patch("/comments/:id", async (req, res, next) => {
   try {
     const input = commentInput.strict().parse(req.body);
-    const ids = [req.userId, ...await friendIds(req.userId)];
+    const visiblePosts = await visiblePostWhere(req.userId);
     const result = await prismaClient.feedComment.updateMany({
-      where: { id: req.params.id, userId: req.userId, post: { userId: { in: ids } } },
+      where: { id: req.params.id, userId: req.userId, post: visiblePosts },
       data: { text: input.text }
     });
     if (result.count === 0) return res.status(404).json({ error: "Comment not found." });
@@ -784,9 +798,9 @@ router.patch("/comments/:id", async (req, res, next) => {
 // Keep comment deletion owner-scoped so a user cannot remove another person's contribution.
 router.delete("/comments/:id", async (req, res, next) => {
   try {
-    const ids = [req.userId, ...await friendIds(req.userId)];
+    const visiblePosts = await visiblePostWhere(req.userId);
     const result = await prismaClient.feedComment.deleteMany({
-      where: { id: req.params.id, userId: req.userId, post: { userId: { in: ids } } }
+      where: { id: req.params.id, userId: req.userId, post: visiblePosts }
     });
     if (result.count === 0) return res.status(404).json({ error: "Comment not found." });
     return res.json({ deleted: true });

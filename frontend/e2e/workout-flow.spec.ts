@@ -342,7 +342,9 @@ test("the app uses persistent navigation on desktop and a bottom tab bar on mobi
   await page.getByRole("button", { name: "Sign in" }).click();
 
   await expect(page.locator(".app-sidebar")).toBeVisible();
+  await expect(page.locator(".sidebar-nav button[aria-current=page]")).toHaveText("Overview");
   await page.getByRole("button", { name: "Workouts" }).click();
+  await expect(page.locator(".sidebar-nav button[aria-current=page]")).toHaveText("Workouts");
   await expect(page.getByRole("heading", { name: "Build a workout" })).toBeVisible();
 
   // Tablet portrait uses the compact navigation layout; desktop retains the sidebar.
@@ -357,6 +359,7 @@ test("the app uses persistent navigation on desktop and a bottom tab bar on mobi
   await expect.poll(() => mobileNavButton.evaluate(element => getComputedStyle(element).minHeight)).toBe("52px");
   await expect.poll(() => page.locator(".mobile-nav").evaluate(element => getComputedStyle(element).position)).toBe("fixed");
   await page.locator(".mobile-nav").getByRole("button", { name: "Community" }).click();
+  await expect(page.locator(".mobile-nav button[aria-current=page]")).toHaveText("Community");
   await expect(page.getByRole("heading", { name: "Your community." })).toBeVisible();
   await expect(page.locator(".app-sidebar")).toBeHidden();
 });

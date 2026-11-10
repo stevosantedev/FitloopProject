@@ -2425,6 +2425,21 @@ test("daily check-in disables its save action while the request is pending", asy
   await expect(page.getByRole("button", { name: "Save check-in" })).toBeEnabled();
 });
 
+// The browser should explain that fields are optional and prevent values the API cannot store.
+test("daily check-in communicates optional fields and mirrors API input limits", async ({ page }) => {
+  await mockApplicationApi(page);
+  await page.goto("/");
+  await page.getByLabel("Email").fill("tester@example.com");
+  await page.getByLabel("Password").fill("test-password");
+  await page.getByRole("button", { name: "Sign in" }).click();
+
+  await expect(page.getByText("Add what you know. It's fine to leave any field blank.")).toBeVisible();
+  await expect(page.locator('input[name="steps"]')).toHaveAttribute("max", "200000");
+  await expect(page.locator('input[name="steps"]')).toHaveAttribute("step", "1");
+  await expect(page.locator('input[name="focusMinutes"]')).toHaveAttribute("max", "1440");
+  await expect(page.locator('input[name="focusMinutes"]')).toHaveAttribute("step", "1");
+});
+
 // Date-only check-ins must follow the calendar day shown by the user's device, not UTC.
 test("daily check-in uses the local calendar date outside UTC", async ({ browser }) => {
   const context = await browser.newContext({ timezoneId: "America/Los_Angeles" });

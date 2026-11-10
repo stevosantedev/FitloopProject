@@ -1762,6 +1762,15 @@ function signOut() {
   const maxFocus = Math.max(1, ...chartLogs.map(log => log.focusMinutes ?? 0));
   // Scale active minutes independently so their bars remain meaningful beside other units.
   const maxActivityMinutes = Math.max(1, ...chartLogs.map(log => log.activityMinutes ?? 0));
+  // Totals use recorded values only, so a blank check-in never becomes an assumed zero.
+  const recordedActivity = chartLogs.filter(log => Number.isFinite(log.activityMinutes));
+  const recordedSleep = chartLogs.filter(log => Number.isFinite(log.sleepMinutes));
+  const recordedFocus = chartLogs.filter(log => Number.isFinite(log.focusMinutes));
+  const weeklyActivityMinutes = recordedActivity.reduce((total, log) => total + (log.activityMinutes ?? 0), 0);
+  const averageSleepHours = recordedSleep.length
+    ? recordedSleep.reduce((total, log) => total + (log.sleepMinutes ?? 0), 0) / recordedSleep.length / 60
+    : null;
+  const weeklyFocusMinutes = recordedFocus.reduce((total, log) => total + (log.focusMinutes ?? 0), 0);
   const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
   const sessionsThisWeek = sessions.filter(session => new Date(session.startedAt).getTime() >= sevenDaysAgo);
   const completedSetsThisWeek = sessionsThisWeek.flatMap(session => session.sets).filter(set => set.completed).length;
@@ -1992,6 +2001,11 @@ function signOut() {
         <article><span>Workouts this week</span><strong>{sessionsThisWeek.length}</strong><small>Last 7 days</small></article>
         <article><span>Sets completed</span><strong>{completedSetsThisWeek}</strong><small>Across your sessions</small></article>
         <article><span>Daily check-ins</span><strong>{logs.length}<small> / 7</small></strong><small>Last 7 days</small></article>
+      </section>
+      <section className="stats section-gap progress-highlights" aria-label="Recorded weekly totals">
+        <article><span>Active minutes logged</span><strong>{weeklyActivityMinutes}</strong><small>{recordedActivity.length} of 7 days recorded</small></article>
+        <article><span>Average sleep logged</span><strong>{averageSleepHours === null ? "—" : averageSleepHours.toFixed(1) + "h"}</strong><small>{recordedSleep.length} nights recorded</small></article>
+        <article><span>Focused time logged</span><strong>{weeklyFocusMinutes}</strong><small>{recordedFocus.length} of 7 days recorded</small></article>
       </section>
       <section className="panel section-gap">
         <p className="eyebrow">DAILY CHECK-INS</p><h2>Sleep, steps, mood and focus</h2>

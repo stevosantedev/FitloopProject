@@ -2031,6 +2031,8 @@ footer { border-color: #2b322b; }
   font-weight: 800;
 }
 .profile-identity { min-width: 0; }
+/* Keep profile actions grouped so the identity remains readable at narrow widths. */
+.profile-hero-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
 .profile-identity h2 { margin: 0 0 4px; }
 .profile-identity p { margin: 4px 0; color: #a3b0a6; overflow-wrap: anywhere; }
 .profile-edit-card { display: grid; gap: 14px; padding: 18px; }

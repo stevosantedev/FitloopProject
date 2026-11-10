@@ -1635,18 +1635,30 @@ function signOut() {
       if (event.key !== "Tab") return;
 
       // Keep keyboard users inside the modal instead of tabbing into the page behind it.
-      const focusable = accountSettingsDialogRef.current?.querySelectorAll<HTMLElement>(
-        'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])'
-      );
-      if (!focusable?.length) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
+      const focusable = Array.from(
+        accountSettingsDialogRef.current?.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])'
+        ) ?? []
+      ).filter(element => element.getAttribute("aria-hidden") !== "true"
+        && element.getClientRects().length > 0
+        && getComputedStyle(element).visibility !== "hidden");
+      if (!focusable.length) {
         event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
+        accountSettingsCloseRef.current?.focus();
+        return;
+      }
+
+      const activeIndex = focusable.indexOf(document.activeElement as HTMLElement);
+      if (activeIndex === -1) {
+        // Recover if another script or browser action moves focus behind the open dialog.
         event.preventDefault();
-        first.focus();
+        (event.shiftKey ? focusable[focusable.length - 1] : focusable[0]).focus();
+      } else if (event.shiftKey && activeIndex === 0) {
+        event.preventDefault();
+        focusable[focusable.length - 1].focus();
+      } else if (!event.shiftKey && activeIndex === focusable.length - 1) {
+        event.preventDefault();
+        focusable[0].focus();
       }
     };
     window.addEventListener("keydown", handleKeyDown);

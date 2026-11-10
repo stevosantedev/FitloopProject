@@ -1766,6 +1766,11 @@ function signOut() {
   const recordedActivity = chartLogs.filter(log => Number.isFinite(log.activityMinutes));
   const recordedSleep = chartLogs.filter(log => Number.isFinite(log.sleepMinutes));
   const recordedFocus = chartLogs.filter(log => Number.isFinite(log.focusMinutes));
+  // Paired coverage shows how often both sleep and movement were recorded on the same day.
+  // It describes the available data only; it does not suggest that one measure caused another.
+  const pairedSleepActivityDays = chartLogs.filter(log =>
+    Number.isFinite(log.sleepMinutes) && Number.isFinite(log.activityMinutes)
+  ).length;
   const weeklyActivityMinutes = recordedActivity.reduce((total, log) => total + (log.activityMinutes ?? 0), 0);
   const averageSleepHours = recordedSleep.length
     ? recordedSleep.reduce((total, log) => total + (log.sleepMinutes ?? 0), 0) / recordedSleep.length / 60
@@ -2006,6 +2011,7 @@ function signOut() {
         <article><span>Active minutes logged</span><strong>{weeklyActivityMinutes}</strong><small>{recordedActivity.length} of 7 days recorded</small></article>
         <article><span>Average sleep logged</span><strong>{averageSleepHours === null ? "—" : averageSleepHours.toFixed(1) + "h"}</strong><small>{recordedSleep.length} nights recorded</small></article>
         <article><span>Focused time logged</span><strong>{weeklyFocusMinutes}</strong><small>{recordedFocus.length} of 7 days recorded</small></article>
+        <article><span>Sleep + activity entries</span><strong>{pairedSleepActivityDays}</strong><small>Days with both recorded</small></article>
       </section>
       <section className="panel section-gap">
         <p className="eyebrow">DAILY CHECK-INS</p><h2>Sleep, steps, mood and focus</h2>

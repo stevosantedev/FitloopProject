@@ -1183,7 +1183,7 @@ test("Community feed retries an initial failure and then shows a genuine empty s
   const error = page.getByRole("alert").filter({ hasText: "Community feed is temporarily unavailable." });
   await expect(error).toBeVisible();
   await expect(page.locator(".activity-inbox")).toContainText("Activity is unavailable until the community can be refreshed.");
-  await expect(page.locator(".activity-inbox")).not.toContainText("Friend requests, reactions and comments will appear here.");
+  await expect(page.locator(".activity-inbox")).not.toContainText("Friend requests, reactions, comments and private message alerts will appear here.");
   await expect(page.getByText("No shared workouts yet. Once you and your friends log a session, it can appear here.")).toHaveCount(0);
   await error.getByRole("button", { name: "Try again" }).click();
   await expect(page.getByText("No shared workouts yet. Once you and your friends log a session, it can appear here.")).toBeVisible();

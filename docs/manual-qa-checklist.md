@@ -45,8 +45,8 @@ For each area below, check the initial load, a slow connection, a failed request
 - [ ] Private feed content is only shown to the expected account and accepted connections.
 - [ ] Social and You remain separate workspaces, and the bottom navigation changes when the top switch changes.
 - [ ] Feed shows friends' activity before secondary relationship management.
-- [ ] Explore currently provides bounded people discovery only; do not expect public posts or video discovery yet.
-- [ ] Pings clearly states that private messaging is not available; it must not imply that messages can be sent.
+- [ ] Explore shows public posts from eligible public profiles, with bounded pagination and post reporting; confirm private profiles and blocked relationships stay excluded.
+- [ ] Pings supports private message requests, recipient-only accept/decline, accepted one-to-one conversations, replies, unread indicators, reporting and blocking. Confirm a new request is not treated as an accepted conversation.
 - [ ] The signed-in Profile shows only that member's own shared posts and workout summaries, offers profile editing and opens account settings.
 - [ ] Profile history can load older posts independently of the friends feed.
 - [ ] Profile content does not expose private session notes, wellbeing logs or account credentials.
@@ -129,9 +129,9 @@ Do not mark these checks complete based only on the Playwright suite. The tester
 ## Social tab separation
 
 - [ ] Feed shows the post composer, activity inbox and friends' activity.
-- [ ] Explore shows people search, friend requests and blocked-account management without the feed composer or inbox.
+- [ ] Explore shows public post discovery and its relationship controls without the friends-feed composer or activity inbox.
 - [ ] Profile shows the member's details and own shared workout posts without Explore relationship management.
-- [ ] Pings clearly explains that direct messaging is not enabled yet.
+- [ ] Pings separates incoming requests from accepted conversations and supports participant-scoped replies, unread counts, reporting and blocking.
 - [ ] Switching tabs does not leave content from the previous tab visible below the current screen.
 
 

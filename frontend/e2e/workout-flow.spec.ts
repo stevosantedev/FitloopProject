@@ -265,6 +265,8 @@ async function clickWorkspaceDestination(page: Page, workspace: "social" | "you"
   const destinationButton = navigation.getByRole("button", { name: accessibleName, exact: true });
   await expect(destinationButton).toBeVisible();
   await destinationButton.click();
+  // Screen readers need the same selected-destination cue as the visual active state.
+  await expect(destinationButton).toHaveAttribute("aria-current", "page");
   // The shell exposes the selected destination independently of the responsive
   // navigation, which is hidden or rebuilt at different viewport sizes.
   const appShell = page.locator(".app-shell");

@@ -1898,7 +1898,7 @@ test("Social opens on activity and Plan leads with weekly planning", async ({ pa
 
   await page.locator(".workspace-switch-bar").getByRole("button", { name: "Social" }).click();
   await expect(page.getByRole("heading", { name: "Your feed.", exact: true })).toBeVisible();
-  await expect(page.getByText("Friend requests, reactions and comments will appear here.")).toBeVisible();
+  await expect(page.getByText("Friend requests, reactions, comments and private message alerts will appear here.")).toBeVisible();
   await expect(page.locator(".community-composer")).toBeVisible();
   await expect(page.locator(".feed-section-heading")).toBeVisible();
   await page.locator(".sidebar-nav").getByRole("button", { name: "Explore" }).click();

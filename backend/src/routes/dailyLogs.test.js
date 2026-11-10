@@ -122,3 +122,54 @@ test("PUT daily logs rejects impossible calendar dates", async () => {
     assert.equal(response.status, 400);
   });
 });
+
+
+test("PUT daily logs accepts active minutes at the documented upper boundary", async () => {
+  let savedInput;
+  const prisma = {
+    dailyLog: {
+      upsert: async args => {
+        savedInput = args.create;
+        return { id: "log-active-boundary", ...args.create };
+      }
+    }
+  };
+
+  await withDailyLogApi(prisma, async baseUrl => {
+    const response = await fetch(baseUrl + "/api/daily-logs", {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ date: "2026-11-10", activityMinutes: 1440 })
+    });
+    assert.equal(response.status, 200);
+  });
+
+  assert.equal(savedInput.activityMinutes, 1440);
+});
+
+test("PUT daily logs rejects active minutes outside whole-day integer bounds", async t => {
+  for (const activityMinutes of [-1, 1441, 35.5]) {
+    await t.test("rejects " + activityMinutes, async () => {
+      let reachedDatabase = false;
+      const prisma = {
+        dailyLog: {
+          upsert: async () => {
+            reachedDatabase = true;
+            throw new Error("Invalid active minutes must not reach storage");
+          }
+        }
+      };
+
+      await withDailyLogApi(prisma, async baseUrl => {
+        const response = await fetch(baseUrl + "/api/daily-logs", {
+          method: "PUT",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ date: "2026-11-10", activityMinutes })
+        });
+        assert.equal(response.status, 400);
+      });
+
+      assert.equal(reachedDatabase, false);
+    });
+  }
+});

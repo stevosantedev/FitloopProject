@@ -1934,6 +1934,22 @@ footer { border-color: #2b322b; }
   background: #141e17;
 }
 .account-settings-dialog .account-danger { margin-bottom: 0; }
+.account-settings-dialog .notification-preferences-panel {
+  margin: 0 0 14px;
+  padding: 18px;
+  border: 1px solid #2b3a30;
+  border-radius: 12px;
+  background: #141e17;
+}
+.notification-preferences-panel h2 { margin: 0 0 8px; }
+.notification-preferences-panel > .muted { margin: 8px 0 14px; }
+.notification-preferences-panel .coach-ai-consent {
+  padding: 13px 0;
+  border-top: 1px solid #29362f;
+}
+.notification-preferences-panel .coach-ai-consent small { line-height: 1.45; }
+.notification-preferences-panel .secondary-action { width: 100%; }
+
 @media (max-width: 520px) {
   .overview-settings-action { top: 25px; right: 0; width: 40px; min-width: 40px; height: 40px; }
   .account-settings-backdrop { align-items: end; padding: 0; }

@@ -257,6 +257,10 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<"home" | "workouts" | "progress" | "community" | "coach">("home");
   // Account controls stay behind a deliberate settings action instead of extending the Home feed.
   const [showAccountSettings, setShowAccountSettings] = useState(false);
+  // Keep keyboard focus inside Settings and return it to the button that opened the dialog.
+  const accountSettingsCloseRef = useRef<HTMLButtonElement | null>(null);
+  const accountSettingsTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const accountSettingsDialogRef = useRef<HTMLElement | null>(null);
   // In-app notification categories are independent; delivery channels such as push/email are not offered yet.
   const [notificationPreferences, setNotificationPreferences] = useState({ socialActivity: true, pings: true });
   const [notificationPreferencesError, setNotificationPreferencesError] = useState("");
@@ -1621,6 +1625,38 @@ function signOut() {
   }, [profileViewLoading, profileViewError, viewedProfile]);
 
   useEffect(() => {
+    if (!showAccountSettings) return;
+    accountSettingsCloseRef.current?.focus();
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setShowAccountSettings(false);
+        return;
+      }
+      if (event.key !== "Tab") return;
+
+      // Keep keyboard users inside the modal instead of tabbing into the page behind it.
+      const focusable = accountSettingsDialogRef.current?.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])'
+      );
+      if (!focusable?.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      accountSettingsTriggerRef.current?.focus();
+    };
+  }, [showAccountSettings]);
+
+  useEffect(() => {
     // Each feature loads only when the account is signed in, keeping private requests out of the public screen.
     if (token) void loadDashboard();
   }, [token]);
@@ -2395,7 +2431,7 @@ function signOut() {
         <div className="profile-hero panel">
           <div className="profile-avatar-large">{(user?.displayName || user?.username || "F").slice(0, 1).toUpperCase()}</div>
           <div className="profile-identity"><h2>{user?.displayName || user?.username || "Your profile"}</h2><p>@{user?.username}</p><p>{user?.bio || "Add a short introduction to your profile."}</p></div>
-          <div className="profile-hero-actions"><button type="button" className="small-button secondary" onClick={() => setShowProfileEditor(open => !open)} aria-expanded={showProfileEditor} aria-controls="profile-edit-form">{showProfileEditor ? "Close edit" : "Edit profile"}</button><button type="button" className="small-button secondary" onClick={() => setShowAccountSettings(true)}>Settings</button></div>
+          <div className="profile-hero-actions"><button type="button" className="small-button secondary" onClick={() => setShowProfileEditor(open => !open)} aria-expanded={showProfileEditor} aria-controls="profile-edit-form">{showProfileEditor ? "Close edit" : "Edit profile"}</button><button ref={accountSettingsTriggerRef} type="button" className="small-button secondary" aria-label="Open account settings" onClick={() => setShowAccountSettings(true)}>Settings</button></div>
         </div>
         {/* These counts describe the posts currently loaded on this profile page.
             They are deliberately not presented as lifetime totals because older
@@ -2756,8 +2792,8 @@ function signOut() {
     </div>}
     {/* Preferences and destructive account actions are available on demand, not mixed into the daily Home journey. */}
     {showAccountSettings && <div className="account-settings-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) setShowAccountSettings(false); }}>
-      <section className="account-settings-dialog" role="dialog" aria-modal="true" aria-labelledby="account-settings-title">
-        <div className="account-settings-heading"><div><p className="eyebrow">YOUR ACCOUNT</p><h2 id="account-settings-title">Settings</h2></div><button type="button" className="small-button secondary" onClick={() => setShowAccountSettings(false)}>Close</button></div>
+      <section ref={accountSettingsDialogRef} className="account-settings-dialog" role="dialog" aria-modal="true" aria-labelledby="account-settings-title">
+        <div className="account-settings-heading"><div><p className="eyebrow">YOUR ACCOUNT</p><h2 id="account-settings-title">Settings</h2></div><button ref={accountSettingsCloseRef} type="button" className="small-button secondary" onClick={() => setShowAccountSettings(false)}>Close</button></div>
       <section className="panel notification-preferences-panel" aria-labelledby="notification-preferences-title">
         <p className="eyebrow">IN-APP ALERTS</p><h2 id="notification-preferences-title">Notifications</h2>
         <p className="muted">Choose which activity appears in your FitLoop inbox. These settings do not affect messages themselves.</p>

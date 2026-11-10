@@ -1794,6 +1794,12 @@ test("Coach settings disclose optional AI processing and keep consent off by def
   // Preferences now live in Settings so they do not interrupt the daily Home flow.
   await page.getByRole("button", { name: "Open account settings" }).click();
   const settings = page.getByRole("dialog", { name: "Settings" });
+  const closeSettings = settings.getByRole("button", { name: "Close" });
+  await expect(closeSettings).toBeFocused();
+  await page.keyboard.press("Shift+Tab");
+  await expect(settings.getByRole("button", { name: "Open account settings" })).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(closeSettings).toBeFocused();
   const consent = settings.getByLabel(/Use AI-generated coaching replies/);
   await expect(consent).not.toBeChecked();
   await expect(settings.getByText(/message and up to five recent completed workout summaries are sent/i)).toBeVisible();

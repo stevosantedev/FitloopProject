@@ -335,6 +335,11 @@ model ContentReport {
   reportedUserId String?
   postId         String?
   messageId      String?
+  // A report keeps the exact message that was flagged even if the sender later deletes their account.
+  // This snapshot is created only for reported messages; ordinary private chat history still cascades away.
+  reportedMessageBody      String?  @db.VarChar(2000)
+  reportedMessageCreatedAt DateTime?
+  reportedMessageSenderId  String?
   reason         String
   details        String?  @db.VarChar(1000)
   status         String   @default("open")

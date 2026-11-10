@@ -1021,6 +1021,9 @@ test("GET notifications is private, filters blocked actors and returns an unread
     OR: [{ actorId: null }, { actorId: { notIn: ["blocked-user"] } }]
   });
   assert.deepEqual(query.include.actor.select, { id: true, username: true, displayName: true });
+  // The inbox may show a post preview, but it must never join private message records.
+  assert.deepEqual(query.include.post.select, { id: true, text: true, type: true });
+  assert.equal(Object.hasOwn(query.include, "messages"), false);
   assert.deepEqual(countQuery.where, { ...query.where, readAt: null });
 });
 

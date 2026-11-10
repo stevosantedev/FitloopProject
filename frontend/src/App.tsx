@@ -24,6 +24,17 @@ class ApiRequestError extends Error {
     this.name = "ApiRequestError";
   }
 }
+// Keep date-only records tied to the user's calendar rather than UTC midnight.
+// This matters when someone checks in near midnight or views history outside UTC.
+function localCalendarDateKey(date: Date): string {
+  return [date.getFullYear(), String(date.getMonth() + 1).padStart(2, "0"), String(date.getDate()).padStart(2, "0")].join("-");
+}
+
+function parseCalendarDate(value: string): Date {
+  const [year, month, day] = value.slice(0, 10).split("-").map(Number);
+  return new Date(year, month - 1, day);
+}
+
 type DailyLog = {
   id: string;
   date: string;
@@ -1018,7 +1029,7 @@ async function sendCoachMessage(event: React.FormEvent) {
       await request("/api/daily-logs", {
         method: "PUT",
         body: JSON.stringify({
-          date: new Date().toISOString().slice(0, 10),
+          date: localCalendarDateKey(new Date()),
           sleepMinutes: optionalNumber("sleepHours") === undefined ? undefined : optionalNumber("sleepHours")! * 60,
           steps: optionalNumber("steps"),
           mood: optionalNumber("mood"),
@@ -1746,7 +1757,7 @@ function signOut() {
   const sessionsThisWeek = sessions.filter(session => new Date(session.startedAt).getTime() >= sevenDaysAgo);
   const completedSetsThisWeek = sessionsThisWeek.flatMap(session => session.sets).filter(set => set.completed).length;
   // Use local calendar dates for the week strip so a workout near midnight stays on the day the user logged it.
-  const localDayKey = (date: Date) => [date.getFullYear(), String(date.getMonth() + 1).padStart(2, "0"), String(date.getDate()).padStart(2, "0")].join("-");
+  const localDayKey = localCalendarDateKey;
   const today = new Date();
   const mondayOffset = (today.getDay() + 6) % 7;
   const monday = new Date(today.getFullYear(), today.getMonth(), today.getDate() - mondayOffset);
@@ -1759,7 +1770,7 @@ function signOut() {
       day: date.getDate(),
       isToday: key === localDayKey(today),
       hasWorkout: sessions.some(session => localDayKey(new Date(session.startedAt)) === key),
-      hasCheckIn: logs.some(log => localDayKey(new Date(log.date)) === key)
+      hasCheckIn: logs.some(log => localDayKey(parseCalendarDate(log.date)) === key)
     };
   });
   // Count completed sets by the exercise's primary muscle group. This is a
@@ -1950,7 +1961,7 @@ function signOut() {
           <p className="eyebrow">CHECK-IN HISTORY</p><h2>Last seven days</h2>
           {logs.length === 0 && dashboardLoading ? <p className="muted" role="status">Loading your check-ins…</p> : logs.length === 0 && dashboardError ? <p className="muted">Check-ins are unavailable until the overview can be refreshed.</p> : logs.length === 0 ? <p className="muted">Your check-ins will appear here once you log a day.</p> :
             <ul className="log-list">{logs.map(log => <li key={log.id}>
-              <strong>{new Date(log.date).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" })}</strong>
+              <strong>{parseCalendarDate(log.date).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" })}</strong>
               <span>{log.steps?.toLocaleString() ?? "No steps"} steps · {log.sleepMinutes ? (log.sleepMinutes / 60).toFixed(1) : "—"}h sleep · Mood {log.mood ?? "—"}/5</span>
             </li>)}</ul>}
         </section>

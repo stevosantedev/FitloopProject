@@ -1797,7 +1797,9 @@ test("Coach settings disclose optional AI processing and keep consent off by def
   const closeSettings = settings.getByRole("button", { name: "Close" });
   await expect(closeSettings).toBeFocused();
   await page.keyboard.press("Shift+Tab");
-  await expect(settings.getByRole("button", { name: "Open account settings" })).toBeFocused();
+  // The last enabled control stays inside the dialog; the disabled delete button is skipped.
+  const lastSettingsControl = settings.getByLabel("Type DELETE to confirm");
+  await expect(lastSettingsControl).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(closeSettings).toBeFocused();
   const consent = settings.getByLabel(/Use AI-generated coaching replies/);

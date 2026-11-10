@@ -262,7 +262,8 @@ async function clickWorkspaceDestination(page: Page, workspace: "social" | "you"
     : destination === "Stats" ? "Progress"
     : destination === "Plan" ? "Coach"
     : destination;
-  const destinationButton = navigation.getByRole("button", { name: accessibleName, exact: true });
+  // Unread badges are part of the accessible name, so match the stable destination label.
+  const destinationButton = navigation.getByRole("button", { name: accessibleName });
   await expect(destinationButton).toBeVisible();
   await destinationButton.click();
   // Screen readers need the same selected-destination cue as the visual active state.

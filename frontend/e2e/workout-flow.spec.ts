@@ -2403,3 +2403,24 @@ test("Pings supports message requests, acceptance, private history and replies",
   await page.getByRole("button", { name: "Block", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Your conversation" })).toBeVisible();
 });
+
+// A slow response makes the pending state observable and protects against duplicate daily-log writes.
+test("daily check-in disables its save action while the request is pending", async ({ page }) => {
+  await mockApplicationApi(page);
+  await page.route("http://localhost:4000/api/daily-logs", async route => {
+    if (route.request().method() !== "PUT") {
+      await route.fallback();
+      return;
+    }
+    await new Promise(resolve => setTimeout(resolve, 250));
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ log: { id: "log-1" } }) });
+  });
+  await page.goto("/");
+  await page.getByLabel("Email").fill("tester@example.com");
+  await page.getByLabel("Password").fill("test-password");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  const saveButton = page.getByRole("button", { name: "Save check-in" });
+  await saveButton.click();
+  await expect(page.getByRole("button", { name: "Saving check-in…" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Save check-in" })).toBeEnabled();
+});

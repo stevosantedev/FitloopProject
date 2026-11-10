@@ -2436,8 +2436,11 @@ test("daily check-in disables its save action while the request is pending", asy
   await page.getByLabel("Email").fill("tester@example.com");
   await page.getByLabel("Password").fill("test-password");
   await page.getByRole("button", { name: "Sign in" }).click();
-  const saveButton = page.getByRole("button", { name: "Save check-in" });
+  const checkInForm = page.getByRole("form", { name: "Log today's check-in" });
+  await expect(checkInForm).toHaveAttribute("aria-busy", "false");
+  const saveButton = checkInForm.getByRole("button", { name: "Save check-in" });
   await saveButton.click();
+  await expect(checkInForm).toHaveAttribute("aria-busy", "true");
   await expect(page.getByRole("button", { name: "Saving check-in…" })).toBeDisabled();
   await expect(page.getByRole("button", { name: "Save check-in" })).toBeEnabled();
 });

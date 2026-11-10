@@ -516,7 +516,17 @@ test("reports can be filed only against a visible post and store no reporter-sup
     assert.equal((await response.json()).report.status, "open");
   });
   assert.deepEqual(create.data, {
-    reporterId: "user-a", reportedUserId: "user-b", postId: "post-b", messageId: null, reason: "harassment", details: "Abusive comments."
+    reporterId: "user-a",
+    reportedUserId: "user-b",
+    postId: "post-b",
+    messageId: null,
+    // Non-message reports have no retained message evidence; keeping the nulls explicit
+    // protects the report shape while distinguishing it from a reported private message.
+    reportedMessageBody: null,
+    reportedMessageCreatedAt: null,
+    reportedMessageSenderId: null,
+    reason: "harassment",
+    details: "Abusive comments."
   });
 });
 

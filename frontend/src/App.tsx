@@ -1951,10 +1951,11 @@ function signOut() {
       <section className="content-grid">
         <form className="panel" onSubmit={saveCheckIn}>
           <p className="eyebrow">DAILY CHECK-IN</p><h2>Log today's check-in</h2>
+          <p className="muted">Add what you know. It's fine to leave any field blank.</p>
           <label>Hours of sleep<input name="sleepHours" type="number" min="0" max="24" step="0.5" placeholder="e.g. 7.5" /></label>
-          <label>Steps<input name="steps" type="number" min="0" placeholder="e.g. 6500" /></label>
+          <label>Steps<input name="steps" type="number" min="0" max="200000" step="1" placeholder="e.g. 6500" /></label>
           <label>Mood<select name="mood" defaultValue=""><option value="">Choose a mood</option>{[1,2,3,4,5].map(value => <option key={value} value={value}>{value} / 5</option>)}</select></label>
-          <label>Focused work or study (minutes)<input name="focusMinutes" type="number" min="0" max="1440" placeholder="e.g. 120" /></label>
+          <label>Focused work or study (minutes)<input name="focusMinutes" type="number" min="0" max="1440" step="1" placeholder="e.g. 120" /></label>
           <button disabled={checkInSaving}>{checkInSaving ? "Saving check-in…" : "Save check-in"}</button>
         </form>
         <section className="panel">

@@ -2146,7 +2146,11 @@ test("Social and You switch between the correct destinations", async ({ page }) 
   await clickWorkspaceDestination(page, "social", "Profile");
   await expect(page.getByRole("heading", { name: "Shared workouts & posts" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Settings" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Edit profile" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Edit profile" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Edit profile" }).click();
   await expect(page.getByRole("heading", { name: "Edit profile" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Close edit" })).toHaveAttribute("aria-expanded", "true");
   await expect(page.getByRole("heading", { name: "Blocked accounts" })).toHaveCount(0);
 
   await clickWorkspaceDestination(page, "social", "Pings");

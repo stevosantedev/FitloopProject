@@ -245,6 +245,10 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<"home" | "workouts" | "progress" | "community" | "coach">("home");
   // Account controls stay behind a deliberate settings action instead of extending the Home feed.
   const [showAccountSettings, setShowAccountSettings] = useState(false);
+  // In-app notification categories are independent; delivery channels such as push/email are not offered yet.
+  const [notificationPreferences, setNotificationPreferences] = useState({ socialActivity: true, pings: true });
+  const [notificationPreferencesError, setNotificationPreferencesError] = useState("");
+  const [notificationPreferencesSaving, setNotificationPreferencesSaving] = useState(false);
   const [notice, setNotice] = useState("");
   // Keep first-load and refresh failures separate from legitimate empty account data.
   const [dashboardLoading, setDashboardLoading] = useState(false);
@@ -527,6 +531,37 @@ async function deleteTrainingPlan(planId: string) {
       setNotice("");
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Unable to sign in.");
+    }
+  }
+
+  // Load preferences when settings opens so another device's changes are reflected.
+  async function openAccountSettings() {
+    setShowAccountSettings(true);
+    setNotificationPreferencesError("");
+    try {
+      const data = await request("/api/social/notification-preferences");
+      setNotificationPreferences(data.preferences);
+    } catch (error) {
+      setNotificationPreferencesError(error instanceof Error ? error.message : "Could not load notification preferences.");
+    }
+  }
+
+  // Save only the in-app categories; push and email need a separate consent and delivery design.
+  async function saveNotificationPreferences(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setNotificationPreferencesSaving(true);
+    setNotificationPreferencesError("");
+    try {
+      const data = await request("/api/social/notification-preferences", {
+        method: "PATCH",
+        body: JSON.stringify(notificationPreferences)
+      });
+      setNotificationPreferences(data.preferences);
+      setNotice("Notification preferences saved.");
+    } catch (error) {
+      setNotificationPreferencesError(error instanceof Error ? error.message : "Could not save notification preferences.");
+    } finally {
+      setNotificationPreferencesSaving(false);
     }
   }
 
@@ -1854,7 +1889,7 @@ function signOut() {
       {dashboardLoading && <p className="load-state" role="status">Loading your overview…</p>}
       {dashboardError && <div className="load-error" role="alert"><span>{dashboardError}</span><button type="button" className="secondary" onClick={() => void loadDashboard()}>Try again</button></div>}
       <section className="welcome overview-welcome">
-        <button type="button" className="overview-settings-action" aria-label="Open account settings" title="Account settings" onClick={() => setShowAccountSettings(true)}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z"/><path d="m19.4 13.5 1.3 1-1.5 2.6-1.6-.5a7.8 7.8 0 0 1-2.2 1.3l-.3 1.7h-3l-.3-1.7a7.8 7.8 0 0 1-2.2-1.3l-1.6.5-1.5-2.6 1.3-1a7.6 7.6 0 0 1 0-3l-1.3-1 1.5-2.6 1.6.5a7.8 7.8 0 0 1 2.2-1.3l.3-1.7h3l.3 1.7a7.8 7.8 0 0 1 2.2 1.3l1.6-.5 1.5 2.6-1.3 1a7.6 7.6 0 0 1 0 3Z"/></svg></button>
+        <button type="button" className="overview-settings-action" aria-label="Open account settings" title="Account settings" onClick={() => void openAccountSettings()}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z"/><path d="m19.4 13.5 1.3 1-1.5 2.6-1.6-.5a7.8 7.8 0 0 1-2.2 1.3l-.3 1.7h-3l-.3-1.7a7.8 7.8 0 0 1-2.2-1.3l-1.6.5-1.5-2.6 1.3-1a7.6 7.6 0 0 1 0-3l-1.3-1 1.5-2.6 1.6.5a7.8 7.8 0 0 1 2.2-1.3l.3-1.7h3l.3 1.7a7.8 7.8 0 0 1 2.2 1.3l1.6-.5 1.5 2.6-1.3 1a7.6 7.6 0 0 1 0 3Z"/></svg></button>
         <div className="overview-welcome-copy">
           <p className="eyebrow">THIS WEEK</p>
           <h1>Your week</h1>
@@ -2670,6 +2705,23 @@ function signOut() {
     {showAccountSettings && <div className="account-settings-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) setShowAccountSettings(false); }}>
       <section className="account-settings-dialog" role="dialog" aria-modal="true" aria-labelledby="account-settings-title">
         <div className="account-settings-heading"><div><p className="eyebrow">YOUR ACCOUNT</p><h2 id="account-settings-title">Settings</h2></div><button type="button" className="small-button secondary" onClick={() => setShowAccountSettings(false)}>Close</button></div>
+      <section className="panel notification-preferences-panel" aria-labelledby="notification-preferences-title">
+        <p className="eyebrow">IN-APP ALERTS</p><h2 id="notification-preferences-title">Notifications</h2>
+        <p className="muted">Choose which activity appears in your FitLoop inbox. These settings do not affect messages themselves.</p>
+        <form className="coach-preferences" onSubmit={saveNotificationPreferences}>
+          <label className="coach-ai-consent">
+            <input type="checkbox" checked={notificationPreferences.socialActivity} onChange={event => setNotificationPreferences(current => ({ ...current, socialActivity: event.target.checked }))} />
+            <span><strong>Social activity</strong><small>Friend requests, accepted requests, reactions and comments.</small></span>
+          </label>
+          <label className="coach-ai-consent">
+            <input type="checkbox" checked={notificationPreferences.pings} onChange={event => setNotificationPreferences(current => ({ ...current, pings: event.target.checked }))} />
+            <span><strong>Pings</strong><small>New private message requests and messages. Turning this off only mutes inbox alerts, not the conversations.</small></span>
+          </label>
+          {notificationPreferencesError && <p role="alert" className="form-error">{notificationPreferencesError}</p>}
+          <button className="secondary-action" disabled={notificationPreferencesSaving}>{notificationPreferencesSaving ? "Saving…" : "Save notification preferences"}</button>
+        </form>
+        <p className="muted">Push and email alerts are not enabled.</p>
+      </section>
       <section className="panel coach-panel">
         <div><p className="eyebrow">COACH</p><h2>Review your recent activity.</h2><p className="muted">Get one practical suggestion based on the check-ins you've logged.</p></div>
         <button onClick={askCoach}>Review my recent trends</button>

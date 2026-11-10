@@ -428,7 +428,7 @@ router.post("/reports", reportLimiter, async (req, res, next) => {
             OR: [{ userAId: req.userId }, { userBId: req.userId }]
           }
         },
-        select: { id: true, senderId: true }
+        select: { id: true, senderId: true, body: true, createdAt: true }
       });
       if (!reportTarget) return res.status(404).json({ error: "Report target not found." });
     } else {
@@ -446,6 +446,10 @@ router.post("/reports", reportLimiter, async (req, res, next) => {
         reportedUserId: input.targetType === "user" ? reportTarget.id : input.targetType === "message" ? reportTarget.senderId : reportTarget.userId,
         postId: input.targetType === "post" ? reportTarget.id : null,
         messageId: input.targetType === "message" ? reportTarget.id : null,
+        // Preserve only the message explicitly reported, so account deletion cannot erase moderation evidence.
+        reportedMessageBody: input.targetType === "message" ? reportTarget.body : null,
+        reportedMessageCreatedAt: input.targetType === "message" ? reportTarget.createdAt : null,
+        reportedMessageSenderId: input.targetType === "message" ? reportTarget.senderId : null,
         reason: input.reason,
         details: input.details || null
       },
@@ -494,7 +498,9 @@ router.get("/moderation/reports", requireModerator, async (req, res, next) => {
         reporter: { select: { id: true, username: true, displayName: true } },
         reportedUser: { select: { id: true, username: true, displayName: true } },
         post: { select: { id: true, text: true, user: { select: { id: true, username: true, displayName: true } } } },
-        message: { select: { id: true, body: true, createdAt: true, sender: { select: { id: true, username: true, displayName: true } } } }
+        message: { select: { id: true, body: true, createdAt: true, sender: { select: { id: true, username: true, displayName: true } } } },
+        // The snapshot remains available when the original message relation is cleared by account deletion.
+        reportedMessageBody: true, reportedMessageCreatedAt: true, reportedMessageSenderId: true
       }
     });
     const hasMore = rows.length > input.limit;

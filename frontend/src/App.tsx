@@ -1921,7 +1921,7 @@ function signOut() {
 
       <section className="panel section-gap recent-training">
         <div className="section-heading-row"><div><p className="eyebrow">WORKOUT HISTORY</p><h2>Recent sessions</h2></div><button className="subtle-action" onClick={() => { setYouView("workout"); setActiveTab("workouts"); }}>View workouts <span>↗</span></button></div>
-        {sessions.length === 0 && dashboardLoading ? <p className="muted" role="status">Loading recent training…</p> : sessions.length === 0 && dashboardError ? <p className="muted">Recent training is unavailable until the overview can be refreshed.</p> : sessions.length === 0 ? <div className="empty-training"><p className="muted">Your completed sessions will appear here. Start with a routine or build a one-off workout.</p><button onClick={() => { setYouView("workout"); setActiveTab("workouts"); }}>Build your first workout</button></div> :
+        {sessions.length === 0 && dashboardLoading ? <p className="muted" role="status">Loading recent training…</p> : sessions.length === 0 && dashboardError ? <p className="muted">Recent training is unavailable until the overview can be refreshed.</p> : sessions.length === 0 ? <div className="empty-training"><p className="muted">Your completed sessions will appear here after your first workout. Use Start a workout above to get going.</p></div> :
           <div className="recent-session-list">{sessions.slice(0, 3).map(session => {
             const names = session.sets.map(set => set.exercise.name).filter((name, index, all) => all.indexOf(name) === index);
             const completed = session.sets.filter(set => set.completed).length;

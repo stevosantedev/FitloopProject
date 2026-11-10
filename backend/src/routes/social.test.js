@@ -1235,6 +1235,30 @@ test("POST pings requests creates a pending conversation for the authenticated s
   assert.deepEqual(notificationArgs.data, { recipientId: "user-b", actorId: "user-a", type: "ping_request" });
 });
 
+// Muting Pings suppresses the inbox alert without preventing the private message request itself.
+test("POST pings requests honours the recipient's in-app Pings preference", async () => {
+  let notificationWrites = 0;
+  const prisma = {
+    userBlock: { findMany: async () => [] },
+    notificationPreference: { findUnique: async () => ({ socialActivity: true, pings: false }) },
+    activityNotification: { create: async () => { notificationWrites += 1; } },
+    user: { findUnique: async () => ({ id: "user-b", username: "runner", displayName: "Runner", privateAccount: false }) },
+    directConversation: {
+      findUnique: async () => null,
+      create: async () => ({ id: "conversation-a", status: "pending" })
+    }
+  };
+  await withSocialApi(prisma, async base => {
+    const response = await fetch(base + "/api/social/pings/requests", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ username: "runner", message: "Hello there." })
+    });
+    assert.equal(response.status, 201);
+  });
+  assert.equal(notificationWrites, 0);
+});
+
 // Unknown, self and blocked recipients share the same response so the endpoint cannot be used to enumerate accounts.
 test("POST pings requests hides unknown, self and blocked recipients", async () => {
   let creates = 0;

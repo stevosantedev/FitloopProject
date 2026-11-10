@@ -41,7 +41,7 @@ const exercise = {
   muscles: [{ role: "PRIMARY", muscle: { name: "Quadriceps", slug: "quadriceps" } }]
 };
 
-async function mockApplicationApi(page: Page, onSessionSave?: (body: any) => void, sessionSaveStatus: number | (() => number) = 200, muscleStats: any[] = [], catalogueExercises: any[] = [exercise], onRoutineSave?: (body: any) => void, initialNotifications: any[] = []) {
+async function mockApplicationApi(page: Page, onSessionSave?: (body: any) => void, sessionSaveStatus: number | (() => number) = 200, muscleStats: any[] = [], catalogueExercises: any[] = [exercise], onRoutineSave?: (body: any) => void, initialNotifications: any[] = [], dailyLogs: any[] = []) {
   const routines: any[] = [];
   const trainingPlans: any[] = [];
   const conversations: any[] = [];
@@ -70,7 +70,7 @@ async function mockApplicationApi(page: Page, onSessionSave?: (body: any) => voi
       coachAiEnabled = input.aiEnabled === true;
       body = { preference: { style: input.style, focus: input.focus, aiEnabled: coachAiEnabled } };
     } else if (url.pathname === "/api/daily-logs") {
-      body = { logs: [] };
+      body = { logs: dailyLogs };
     } else if (url.pathname === "/api/coach/history") {
       body = { events: [] };
     } else if (url.pathname === "/api/coach/conversations" && method === "GET") {
@@ -1874,7 +1874,10 @@ test("overview quick actions open the workout builder and Coach", async ({ page 
 // Screen ordering keeps the main task visible before secondary account and planning controls.
 // Progress owns the weekly totals and daily pattern charts so Home can stay focused on today's next action.
 test("Progress is a separate destination with compact weekly metrics", async ({ page }) => {
-  await mockApplicationApi(page);
+  // Include a recorded activity value so the chart's label and exact measurement stay covered.
+  await mockApplicationApi(page, undefined, 200, [], [exercise], undefined, [], [
+    { id: "log-activity", date: "2026-11-10T00:00:00.000Z", activityMinutes: 35, sleepMinutes: 450, steps: 5000, mood: 4, focusMinutes: 60 }
+  ]);
   await page.goto("/");
   await page.getByLabel("Email").fill("tester@example.com");
   await page.getByLabel("Password").fill("test-password");
@@ -1886,6 +1889,9 @@ test("Progress is a separate destination with compact weekly metrics", async ({ 
   await expect(page.getByRole("heading", { name: "Progress", exact: true })).toBeVisible();
   await expect(page.getByText("Workouts this week")).toBeVisible();
   await expect(page.getByText("Sleep, steps, mood and focus")).toBeVisible();
+  const activityChart = page.locator(".mini-chart").filter({ hasText: "Active minutes" });
+  await expect(activityChart).toBeVisible();
+  await expect(activityChart.locator(".bar-column")).toHaveAttribute("title", "35 active minutes");
   await expect(page.getByRole("heading", { name: "Your week", exact: true })).toHaveCount(0);
 
   await page.setViewportSize({ width: 390, height: 844 });

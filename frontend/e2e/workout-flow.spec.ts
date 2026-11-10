@@ -1898,6 +1898,8 @@ test("Progress is a separate destination with compact weekly metrics", async ({ 
   const activityChart = page.locator(".mini-chart").filter({ hasText: "Active minutes" });
   await expect(activityChart).toBeVisible();
   await expect(activityChart.locator(".bar-column")).toHaveAttribute("title", "35 active minutes");
+  // The same measurement must be announced to assistive technology, not only shown on hover.
+  await expect(activityChart.getByRole("img", { name: /35 active minutes/ })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Your week", exact: true })).toHaveCount(0);
 
   await page.setViewportSize({ width: 390, height: 844 });

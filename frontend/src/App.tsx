@@ -1025,18 +1025,23 @@ async function sendCoachMessage(event: React.FormEvent) {
       return value === "" ? undefined : Number(value);
     };
 
+    // Convert sleep hours once so the submitted value and its empty-state check
+    // always use the same reading from the form.
+    const sleepHours = optionalNumber("sleepHours");
+    const checkIn = {
+      date: localCalendarDateKey(new Date()),
+      sleepMinutes: sleepHours === undefined ? undefined : sleepHours * 60,
+      steps: optionalNumber("steps"),
+      activityMinutes: optionalNumber("activityMinutes"),
+      mood: optionalNumber("mood"),
+      focusMinutes: optionalNumber("focusMinutes")
+    };
+
     setCheckInSaving(true);
     try {
       await request("/api/daily-logs", {
         method: "PUT",
-        body: JSON.stringify({
-          date: localCalendarDateKey(new Date()),
-          sleepMinutes: optionalNumber("sleepHours") === undefined ? undefined : optionalNumber("sleepHours")! * 60,
-          steps: optionalNumber("steps"),
-          activityMinutes: optionalNumber("activityMinutes"),
-          mood: optionalNumber("mood"),
-          focusMinutes: optionalNumber("focusMinutes")
-        })
+        body: JSON.stringify(checkIn)
       });
       setNotice("Your check-in has been saved.");
       await loadDashboard();

@@ -2466,6 +2466,34 @@ test("daily check-in saves optional active minutes", async ({ page }) => {
   await expect.poll(() => submitted?.activityMinutes).toBe(35);
 });
 
+// Sleep is entered in hours for people, then stored as minutes for consistent daily summaries.
+// Blank optional fields should stay absent rather than becoming zero.
+test("daily check-in converts sleep hours and leaves blank fields out", async ({ page }) => {
+  let submitted: Record<string, unknown> | undefined;
+  await mockApplicationApi(page);
+  await page.route("http://localhost:4000/api/daily-logs", async route => {
+    if (route.request().method() !== "PUT") {
+      await route.fallback();
+      return;
+    }
+    submitted = route.request().postDataJSON();
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ log: { id: "log-sleep-hours" } }) });
+  });
+
+  await page.goto("/");
+  await page.getByLabel("Email").fill("tester@example.com");
+  await page.getByLabel("Password").fill("test-password");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByLabel("Sleep (hours)").fill("7.5");
+  await page.getByRole("button", { name: "Save check-in" }).click();
+
+  await expect.poll(() => submitted?.sleepMinutes).toBe(450);
+  expect(submitted).not.toHaveProperty("steps");
+  expect(submitted).not.toHaveProperty("activityMinutes");
+  expect(submitted).not.toHaveProperty("mood");
+  expect(submitted).not.toHaveProperty("focusMinutes");
+});
+
 // Date-only check-ins must follow the calendar day shown by the user's device, not UTC.
 test("daily check-in uses the local calendar date outside UTC", async ({ browser }) => {
   const context = await browser.newContext({ timezoneId: "America/Los_Angeles" });

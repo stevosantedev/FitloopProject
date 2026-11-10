@@ -287,6 +287,8 @@ export default function App() {
   const [friendSearchLoading, setFriendSearchLoading] = useState(false);
   const [friendSearchError, setFriendSearchError] = useState("");
   const [profileNameDraft, setProfileNameDraft] = useState("");
+  // Keep profile editing out of the activity flow until the member explicitly opens it.
+  const [showProfileEditor, setShowProfileEditor] = useState(false);
   const [profileBioDraft, setProfileBioDraft] = useState("");
   const [profileSaving, setProfileSaving] = useState(false);
   const [communityPostDraft, setCommunityPostDraft] = useState("");
@@ -1217,6 +1219,7 @@ async function recordWorkout(event: React.FormEvent) {
       setUser(current => current ? { ...current, ...data.profile } : current);
       localStorage.setItem("fitloop-user", JSON.stringify({ ...user, ...data.profile }));
       setNotice("Your profile has been updated.");
+      setShowProfileEditor(false);
       await loadCommunity();
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Could not update your profile.");
@@ -2342,7 +2345,7 @@ function signOut() {
         <div className="profile-hero panel">
           <div className="profile-avatar-large">{(user?.displayName || user?.username || "F").slice(0, 1).toUpperCase()}</div>
           <div className="profile-identity"><h2>{user?.displayName || user?.username || "Your profile"}</h2><p>@{user?.username}</p><p>{user?.bio || "Add a short introduction to your profile."}</p></div>
-          <button type="button" className="small-button secondary" onClick={() => setShowAccountSettings(true)}>Settings</button>
+          <div className="profile-hero-actions"><button type="button" className="small-button secondary" onClick={() => setShowProfileEditor(open => !open)} aria-expanded={showProfileEditor} aria-controls="profile-edit-form">{showProfileEditor ? "Close edit" : "Edit profile"}</button><button type="button" className="small-button secondary" onClick={() => setShowAccountSettings(true)}>Settings</button></div>
         </div>
         {/* These counts describe the posts currently loaded on this profile page.
             They are deliberately not presented as lifetime totals because older
@@ -2352,12 +2355,12 @@ function signOut() {
           <article><strong>{myProfilePosts.filter(post => Boolean(post.session)).length}</strong><span>Workouts</span></article>
           <article><strong>{myProfilePosts.reduce((total, post) => total + (post.session?.sets.filter(set => set.completed).length ?? 0), 0)}</strong><span>Completed sets</span></article>
         </div>
-        <form className="panel profile-edit-card" onSubmit={saveProfile}>
+        {showProfileEditor && <form id="profile-edit-form" className="panel profile-edit-card" onSubmit={saveProfile}>
           <div><p className="eyebrow">PROFILE DETAILS</p><h2>Edit profile</h2></div>
           <label>Display name<input value={profileNameDraft} onChange={event => setProfileNameDraft(event.target.value)} maxLength={40} placeholder={user?.username ?? "Your name"} /></label>
           <label>Bio<textarea value={profileBioDraft} onChange={event => setProfileBioDraft(event.target.value)} maxLength={160} rows={3} placeholder="A little about your training…" /></label>
           <div className="composer-footer"><small>{profileBioDraft.length}/160</small><button disabled={profileSaving}>{profileSaving ? "Saving…" : "Save profile"}</button></div>
-        </form>
+        </form>}
         <section className="profile-posts panel">
           <div className="section-heading-row"><div><p className="eyebrow">YOUR ACTIVITY</p><h2>Shared workouts & posts</h2></div><span>{myProfilePosts.length} posts</span></div>
           {myProfilePostsLoading && myProfilePosts.length === 0 && <p className="muted" role="status">Loading your shared posts…</p>}

@@ -1889,6 +1889,12 @@ test("Progress is a separate destination with compact weekly metrics", async ({ 
   await expect(page.getByRole("heading", { name: "Progress", exact: true })).toBeVisible();
   await expect(page.getByText("Workouts this week")).toBeVisible();
   await expect(page.getByText("Sleep, steps, mood and focus")).toBeVisible();
+  // Weekly highlights must total only recorded values and show how much data supports each figure.
+  const weeklyHighlights = page.locator(".progress-highlights");
+  await expect(weeklyHighlights).toContainText("35");
+  await expect(weeklyHighlights).toContainText("7.5h");
+  await expect(weeklyHighlights).toContainText("60");
+  await expect(weeklyHighlights).toContainText("1 of 7 days recorded");
   const activityChart = page.locator(".mini-chart").filter({ hasText: "Active minutes" });
   await expect(activityChart).toBeVisible();
   await expect(activityChart.locator(".bar-column")).toHaveAttribute("title", "35 active minutes");

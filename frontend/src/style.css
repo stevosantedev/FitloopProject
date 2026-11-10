@@ -2091,7 +2091,9 @@ footer { border-color: #2b322b; }
   .social-subnav { gap: 26px; }
   .profile-hero { grid-template-columns: 56px minmax(0, 1fr); padding: 15px; }
   .profile-avatar-large { width: 56px; height: 56px; font-size: 1.45rem; }
-  .profile-hero > button { grid-column: 1 / -1; width: 100%; }
+  /* The shared panel button rule makes buttons full-width; override it here so profile actions stay together. */
+  .profile-hero-actions { grid-column: 1 / -1; justify-content: flex-start; }
+  .profile-hero-actions button { width: auto; margin: 0; }
   .profile-edit-card, .profile-posts { padding: 14px; }
 }
 

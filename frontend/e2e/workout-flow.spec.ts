@@ -2424,3 +2424,33 @@ test("daily check-in disables its save action while the request is pending", asy
   await expect(page.getByRole("button", { name: "Saving check-in…" })).toBeDisabled();
   await expect(page.getByRole("button", { name: "Save check-in" })).toBeEnabled();
 });
+
+// Date-only check-ins must follow the calendar day shown by the user's device, not UTC.
+test("daily check-in uses the local calendar date outside UTC", async ({ browser }) => {
+  const context = await browser.newContext({ timezoneId: "America/Los_Angeles" });
+  const page = await context.newPage();
+  let submittedDate: string | undefined;
+  try {
+    await mockApplicationApi(page);
+    await page.route("http://localhost:4000/api/daily-logs", async route => {
+      if (route.request().method() !== "PUT") {
+        await route.fallback();
+        return;
+      }
+      submittedDate = route.request().postDataJSON().date;
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ log: { id: "log-local-date" } }) });
+    });
+    await page.goto("/");
+    await page.getByLabel("Email").fill("tester@example.com");
+    await page.getByLabel("Password").fill("test-password");
+    await page.getByRole("button", { name: "Sign in" }).click();
+    await page.getByRole("button", { name: "Save check-in" }).click();
+    const expectedLocalDate = await page.evaluate(() => {
+      const today = new Date();
+      return [today.getFullYear(), String(today.getMonth() + 1).padStart(2, "0"), String(today.getDate()).padStart(2, "0")].join("-");
+    });
+    expect(submittedDate).toBe(expectedLocalDate);
+  } finally {
+    await context.close();
+  }
+});

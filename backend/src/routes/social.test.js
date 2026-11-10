@@ -1007,6 +1007,74 @@ test("POST reactions rejects posts outside the current visible feed", async () =
 });
 
 
+// Accounts without a saved preference retain the existing in-app notification defaults.
+test("GET notification preferences returns enabled defaults for the signed-in account", async () => {
+  let query;
+  const prisma = {
+    notificationPreference: {
+      findUnique: async args => { query = args; return null; }
+    }
+  };
+  await withSocialApi(prisma, async base => {
+    const response = await fetch(base + "/api/social/notification-preferences");
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), {
+      preferences: { socialActivity: true, pings: true }
+    });
+  });
+  assert.deepEqual(query, {
+    where: { userId: "user-a" },
+    select: { socialActivity: true, pings: true }
+  });
+});
+
+// Preference updates accept only the two supported in-app categories and never a client-supplied user ID.
+test("PATCH notification preferences updates only the authenticated account", async () => {
+  let query;
+  const prisma = {
+    notificationPreference: {
+      upsert: async args => {
+        query = args;
+        return { socialActivity: false, pings: true };
+      }
+    }
+  };
+  await withSocialApi(prisma, async base => {
+    const response = await fetch(base + "/api/social/notification-preferences", {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ socialActivity: false })
+    });
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), {
+      preferences: { socialActivity: false, pings: true }
+    });
+  });
+  assert.deepEqual(query, {
+    where: { userId: "user-a" },
+    create: { userId: "user-a", socialActivity: false },
+    update: { socialActivity: false },
+    select: { socialActivity: true, pings: true }
+  });
+});
+
+// Reject empty updates and unknown delivery channels rather than implying push or email support.
+test("PATCH notification preferences rejects empty and unsupported settings", async () => {
+  let writes = 0;
+  const prisma = { notificationPreference: { upsert: async () => { writes += 1; } } };
+  await withSocialApi(prisma, async base => {
+    for (const body of [{}, { push: true }, { email: false }]) {
+      const response = await fetch(base + "/api/social/notification-preferences", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body)
+      });
+      assert.equal(response.status, 400);
+    }
+  });
+  assert.equal(writes, 0);
+});
+
 // The inbox returns only the signed-in recipient's notifications and hides blocked actors.
 test("GET notifications is private, filters blocked actors and returns an unread count", async () => {
   let query;

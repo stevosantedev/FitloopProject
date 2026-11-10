@@ -11,6 +11,7 @@ export function summariseDailyLogs(logs) {
     daysLogged: logs.length,
     averageSleepMinutes: average("sleepMinutes"),
     averageSteps: average("steps"),
+    averageActivityMinutes: average("activityMinutes"),
     averageMood: average("mood"),
     averageFocusMinutes: average("focusMinutes")
   };

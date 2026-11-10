@@ -1972,9 +1972,10 @@ function signOut() {
           })}</div>}
       </section>
       <section className="content-grid">
-        <form className="panel" onSubmit={saveCheckIn}>
-          <p className="eyebrow">DAILY CHECK-IN</p><h2>Log today's check-in</h2>
-          <p className="muted">Add what you know. It's fine to leave any field blank.</p>
+        {/* Give the form a name and expose its save lifecycle to assistive technology. */}
+        <form className="panel" aria-labelledby="daily-check-in-heading" aria-busy={checkInSaving} onSubmit={saveCheckIn}>
+          <p className="eyebrow">DAILY CHECK-IN</p><h2 id="daily-check-in-heading">Log today's check-in</h2>
+          <p className="muted" id="daily-check-in-guidance">Add what you know. It's fine to leave any field blank.</p>
           <label>Hours of sleep<input name="sleepHours" type="number" min="0" max="24" step="0.5" placeholder="e.g. 7.5" /></label>
           <label>Steps<input name="steps" type="number" min="0" max="200000" step="1" placeholder="e.g. 6500" /></label>
           <label>Active minutes<input name="activityMinutes" type="number" min="0" max="1440" step="1" placeholder="e.g. 35" /></label>

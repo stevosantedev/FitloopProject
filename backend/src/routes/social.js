@@ -136,11 +136,57 @@ async function visiblePostWhere(userId) {
 async function recordActivityNotification(data) {
   if (typeof prismaClient.activityNotification?.create !== "function") return;
   try {
+    // Keep the two notification categories separate so a member can mute social updates
+    // without missing private messages, or quiet Pings without hiding friend activity.
+    if (typeof prismaClient.notificationPreference?.findUnique === "function") {
+      const preference = await prismaClient.notificationPreference.findUnique({
+        where: { userId: data.recipientId },
+        select: { socialActivity: true, pings: true }
+      });
+      const category = data.type.startsWith("ping_") ? "pings" : "socialActivity";
+      if (preference?.[category] === false) return;
+    }
     await prismaClient.activityNotification.create({ data });
   } catch (error) {
     console.error("Unable to record a FitLoop activity notification.", error);
   }
 }
+
+const notificationPreferenceInput = z.object({
+  socialActivity: z.boolean().optional(),
+  pings: z.boolean().optional()
+}).strict().refine(value => Object.keys(value).length > 0, "Choose at least one preference to update.");
+
+// Defaults keep the existing inbox experience for accounts that have not opened settings yet.
+router.get("/notification-preferences", async (req, res, next) => {
+  try {
+    const preference = await prismaClient.notificationPreference.findUnique({
+      where: { userId: req.userId },
+      select: { socialActivity: true, pings: true }
+    });
+    return res.json({
+      preferences: {
+        socialActivity: preference?.socialActivity ?? true,
+        pings: preference?.pings ?? true
+      }
+    });
+  } catch (error) { return next(error); }
+});
+
+// Only the authenticated member's own in-app preferences can be changed here.
+// Push and email are intentionally absent until delivery consent and retention rules are defined.
+router.patch("/notification-preferences", async (req, res, next) => {
+  try {
+    const input = notificationPreferenceInput.parse(req.body);
+    const preference = await prismaClient.notificationPreference.upsert({
+      where: { userId: req.userId },
+      create: { userId: req.userId, ...input },
+      update: input,
+      select: { socialActivity: true, pings: true }
+    });
+    return res.json({ preferences: preference });
+  } catch (error) { return next(error); }
+});
 
 // The inbox is private to its recipient. Blocked actors are filtered in both directions,
 // and pagination is stable so a new notification cannot reshuffle an older page.

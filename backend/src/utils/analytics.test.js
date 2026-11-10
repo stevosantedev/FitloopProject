@@ -6,14 +6,15 @@ import { summariseDailyLogs, summariseWorkoutSessions } from "./analytics.js";
 test("daily averages ignore fields that were not logged", () => {
   // Missing values should not pull a person's average down to zero.
   const result = summariseDailyLogs([
-    { sleepMinutes: 420, steps: 5000, mood: 4, focusMinutes: 60 },
-    { sleepMinutes: null, steps: 7000, mood: 2, focusMinutes: null },
-    { sleepMinutes: 480, steps: undefined, mood: 5, focusMinutes: 120 }
+    { sleepMinutes: 420, steps: 5000, activityMinutes: 30, mood: 4, focusMinutes: 60 },
+    { sleepMinutes: null, steps: 7000, activityMinutes: null, mood: 2, focusMinutes: null },
+    { sleepMinutes: 480, steps: undefined, activityMinutes: 60, mood: 5, focusMinutes: 120 }
   ]);
 
   assert.equal(result.daysLogged, 3);
   assert.equal(result.averageSleepMinutes, 450);
   assert.equal(result.averageSteps, 6000);
+  assert.equal(result.averageActivityMinutes, 45);
   assert.equal(result.averageMood, 3.7);
   assert.equal(result.averageFocusMinutes, 90);
 });
@@ -24,6 +25,7 @@ test("daily averages return null when no measurements exist", () => {
   const result = summariseDailyLogs([{ sleepMinutes: null, steps: undefined }]);
   assert.equal(result.averageSleepMinutes, null);
   assert.equal(result.averageSteps, null);
+  assert.equal(result.averageActivityMinutes, null);
 });
 
 // Completed bodyweight sets count as work, while unknown load is excluded from kilogram volume.

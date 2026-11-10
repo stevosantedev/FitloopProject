@@ -43,6 +43,10 @@ test("GET daily logs includes the full requested calendar window and scopes it t
     }
   };
 
+  const expectedStart = new Date();
+  expectedStart.setUTCHours(0, 0, 0, 0);
+  expectedStart.setUTCDate(expectedStart.getUTCDate() - 6);
+
   await withDailyLogApi(prisma, async baseUrl => {
     const response = await fetch(baseUrl + "/api/daily-logs?days=7");
     assert.equal(response.status, 200);
@@ -51,9 +55,6 @@ test("GET daily logs includes the full requested calendar window and scopes it t
 
   assert.equal(query.where.userId, "user-a");
   assert.equal(query.where.date.gte.toISOString().slice(11), "00:00:00.000Z");
-  const expectedStart = new Date();
-  expectedStart.setUTCHours(0, 0, 0, 0);
-  expectedStart.setUTCDate(expectedStart.getUTCDate() - 6);
   assert.equal(query.where.date.gte.toISOString(), expectedStart.toISOString());
   assert.deepEqual(query.orderBy, { date: "desc" });
 });
@@ -69,14 +70,15 @@ test("GET daily logs caps the requested history window", async () => {
     }
   };
 
+  const expectedStart = new Date();
+  expectedStart.setUTCHours(0, 0, 0, 0);
+  expectedStart.setUTCDate(expectedStart.getUTCDate() - 89);
+
   await withDailyLogApi(prisma, async baseUrl => {
     const response = await fetch(baseUrl + "/api/daily-logs?days=3650");
     assert.equal(response.status, 200);
   });
 
-  const expectedStart = new Date();
-  expectedStart.setUTCHours(0, 0, 0, 0);
-  expectedStart.setUTCDate(expectedStart.getUTCDate() - 89);
   assert.equal(query.where.date.gte.toISOString(), expectedStart.toISOString());
 });
 

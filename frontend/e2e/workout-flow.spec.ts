@@ -1816,8 +1816,20 @@ test("Coach settings disclose optional AI processing and keep consent off by def
   await settings.getByRole("button", { name: "Save coach preferences" }).click();
   await expect(page.getByText("Your coaching preferences have been saved.")).toBeVisible();
   await page.reload();
-  await page.getByRole("button", { name: "Open account settings" }).click();
-  await expect(page.getByRole("dialog", { name: "Settings" }).getByLabel(/Use AI-generated coaching replies/)).not.toBeChecked();
+  const settingsTrigger = page.getByRole("button", { name: "Open account settings" });
+  await settingsTrigger.click();
+  const reopenedSettings = page.getByRole("dialog", { name: "Settings" });
+  await expect(reopenedSettings.getByLabel(/Use AI-generated coaching replies/)).not.toBeChecked();
+
+  // Escape and backdrop dismissal should both close the sheet and return focus to its opener.
+  await page.keyboard.press("Escape");
+  await expect(reopenedSettings).toHaveCount(0);
+  await expect(settingsTrigger).toBeFocused();
+  await settingsTrigger.click();
+  await expect(reopenedSettings).toBeVisible();
+  await page.locator(".account-settings-backdrop").click({ position: { x: 5, y: 5 } });
+  await expect(reopenedSettings).toHaveCount(0);
+  await expect(settingsTrigger).toBeFocused();
 });
 
 

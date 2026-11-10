@@ -2440,6 +2440,29 @@ test("daily check-in communicates optional fields and mirrors API input limits",
   await expect(page.locator('input[name="focusMinutes"]')).toHaveAttribute("step", "1");
 });
 
+// Active minutes are part of the daily movement picture and should reach the same validated API field.
+test("daily check-in saves optional active minutes", async ({ page }) => {
+  let submitted: Record<string, unknown> | undefined;
+  await mockApplicationApi(page);
+  await page.route("http://localhost:4000/api/daily-logs", async route => {
+    if (route.request().method() !== "PUT") {
+      await route.fallback();
+      return;
+    }
+    submitted = route.request().postDataJSON();
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ log: { id: "log-active-minutes" } }) });
+  });
+
+  await page.goto("/");
+  await page.getByLabel("Email").fill("tester@example.com");
+  await page.getByLabel("Password").fill("test-password");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByLabel("Active minutes").fill("35");
+  await page.getByRole("button", { name: "Save check-in" }).click();
+
+  await expect.poll(() => submitted?.activityMinutes).toBe(35);
+});
+
 // Date-only check-ins must follow the calendar day shown by the user's device, not UTC.
 test("daily check-in uses the local calendar date outside UTC", async ({ browser }) => {
   const context = await browser.newContext({ timezoneId: "America/Los_Angeles" });

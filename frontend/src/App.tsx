@@ -1664,7 +1664,8 @@ function signOut() {
     window.addEventListener("keydown", handleKeyDown);
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
-      accountSettingsTriggerRef.current?.focus();
+      // Wait until React has removed the backdrop before restoring focus to its opener.
+      window.requestAnimationFrame(() => accountSettingsTriggerRef.current?.focus());
     };
   }, [showAccountSettings]);
 

@@ -252,6 +252,8 @@ export default function App() {
   const [notice, setNotice] = useState("");
   // Keep first-load and refresh failures separate from legitimate empty account data.
   const [dashboardLoading, setDashboardLoading] = useState(false);
+  // Prevent repeated submissions while today’s check-in is being saved and refreshed.
+  const [checkInSaving, setCheckInSaving] = useState(false);
   const [workoutsLoading, setWorkoutsLoading] = useState(false);
   const [communityLoading, setCommunityLoading] = useState(false);
   const [dashboardError, setDashboardError] = useState("");
@@ -1011,6 +1013,7 @@ async function sendCoachMessage(event: React.FormEvent) {
       return value === "" ? undefined : Number(value);
     };
 
+    setCheckInSaving(true);
     try {
       await request("/api/daily-logs", {
         method: "PUT",
@@ -1026,6 +1029,8 @@ async function sendCoachMessage(event: React.FormEvent) {
       await loadDashboard();
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Could not save your check-in.");
+    } finally {
+      setCheckInSaving(false);
     }
   }
 
@@ -1939,7 +1944,7 @@ function signOut() {
           <label>Steps<input name="steps" type="number" min="0" placeholder="e.g. 6500" /></label>
           <label>Mood<select name="mood" defaultValue=""><option value="">Choose a mood</option>{[1,2,3,4,5].map(value => <option key={value} value={value}>{value} / 5</option>)}</select></label>
           <label>Focused work or study (minutes)<input name="focusMinutes" type="number" min="0" max="1440" placeholder="e.g. 120" /></label>
-          <button>Save check-in</button>
+          <button disabled={checkInSaving}>{checkInSaving ? "Saving check-in…" : "Save check-in"}</button>
         </form>
         <section className="panel">
           <p className="eyebrow">CHECK-IN HISTORY</p><h2>Last seven days</h2>

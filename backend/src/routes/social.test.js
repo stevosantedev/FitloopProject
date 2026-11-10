@@ -1403,7 +1403,7 @@ test("POST reports accepts a visible message and records its sender", async () =
     userBlock: { findMany: async () => [] },
     directMessage: { findFirst: async args => {
       messageQuery = args;
-      return { id: "message-b", senderId: "user-b" };
+      return { id: "message-b", senderId: "user-b", body: "Please stop contacting me.", createdAt: new Date("2026-11-09T18:30:00.000Z") };
     } },
     contentReport: { create: async args => { createArgs = args; return report; } }
   };
@@ -1422,6 +1422,9 @@ test("POST reports accepts a visible message and records its sender", async () =
   assert.equal(createArgs.data.reporterId, "user-a");
   assert.equal(createArgs.data.reportedUserId, "user-b");
   assert.equal(createArgs.data.messageId, "message-b");
+  assert.equal(createArgs.data.reportedMessageBody, "Please stop contacting me.");
+  assert.equal(createArgs.data.reportedMessageCreatedAt.toISOString(), "2026-11-09T18:30:00.000Z");
+  assert.equal(createArgs.data.reportedMessageSenderId, "user-b");
   assert.equal(createArgs.data.postId, null);
 });
 

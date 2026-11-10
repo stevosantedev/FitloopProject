@@ -2484,7 +2484,7 @@ test("daily check-in converts sleep hours and leaves blank fields out", async ({
   await page.getByLabel("Email").fill("tester@example.com");
   await page.getByLabel("Password").fill("test-password");
   await page.getByRole("button", { name: "Sign in" }).click();
-  await page.getByLabel("Sleep (hours)").fill("7.5");
+  await page.getByLabel("Hours of sleep").fill("7.5");
   await page.getByRole("button", { name: "Save check-in" }).click();
 
   await expect.poll(() => submitted?.sleepMinutes).toBe(450);

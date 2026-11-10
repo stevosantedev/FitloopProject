@@ -1895,6 +1895,9 @@ test("Progress is a separate destination with compact weekly metrics", async ({ 
   await expect(weeklyHighlights).toContainText("7.5h");
   await expect(weeklyHighlights).toContainText("60");
   await expect(weeklyHighlights).toContainText("1 of 7 days recorded");
+  // Paired coverage counts only days where both fields exist, not days with a partial check-in.
+  await expect(weeklyHighlights.locator("article").filter({ hasText: "Sleep + activity entries" })).toContainText("1");
+  await expect(weeklyHighlights).toContainText("Days with both recorded");
   const activityChart = page.locator(".mini-chart").filter({ hasText: "Active minutes" });
   await expect(activityChart).toBeVisible();
   await expect(activityChart.locator(".bar-column")).toHaveAttribute("title", "35 active minutes");

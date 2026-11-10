@@ -1624,12 +1624,18 @@ function signOut() {
     };
   }, [profileViewLoading, profileViewError, viewedProfile]);
 
+  // Close the sheet first, then return keyboard focus after React has removed its backdrop.
+  function closeAccountSettings() {
+    setShowAccountSettings(false);
+    window.setTimeout(() => accountSettingsTriggerRef.current?.focus(), 0);
+  }
+
   useEffect(() => {
     if (!showAccountSettings) return;
     accountSettingsCloseRef.current?.focus();
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        setShowAccountSettings(false);
+        closeAccountSettings();
         return;
       }
       if (event.key !== "Tab") return;
@@ -1663,9 +1669,8 @@ function signOut() {
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => {
+      // Focus restoration is handled by closeAccountSettings after the state update commits.
       window.removeEventListener("keydown", handleKeyDown);
-      // Wait until React has removed the backdrop before restoring focus to its opener.
-      window.requestAnimationFrame(() => accountSettingsTriggerRef.current?.focus());
     };
   }, [showAccountSettings]);
 
@@ -2804,9 +2809,9 @@ function signOut() {
       </section>
     </div>}
     {/* Preferences and destructive account actions are available on demand, not mixed into the daily Home journey. */}
-    {showAccountSettings && <div className="account-settings-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) setShowAccountSettings(false); }}>
+    {showAccountSettings && <div className="account-settings-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) closeAccountSettings(); }}>
       <section ref={accountSettingsDialogRef} className="account-settings-dialog" role="dialog" aria-modal="true" aria-labelledby="account-settings-title">
-        <div className="account-settings-heading"><div><p className="eyebrow">YOUR ACCOUNT</p><h2 id="account-settings-title">Settings</h2></div><button ref={accountSettingsCloseRef} type="button" className="small-button secondary" onClick={() => setShowAccountSettings(false)}>Close</button></div>
+        <div className="account-settings-heading"><div><p className="eyebrow">YOUR ACCOUNT</p><h2 id="account-settings-title">Settings</h2></div><button ref={accountSettingsCloseRef} type="button" className="small-button secondary" onClick={closeAccountSettings}>Close</button></div>
       <section className="panel notification-preferences-panel" aria-labelledby="notification-preferences-title">
         <p className="eyebrow">IN-APP ALERTS</p><h2 id="notification-preferences-title">Notifications</h2>
         <p className="muted">Choose which activity appears in your FitLoop inbox. These settings do not affect messages themselves.</p>

@@ -40,6 +40,7 @@ type DailyLog = {
   date: string;
   sleepMinutes?: number | null;
   steps?: number | null;
+  activityMinutes?: number | null;
   mood?: number | null;
   focusMinutes?: number | null;
 };
@@ -1032,6 +1033,7 @@ async function sendCoachMessage(event: React.FormEvent) {
           date: localCalendarDateKey(new Date()),
           sleepMinutes: optionalNumber("sleepHours") === undefined ? undefined : optionalNumber("sleepHours")! * 60,
           steps: optionalNumber("steps"),
+          activityMinutes: optionalNumber("activityMinutes"),
           mood: optionalNumber("mood"),
           focusMinutes: optionalNumber("focusMinutes")
         })
@@ -1954,6 +1956,7 @@ function signOut() {
           <p className="muted">Add what you know. It's fine to leave any field blank.</p>
           <label>Hours of sleep<input name="sleepHours" type="number" min="0" max="24" step="0.5" placeholder="e.g. 7.5" /></label>
           <label>Steps<input name="steps" type="number" min="0" max="200000" step="1" placeholder="e.g. 6500" /></label>
+          <label>Active minutes<input name="activityMinutes" type="number" min="0" max="1440" step="1" placeholder="e.g. 35" /></label>
           <label>Mood<select name="mood" defaultValue=""><option value="">Choose a mood</option>{[1,2,3,4,5].map(value => <option key={value} value={value}>{value} / 5</option>)}</select></label>
           <label>Focused work or study (minutes)<input name="focusMinutes" type="number" min="0" max="1440" step="1" placeholder="e.g. 120" /></label>
           <button disabled={checkInSaving}>{checkInSaving ? "Saving check-in…" : "Save check-in"}</button>
@@ -1963,7 +1966,7 @@ function signOut() {
           {logs.length === 0 && dashboardLoading ? <p className="muted" role="status">Loading your check-ins…</p> : logs.length === 0 && dashboardError ? <p className="muted">Check-ins are unavailable until the overview can be refreshed.</p> : logs.length === 0 ? <p className="muted">Your check-ins will appear here once you log a day.</p> :
             <ul className="log-list">{logs.map(log => <li key={log.id}>
               <strong>{parseCalendarDate(log.date).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" })}</strong>
-              <span>{log.steps?.toLocaleString() ?? "No steps"} steps · {log.sleepMinutes ? (log.sleepMinutes / 60).toFixed(1) : "—"}h sleep · Mood {log.mood ?? "—"}/5</span>
+              <span>{log.steps?.toLocaleString() ?? "No steps"} steps · {log.activityMinutes ?? "—"} active min · {log.sleepMinutes ? (log.sleepMinutes / 60).toFixed(1) : "—"}h sleep · Mood {log.mood ?? "—"}/5</span>
             </li>)}</ul>}
         </section>
       </section>

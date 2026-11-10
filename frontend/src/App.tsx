@@ -1760,6 +1760,8 @@ function signOut() {
   const maxSteps = Math.max(1, ...chartLogs.map(log => log.steps ?? 0));
   const maxSleep = Math.max(1, ...chartLogs.map(log => log.sleepMinutes ?? 0));
   const maxFocus = Math.max(1, ...chartLogs.map(log => log.focusMinutes ?? 0));
+  // Scale active minutes independently so their bars remain meaningful beside other units.
+  const maxActivityMinutes = Math.max(1, ...chartLogs.map(log => log.activityMinutes ?? 0));
   const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
   const sessionsThisWeek = sessions.filter(session => new Date(session.startedAt).getTime() >= sevenDaysAgo);
   const completedSetsThisWeek = sessionsThisWeek.flatMap(session => session.sets).filter(set => set.completed).length;
@@ -1996,6 +1998,7 @@ function signOut() {
         <div className="mini-charts">
           <article className="mini-chart"><strong>Sleep</strong><div className="bar-row">{chartLogs.map(log => <div className="bar-column" key={log.id} title={log.sleepMinutes == null ? "No sleep entry" : (log.sleepMinutes / 60).toFixed(1) + " hours"}><span style={{ height: (log.sleepMinutes == null ? 0 : Math.max(4, log.sleepMinutes / maxSleep * 100)) + "%" }} /><small>{new Date(log.date).toLocaleDateString(undefined, { weekday: "short" })}</small></div>)}</div></article>
           <article className="mini-chart"><strong>Steps</strong><div className="bar-row">{chartLogs.map(log => <div className="bar-column" key={log.id} title={log.steps == null ? "No step entry" : log.steps.toLocaleString() + " steps"}><span style={{ height: (log.steps == null ? 0 : Math.max(4, log.steps / maxSteps * 100)) + "%" }} /><small>{new Date(log.date).toLocaleDateString(undefined, { weekday: "short" })}</small></div>)}</div></article>
+          <article className="mini-chart"><strong>Active minutes</strong><div className="bar-row">{chartLogs.map(log => <div className="bar-column" key={log.id} title={log.activityMinutes == null ? "No active minutes entry" : log.activityMinutes + " active minutes"}><span style={{ height: (log.activityMinutes == null ? 0 : Math.max(4, log.activityMinutes / maxActivityMinutes * 100)) + "%" }} /><small>{new Date(log.date).toLocaleDateString(undefined, { weekday: "short" })}</small></div>)}</div></article>
           <article className="mini-chart"><strong>Mood (out of 5)</strong><div className="bar-row">{chartLogs.map(log => <div className="bar-column" key={log.id} title={log.mood == null ? "No mood entry" : "Mood " + log.mood + " out of 5"}><span style={{ height: (log.mood == null ? 0 : log.mood / 5 * 100) + "%" }} /><small>{new Date(log.date).toLocaleDateString(undefined, { weekday: "short" })}</small></div>)}</div></article>
           <article className="mini-chart"><strong>Focus (minutes)</strong><div className="bar-row">{chartLogs.map(log => <div className="bar-column" key={log.id} title={log.focusMinutes == null ? "No focus entry" : log.focusMinutes + " focused minutes"}><span style={{ height: (log.focusMinutes == null ? 0 : Math.max(4, log.focusMinutes / maxFocus * 100)) + "%" }} /><small>{new Date(log.date).toLocaleDateString(undefined, { weekday: "short" })}</small></div>)}</div></article>
         </div>

@@ -2436,6 +2436,9 @@ test("daily check-in communicates optional fields and mirrors API input limits",
   await expect(page.getByText("Add what you know. It's fine to leave any field blank.")).toBeVisible();
   await expect(page.locator('input[name="steps"]')).toHaveAttribute("max", "200000");
   await expect(page.locator('input[name="steps"]')).toHaveAttribute("step", "1");
+  await expect(page.locator('input[name="activityMinutes"]')).toHaveAttribute("min", "0");
+  await expect(page.locator('input[name="activityMinutes"]')).toHaveAttribute("max", "1440");
+  await expect(page.locator('input[name="activityMinutes"]')).toHaveAttribute("step", "1");
   await expect(page.locator('input[name="focusMinutes"]')).toHaveAttribute("max", "1440");
   await expect(page.locator('input[name="focusMinutes"]')).toHaveAttribute("step", "1");
 });

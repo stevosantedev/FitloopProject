@@ -51,6 +51,8 @@ async function mockApplicationApi(page: Page, onSessionSave?: (body: any) => voi
   const activityNotifications = initialNotifications.map(notification => ({ ...notification }));
   // Keep the mock preference between requests so browser coverage can verify both consent and opt-out.
   let coachAiEnabled = false;
+  // Keep notification choices between mocked requests so Settings exercises the same read/save flow as the API.
+  let notificationPreferences = { socialActivity: true, pings: true };
   await page.route("http://localhost:4000/**", async route => {
     const request = route.request();
     const url = new URL(request.url());
@@ -182,6 +184,11 @@ async function mockApplicationApi(page: Page, onSessionSave?: (body: any) => voi
       body = { people: [{ id: "friend-candidate", username: "runnercandidate", displayName: "Runner Candidate" }] };
     } else if (url.pathname === "/api/social/friends/request" && method === "POST") {
       body = { connection: { id: "request-candidate", status: "pending" } };
+    } else if (url.pathname === "/api/social/notification-preferences" && method === "GET") {
+      body = { preferences: { ...notificationPreferences } };
+    } else if (url.pathname === "/api/social/notification-preferences" && method === "PATCH") {
+      notificationPreferences = request.postDataJSON();
+      body = { preferences: { ...notificationPreferences } };
     } else if (url.pathname === "/api/social/notifications" && method === "GET") {
       const cursor = url.searchParams.get("cursor");
       const startIndex = cursor ? Math.max(0, activityNotifications.findIndex(item => item.id === cursor) + 1) : 0;

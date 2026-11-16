@@ -1833,6 +1833,35 @@ test("Coach settings disclose optional AI processing and keep consent off by def
 });
 
 
+// Notification controls should survive a fresh read, not just look changed in the open sheet.
+test("notification preferences persist independently for Social activity and Pings", async ({ page }) => {
+  await mockApplicationApi(page);
+  await page.goto("/");
+  await page.getByLabel("Email").fill("tester@example.com");
+  await page.getByLabel("Password").fill("test-password");
+  await page.getByRole("button", { name: "Sign in" }).click();
+
+  await page.getByRole("button", { name: "Open account settings" }).click();
+  const settings = page.getByRole("dialog", { name: "Settings" });
+  const socialActivity = settings.getByLabel(/Social activity/);
+  const pings = settings.getByLabel(/^Pings/);
+  await expect(socialActivity).toBeChecked();
+  await expect(pings).toBeChecked();
+
+  // Muting one category must not silently mute the other category as well.
+  await socialActivity.uncheck();
+  await settings.getByRole("button", { name: "Save notification preferences" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Notification preferences saved." })).toBeVisible();
+  await expect(socialActivity).not.toBeChecked();
+  await expect(pings).toBeChecked();
+
+  await page.reload();
+  await page.getByRole("button", { name: "Open account settings" }).click();
+  const reopenedSettings = page.getByRole("dialog", { name: "Settings" });
+  await expect(reopenedSettings.getByLabel(/Social activity/)).not.toBeChecked();
+  await expect(reopenedSettings.getByLabel(/^Pings/)).toBeChecked();
+});
+
 // The overview should offer direct destinations without making users hunt through navigation.
 // The Home screen should keep the first useful actions visible before the longer check-in form.
 // Account deletion and Coach preferences are important, but they should not lengthen the everyday Home screen.
